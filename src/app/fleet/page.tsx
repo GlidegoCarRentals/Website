@@ -1,293 +1,287 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 import { CARS } from '@/lib/cars';
-import Navbar from '@/components/Navbar';
 
-const FEATURES = ['Apple CarPlay','Android Auto','Heated Seats','Sunroof','AWD','Backup Camera','GPS Navigation'];
-const CATEGORIES = ['All','Economy','Compact','SUV','Luxury','Sports','Electric','Van'];
-const SORT_OPTIONS = ['Recommended','Price: Low to High','Price: High to Low','Top Rated','Most Popular'];
+const CATEGORIES = ['All', 'Economy', 'Compact', 'SUV', 'Luxury', 'Van'];
+const FUEL_TYPES = ['All', 'Petrol', 'Hybrid', 'Electric', 'Diesel'];
+const TRANSMISSIONS = ['All', 'Automatic', 'Manual'];
+const SORT_OPTIONS = [
+  { value: 'recommended', label: 'Recommended' },
+  { value: 'price_asc', label: 'Price: Low to High' },
+  { value: 'price_desc', label: 'Price: High to Low' },
+  { value: 'rating', label: 'Highest Rated' },
+  { value: 'trips', label: 'Most Popular' },
+];
+
+const FEATURES_FILTER = ['Apple CarPlay', 'Heated Seats', 'Sunroof', 'AWD/4WD', 'Backup Camera', 'Bluetooth', 'Cruise Control'];
 
 export default function FleetPage() {
   const { user, toggleFavourite } = useAuth();
-  const [darkMode, setDarkMode] = useState(false);
-  const [view, setView] = useState<'grid'|'list'>('grid');
-  const [search, setSearch] = useState('');
+  const [darkMode, setDarkMode] = useState(true);
   const [category, setCategory] = useState('All');
-  const [sort, setSort] = useState('Recommended');
+  const [fuel, setFuel] = useState('All');
+  const [transmission, setTransmission] = useState('All');
+  const [sort, setSort] = useState('recommended');
   const [priceRange, setPriceRange] = useState([0, 300]);
-  const [transmission, setTransmission] = useState<string[]>([]);
-  const [features, setFeatures] = useState<string[]>([]);
-  const [seatsMin, setSeatsMin] = useState(1);
+  const [seats, setSeats] = useState(0);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [instantOnly, setInstantOnly] = useState(false);
+  const [availableOnly, setAvailableOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
-  const [compareList, setCompareList] = useState<number[]>([]);
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [searchQ, setSearchQ] = useState('');
 
   const dm = darkMode;
-  const bg = dm ? '#0a0f1e' : '#f8fafc';
-  const cardBg = dm ? '#0f1b35' : 'white';
-  const textMain = dm ? 'white' : '#0f172a';
-  const textMuted = dm ? 'rgba(255,255,255,0.5)' : '#64748b';
-  const border = dm ? 'rgba(255,255,255,0.07)' : '#f1f5f9';
-  const inputBg = dm ? 'rgba(255,255,255,0.05)' : 'white';
-  const inputBorder = dm ? 'rgba(255,255,255,0.1)' : '#e2e8f0';
+  const bg = dm ? '#070d1a' : '#f0f4f8';
+  const surface = dm ? '#0d1528' : '#ffffff';
+  const surface2 = dm ? '#111d35' : '#f8fafc';
+  const border = dm ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
+  const text = dm ? '#f1f5f9' : '#0f172a';
+  const muted = dm ? '#64748b' : '#94a3b8';
+  const accent = '#10b981';
 
-  const toggleTransmission = (t: string) => setTransmission(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
-  const toggleFeature = (f: string) => setFeatures(p => p.includes(f) ? p.filter(x => x !== f) : [...p, f]);
-  const toggleCompare = (id: number) => setCompareList(p => p.includes(id) ? p.filter(x => x !== id) : p.length < 3 ? [...p, id] : p);
+  const filtered = useMemo(() => {
+    let cars = CARS;
+    if (searchQ) cars = cars.filter(c => c.name.toLowerCase().includes(searchQ.toLowerCase()) || c.category.toLowerCase().includes(searchQ.toLowerCase()));
+    if (category !== 'All') cars = cars.filter(c => c.category === category);
+    if (fuel !== 'All') cars = cars.filter(c => c.fuel === fuel);
+    if (transmission !== 'All') cars = cars.filter(c => c.transmission === transmission);
+    if (availableOnly) cars = cars.filter(c => c.available);
+    cars = cars.filter(c => c.price >= priceRange[0] && c.price <= priceRange[1]);
+    if (seats > 0) cars = cars.filter(c => c.seats >= seats);
+    if (selectedFeatures.length > 0) cars = cars.filter(c => selectedFeatures.every(f => c.allFeatures?.includes(f)));
 
-  let filtered = CARS.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || (c as any).category?.toLowerCase().includes(search.toLowerCase());
-    const matchCat = category === 'All' || (c as any).category === category || (category === 'Electric' && (c as any).fuel === 'Electric');
-    const matchPrice = c.price >= priceRange[0] && c.price <= priceRange[1];
-    const matchTrans = transmission.length === 0 || transmission.includes((c as any).transmission || 'Automatic');
-    const matchInstant = !instantOnly || c.available;
-    return matchSearch && matchCat && matchPrice && matchTrans && matchInstant;
-  });
+    switch (sort) {
+      case 'price_asc': return [...cars].sort((a, b) => a.price - b.price);
+      case 'price_desc': return [...cars].sort((a, b) => b.price - a.price);
+      case 'rating': return [...cars].sort((a, b) => b.rating - a.rating);
+      case 'trips': return [...cars].sort((a, b) => b.trips - a.trips);
+      default: return cars;
+    }
+  }, [category, fuel, transmission, sort, priceRange, seats, selectedFeatures, availableOnly, searchQ]);
 
-  if (sort === 'Price: Low to High') filtered = [...filtered].sort((a, b) => a.price - b.price);
-  if (sort === 'Price: High to Low') filtered = [...filtered].sort((a, b) => b.price - a.price);
-  if (sort === 'Top Rated') filtered = [...filtered].sort((a, b) => b.rating - a.rating);
-  if (sort === 'Most Popular') filtered = [...filtered].sort((a, b) => b.trips - a.trips);
-
-  const isFav = (id: number | string) => user?.favourites?.includes(String(id));
+  const toggleFeature = (f: string) => setSelectedFeatures(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
+  const clearFilters = () => { setCategory('All'); setFuel('All'); setTransmission('All'); setSeats(0); setSelectedFeatures([]); setPriceRange([0, 300]); setAvailableOnly(false); setInstantOnly(false); setSearchQ(''); };
+  const activeFilterCount = [category !== 'All', fuel !== 'All', transmission !== 'All', seats > 0, selectedFeatures.length > 0, priceRange[0] > 0 || priceRange[1] < 300, availableOnly].filter(Boolean).length;
 
   return (
-    <div style={{ fontFamily: "'Inter',-apple-system,sans-serif", minHeight: '100vh', background: bg, transition: 'background 0.3s' }}>
+    <div style={{ minHeight: '100vh', background: bg, fontFamily: "'Syne','Inter',sans-serif", color: text }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        .playfair { font-family: 'Playfair Display', serif; }
-        .car-card { border-radius: 18px; overflow: hidden; transition: all 0.25s; cursor: pointer; position: relative; }
-        .car-card:hover { transform: translateY(-4px); box-shadow: 0 20px 48px rgba(0,0,0,${dm ? '0.4' : '0.1'}); }
-        .fav-btn { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: all 0.2s; z-index: 2; }
-        .fav-btn:hover { transform: scale(1.15); background: rgba(0,0,0,0.6); }
-        .compare-btn { position: absolute; top: 12px; left: 12px; padding: 4px 10px; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); border: none; cursor: pointer; border-radius: 20px; font-size: 10px; font-weight: 700; color: white; transition: all 0.2s; z-index: 2; }
-        .filter-chip { padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1.5px solid; }
-        .chip-off { background: ${inputBg}; border-color: ${inputBorder}; color: ${textMuted}; }
-        .chip-on { background: rgba(29,78,216,0.12); border-color: #1d4ed8; color: #1d4ed8; }
-        .book-btn { background: linear-gradient(135deg,#1d4ed8,#059669); color: white; border: none; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; width: 100%; transition: all 0.2s; }
-        .book-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(29,78,216,0.35); }
-        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: linear-gradient(to right, #1d4ed8 0%, #1d4ed8 ${(priceRange[1] / 300) * 100}%, ${inputBorder} ${(priceRange[1] / 300) * 100}%, ${inputBorder} 100%); }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #1d4ed8; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-        .available-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:4px}
+        .car-card{background:${surface};border:1px solid ${border};border-radius:18px;overflow:hidden;transition:all 0.25s;cursor:pointer}
+        .car-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,0.2);border-color:rgba(16,185,129,0.3)}
+        .fchip{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ${border};background:${dm ? 'rgba(255,255,255,0.04)' : '#f1f5f9'};color:${muted};transition:all 0.15s}
+        .fchip.on{background:rgba(16,185,129,0.12);border-color:#10b981;color:#10b981}
+        .range-input{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,#10b981,#3b82f6);border-radius:2px;outline:none;cursor:pointer}
+        .range-input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.3);cursor:pointer}
+        .heart-btn{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,0.4);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:all 0.2s}
+        .heart-btn:hover{background:rgba(0,0,0,0.6);transform:scale(1.1)}
+        @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .fi{animation:fi 0.3s ease}
       `}</style>
 
-      <Navbar darkMode={dm} onDarkModeToggle={() => setDarkMode(!dm)} />
-
-      {/* Hero bar */}
-      <div style={{ paddingTop: 68, background: dm ? 'linear-gradient(135deg,#020817,#0c1a3a)' : 'linear-gradient(135deg,#0a0f1e,#0c2c1a)', padding: '80px 24px 40px' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-          <h1 className="playfair" style={{ fontSize: 44, fontWeight: 800, color: 'white', marginBottom: 16 }}>
-            Find Your Perfect Drive
-          </h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.55)', marginBottom: 28 }}>
-            {CARS.length}+ premium vehicles in Melbourne — from $59/day
-          </p>
-          <div style={{ background: dm ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '14px', display: 'flex', gap: 10, alignItems: 'center', maxWidth: 600, margin: '0 auto' }}>
-            <input style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 15, color: 'white', padding: '2px 8px' }} placeholder="🔍  Search by make, model, or type..." value={search} onChange={e => setSearch(e.target.value)} />
-            {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 16 }}>✕</button>}
+      {/* HEADER */}
+      <div style={{ background: surface, borderBottom: `1px solid ${border}`, padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40, backdropFilter: 'blur(20px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Link href="/" style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: muted, textDecoration: 'none' }}>←</Link>
+          <div>
+            <h1 style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.5px' }}>Browse Fleet</h1>
+            <p style={{ fontSize: 11, color: muted }}>{filtered.length} vehicles available in Melbourne</p>
           </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search cars..." style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${border}`, borderRadius: 10, padding: '8px 14px', fontSize: 12, color: text, outline: 'none', width: 180 }} />
+          <button onClick={() => setShowFilters(!showFilters)} style={{ padding: '8px 14px', background: showFilters ? 'rgba(16,185,129,0.1)' : dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', border: `1px solid ${showFilters ? accent : border}`, borderRadius: 10, fontSize: 12, fontWeight: 600, color: showFilters ? accent : muted, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            ⊟ Filters {activeFilterCount > 0 && <span style={{ background: accent, color: 'white', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10 }}>{activeFilterCount}</span>}
+          </button>
+          <div style={{ display: 'flex', border: `1px solid ${border}`, borderRadius: 10, overflow: 'hidden' }}>
+            {(['grid', 'list'] as const).map(v => (
+              <button key={v} onClick={() => setView(v)} style={{ padding: '8px 12px', background: view === v ? `rgba(16,185,129,0.1)` : 'transparent', border: 'none', cursor: 'pointer', color: view === v ? accent : muted, fontSize: 14 }}>{v === 'grid' ? '⊞' : '≡'}</button>
+            ))}
+          </div>
+          <button onClick={() => setDarkMode(!dm)} style={{ width: 40, height: 22, borderRadius: 11, background: dm ? 'linear-gradient(135deg,#1d4ed8,#059669)' : '#e2e8f0', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.3s', flexShrink: 0 }}>
+            <div style={{ position: 'absolute', width: 16, height: 16, borderRadius: '50%', background: 'white', top: 3, left: dm ? 21 : 3, transition: 'left 0.25s' }} />
+          </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 24px', display: 'flex', gap: 28, alignItems: 'flex-start' }}>
-        {/* Filters Sidebar */}
+      <div style={{ display: 'flex', maxWidth: 1400, margin: '0 auto' }}>
+        {/* FILTER SIDEBAR */}
         {showFilters && (
-          <div style={{ width: 260, flexShrink: 0, background: cardBg, borderRadius: 18, border: `1px solid ${border}`, padding: 22, position: 'sticky', top: 88 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: textMain, marginBottom: 18, display: 'flex', justifyContent: 'space-between' }}>
-              Filters
-              <button onClick={() => { setCategory('All'); setPriceRange([0,300]); setTransmission([]); setFeatures([]); setInstantOnly(false); }} style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>Reset</button>
+          <div className="fi" style={{ width: 260, flexShrink: 0, padding: '24px 20px', overflowY: 'auto', height: 'calc(100vh - 66px)', position: 'sticky', top: 66, borderRight: `1px solid ${border}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>Filters</div>
+              {activeFilterCount > 0 && <button onClick={clearFilters} style={{ fontSize: 11, fontWeight: 600, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Clear all</button>}
+            </div>
+
+            {/* Availability */}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Availability</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8 }}>
+                <input type="checkbox" checked={availableOnly} onChange={e => setAvailableOnly(e.target.checked)} style={{ accentColor: accent }} />
+                <span style={{ fontSize: 12, color: text }}>Available only</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input type="checkbox" checked={instantOnly} onChange={e => setInstantOnly(e.target.checked)} style={{ accentColor: accent }} />
+                <span style={{ fontSize: 12, color: text }}>⚡ Instant Book</span>
+              </label>
+            </div>
+
+            {/* Price Range */}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price Range</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: accent }}>${priceRange[0]}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: accent }}>${priceRange[1]}/day</span>
+              </div>
+              <input type="range" min={0} max={300} value={priceRange[1]} onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])} className="range-input" style={{ marginBottom: 8 }} />
             </div>
 
             {/* Category */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: textMuted, letterSpacing: '0.08em', marginBottom: 10 }}>CATEGORY</div>
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Category</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {CATEGORIES.map(c => (
-                  <button key={c} onClick={() => setCategory(c)} className={`filter-chip ${category === c ? 'chip-on' : 'chip-off'}`}>{c}</button>
-                ))}
+                {CATEGORIES.map(c => <button key={c} className={`fchip${category === c ? ' on' : ''}`} onClick={() => setCategory(c)}>{c}</button>)}
               </div>
             </div>
 
-            {/* Price range */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: textMuted, letterSpacing: '0.08em', marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
-                PRICE / DAY <span style={{ color: '#1d4ed8', fontWeight: 700 }}>Up to ${priceRange[1]}</span>
-              </div>
-              <input type="range" min={20} max={300} step={5} value={priceRange[1]} onChange={e => setPriceRange([0, Number(e.target.value)])} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: textMuted, marginTop: 4 }}>
-                <span>$20</span><span>$300</span>
+            {/* Fuel */}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fuel Type</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {FUEL_TYPES.map(f => <button key={f} className={`fchip${fuel === f ? ' on' : ''}`} onClick={() => setFuel(f)}>{f}</button>)}
               </div>
             </div>
 
             {/* Transmission */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: textMuted, letterSpacing: '0.08em', marginBottom: 10 }}>TRANSMISSION</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {['Automatic', 'Manual'].map(t => (
-                  <button key={t} onClick={() => toggleTransmission(t)} className={`filter-chip ${transmission.includes(t) ? 'chip-on' : 'chip-off'}`}>{t}</button>
-                ))}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Transmission</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {TRANSMISSIONS.map(t => <button key={t} className={`fchip${transmission === t ? ' on' : ''}`} onClick={() => setTransmission(t)}>{t}</button>)}
+              </div>
+            </div>
+
+            {/* Seats */}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Min Seats</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[0, 2, 4, 5, 7].map(s => <button key={s} className={`fchip${seats === s ? ' on' : ''}`} onClick={() => setSeats(s)} style={{ minWidth: 38, textAlign: 'center' }}>{s === 0 ? 'Any' : `${s}+`}</button>)}
               </div>
             </div>
 
             {/* Features */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: textMuted, letterSpacing: '0.08em', marginBottom: 10 }}>FEATURES</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {FEATURES.map(f => (
-                  <label key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <div style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${features.includes(f) ? '#1d4ed8' : inputBorder}`, background: features.includes(f) ? '#1d4ed8' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }} onClick={() => toggleFeature(f)}>
-                      {features.includes(f) && <span style={{ color: 'white', fontSize: 10, fontWeight: 800 }}>✓</span>}
-                    </div>
-                    <span style={{ fontSize: 13, color: textMain }}>{f}</span>
-                  </label>
-                ))}
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Features</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {FEATURES_FILTER.map(f => <button key={f} className={`fchip${selectedFeatures.includes(f) ? ' on' : ''}`} onClick={() => toggleFeature(f)} style={{ fontSize: 10 }}>{f}</button>)}
               </div>
-            </div>
-
-            {/* Instant Book */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderTop: `1px solid ${border}` }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: textMain }}>⚡ Available Only</div>
-                <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>Skip unavailable cars</div>
-              </div>
-              <button onClick={() => setInstantOnly(!instantOnly)} style={{ width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer', background: instantOnly ? 'linear-gradient(135deg,#1d4ed8,#059669)' : inputBorder, position: 'relative', transition: 'background 0.2s' }}>
-                <div style={{ position: 'absolute', width: 16, height: 16, borderRadius: '50%', background: 'white', top: 3, left: instantOnly ? '21px' : '3px', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
-              </button>
             </div>
           </div>
         )}
 
-        {/* Main content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Toolbar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button onClick={() => setShowFilters(!showFilters)} style={{ padding: '8px 14px', background: cardBg, border: `1px solid ${border}`, borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: textMuted }}>
-                {showFilters ? '✕ Hide' : '⚙️ Show'} Filters
-              </button>
-              <span style={{ fontSize: 14, color: textMuted, fontWeight: 500 }}>{filtered.length} cars found</span>
-            </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <select value={sort} onChange={e => setSort(e.target.value)} style={{ border: `1px solid ${border}`, borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: textMain, background: cardBg, outline: 'none' }}>
-                {SORT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <div style={{ display: 'flex', border: `1px solid ${border}`, borderRadius: 10, overflow: 'hidden' }}>
-                {(['grid', 'list'] as const).map(v => (
-                  <button key={v} onClick={() => setView(v)} style={{ padding: '8px 12px', border: 'none', background: view === v ? '#0f172a' : cardBg, color: view === v ? 'white' : textMuted, cursor: 'pointer', fontSize: 14 }}>
-                    {v === 'grid' ? '⊞' : '☰'}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* CAR GRID */}
+        <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
+          {/* Sort Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: muted }}><span style={{ fontWeight: 700, color: text }}>{filtered.length}</span> vehicles found</div>
+            <select value={sort} onChange={e => setSort(e.target.value)} style={{ background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', border: `1px solid ${border}`, borderRadius: 10, padding: '8px 14px', fontSize: 12, color: text, outline: 'none', cursor: 'pointer', fontFamily: "'Syne',sans-serif", fontWeight: 600 }}>
+              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
           </div>
 
-          {/* Cars grid/list */}
           {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '80px 24px', background: cardBg, borderRadius: 18, border: `1px solid ${border}` }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: textMain, marginBottom: 8 }}>No cars found</div>
-              <div style={{ fontSize: 14, color: textMuted, marginBottom: 20 }}>Try adjusting your filters or search terms</div>
-              <button onClick={() => { setSearch(''); setCategory('All'); setPriceRange([0,300]); }} style={{ background: 'linear-gradient(135deg,#1d4ed8,#059669)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Clear All Filters</button>
+            <div style={{ textAlign: 'center', padding: 60 }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No cars found</div>
+              <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Try adjusting your filters</div>
+              <button onClick={clearFilters} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Clear All Filters</button>
             </div>
-          ) : (
-            <div style={{ display: view === 'grid' ? 'grid' : 'flex', gridTemplateColumns: view === 'grid' ? 'repeat(auto-fill,minmax(280px,1fr))' : undefined, flexDirection: view === 'list' ? 'column' : undefined, gap: 20 }}>
-              {filtered.map(car => (
-                view === 'grid' ? (
-                  // Grid Card
-                  <div key={car.id} className="car-card" style={{ background: cardBg, border: `1px solid ${border}`, boxShadow: dm ? '0 4px 20px rgba(0,0,0,0.3)' : '0 1px 6px rgba(0,0,0,0.06)' }}>
-                    <button className="fav-btn" onClick={e => { e.preventDefault(); if (user) toggleFavourite(car.id); else window.location.href = '/login'; }}>
-                      {isFav(String(car.id)) ? '❤️' : '🤍'}
-                    </button>
-                    <button className="compare-btn" onClick={e => { e.preventDefault(); toggleCompare(car.id); }} style={{ background: compareList.includes(String(car.id)) ? 'rgba(29,78,216,0.8)' : 'rgba(0,0,0,0.45)' }}>
-                      {compareList.includes(String(car.id)) ? '✓ Compare' : '+ Compare'}
-                    </button>
-                    <div style={{ height: 190, overflow: 'hidden', position: 'relative' }}>
-                      <img src={car.image} alt={car.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} onMouseEnter={e => (e.target as HTMLImageElement).style.transform = 'scale(1.06)'} onMouseLeave={e => (e.target as HTMLImageElement).style.transform = ''} />
-                      {!car.available && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'white', letterSpacing: '0.12em' }}>UNAVAILABLE</div>}
+          ) : view === 'grid' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }} className="fi">
+              {filtered.map(car => {
+                const isFav = user?.favourites?.includes(String(car.id));
+                return (
+                  <div key={car.id} className="car-card">
+                    <div style={{ position: 'relative' }}>
+                      <img src={car.image} alt={car.name} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
+                      {!car.available && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ background: '#ef4444', color: 'white', padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>UNAVAILABLE</span></div>}
+                      <button onClick={e => { e.preventDefault(); if (user) toggleFavourite(String(car.id)); }} className="heart-btn">{isFav ? '❤️' : '🤍'}</button>
+                      <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 5 }}>
+                        <span style={{ background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, backdropFilter: 'blur(4px)' }}>{car.category}</span>
+                        <span style={{ background: car.fuelColor + '33', color: car.fuelColor, fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, backdropFilter: 'blur(4px)', border: `1px solid ${car.fuelColor}44` }}>{car.fuel}</span>
+                      </div>
                     </div>
                     <div style={{ padding: '16px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                        <h3 style={{ fontSize: 15, fontWeight: 700, color: textMain, lineHeight: 1.3 }}>{car.name}</h3>
-                        <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
-                          <div style={{ fontSize: 20, fontWeight: 800, color: textMain }}>${car.price}</div>
-                          <div style={{ fontSize: 10, color: textMuted }}>per day</div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: text }}>{car.name}</div>
+                          <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>{car.year} · {car.transmission} · {car.seats} seats</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: accent }}>${car.price}</div>
+                          <div style={{ fontSize: 10, color: muted }}>per day</div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#d97706' }}>⭐ {car.rating}</span>
-                        <span style={{ fontSize: 11, color: textMuted }}>· {car.trips} trips</span>
-                        <div className="available-dot" style={{ background: car.available ? '#22c55e' : '#f59e0b', marginLeft: 'auto' }} />
-                        <span style={{ fontSize: 11, color: car.available ? '#15803d' : '#d97706', fontWeight: 600 }}>{car.available ? 'Available' : 'Booked'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <span style={{ fontSize: 11, color: '#f59e0b' }}>{'★'.repeat(Math.round(car.rating))}</span>
+                        <span style={{ fontSize: 11, color: muted }}>{car.rating} · {car.trips} trips</span>
                       </div>
-                      <Link href={`/cars/${car.id}`} style={{ textDecoration: 'none' }}>
-                        <button className="book-btn" disabled={!car.available}>
-                          {car.available ? 'Book Now →' : 'View Details'}
-                        </button>
+                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 12 }}>
+                        {car.features.slice(0, 2).map(f => <span key={f} style={{ fontSize: 10, background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: muted, padding: '3px 8px', borderRadius: 6 }}>{f}</span>)}
+                      </div>
+                      <Link href={`/cars/${car.id}`} style={{ display: 'block', textAlign: 'center', padding: '9px', background: car.available ? 'linear-gradient(135deg,#10b981,#059669)' : dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: car.available ? 'white' : muted, borderRadius: 10, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+                        {car.available ? 'View & Book' : 'Notify Me'}
                       </Link>
                     </div>
                   </div>
-                ) : (
-                  // List Card
-                  <div key={car.id} style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 16, display: 'flex', gap: 0, overflow: 'hidden', transition: 'all 0.2s', boxShadow: dm ? '0 4px 20px rgba(0,0,0,0.2)' : '0 1px 6px rgba(0,0,0,0.04)' }}>
-                    <div style={{ width: 200, position: 'relative', flexShrink: 0 }}>
-                      <img src={car.image} alt={car.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      {!car.available && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', letterSpacing: '0.1em' }}>UNAVAILABLE</div>}
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="fi">
+              {filtered.map(car => {
+                const isFav = user?.favourites?.includes(String(car.id));
+                return (
+                  <div key={car.id} style={{ background: surface, border: `1px solid ${border}`, borderRadius: 16, display: 'flex', gap: 16, padding: 16, transition: 'all 0.2s' }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <img src={car.image} alt={car.name} style={{ width: 160, height: 110, borderRadius: 12, objectFit: 'cover' }} />
+                      {!car.available && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: 'white', fontSize: 10, fontWeight: 700 }}>UNAVAILABLE</span></div>}
                     </div>
-                    <div style={{ flex: 1, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 20 }}>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: 17, fontWeight: 700, color: textMain, marginBottom: 4 }}>{car.name}</h3>
-                        <div style={{ fontSize: 12, color: textMuted, marginBottom: 8 }}>⭐ {car.rating} · {car.trips} trips · {(car as any).category || 'Car'} · {(car as any).fuel || 'Petrol'}</div>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {['✓ Instant Book', '🚗 Free Delivery', '🛡️ Insured'].map(tag => (
-                            <span key={tag} style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: dm ? 'rgba(255,255,255,0.06)' : '#f8fafc', color: textMuted }}>{tag}</span>
-                          ))}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: text }}>{car.name}</div>
+                          <div style={{ fontSize: 11, color: muted, marginTop: 3 }}>{car.year} · {car.category} · {car.fuel} · {car.seats} seats</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                            <span style={{ fontSize: 12, color: '#f59e0b' }}>★ {car.rating}</span>
+                            <span style={{ fontSize: 11, color: muted }}>{car.trips} trips</span>
+                            <span style={{ fontSize: 11, color: muted }}>📍 {car.location}</span>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 22, fontWeight: 800, color: accent }}>${car.price}</div>
+                          <div style={{ fontSize: 11, color: muted }}>per day</div>
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 26, fontWeight: 800, color: textMain }}>${car.price}<span style={{ fontSize: 12, fontWeight: 400, color: textMuted }}>/day</span></div>
-                        <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                          <button onClick={() => toggleFavourite(car.id)} style={{ padding: '8px 12px', background: dm ? 'rgba(255,255,255,0.06)' : '#f8fafc', border: `1px solid ${border}`, borderRadius: 9, cursor: 'pointer', fontSize: 14 }}>{isFav(String(car.id)) ? '❤️' : '🤍'}</button>
-                          <Link href={`/cars/${car.id}`} style={{ textDecoration: 'none' }}>
-                            <button className="book-btn" style={{ width: 'auto', padding: '9px 20px' }} disabled={!car.available}>
-                              {car.available ? 'Book →' : 'View'}
-                            </button>
-                          </Link>
-                        </div>
+                      <div style={{ display: 'flex', gap: 5, marginTop: 10, flexWrap: 'wrap' }}>
+                        {car.features.map(f => <span key={f} style={{ fontSize: 10, background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: muted, padding: '3px 8px', borderRadius: 6 }}>{f}</span>)}
                       </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', flexShrink: 0 }}>
+                      <button onClick={() => toggleFavourite(String(car.id))} style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: `1px solid ${border}`, cursor: 'pointer', fontSize: 16 }}>{isFav ? '❤️' : '🤍'}</button>
+                      <Link href={`/cars/${car.id}`} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', borderRadius: 10, fontSize: 12, fontWeight: 700, textDecoration: 'none', textAlign: 'center', whiteSpace: 'nowrap' }}>Book Now</Link>
                     </div>
                   </div>
-                )
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
-
-      {/* Compare bar */}
-      {compareList.length > 0 && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0a0f1e', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16, zIndex: 100 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>Compare ({compareList.length}/3):</span>
-          {compareList.map(id => {
-            const car = CARS.find(c => c.id === id);
-            return car ? (
-              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '6px 12px' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{car.name}</span>
-                <button onClick={() => toggleCompare(id)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 13 }}>✕</button>
-              </div>
-            ) : null;
-          })}
-          {compareList.length >= 2 && (
-            <button style={{ marginLeft: 'auto', background: 'linear-gradient(135deg,#1d4ed8,#059669)', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-              Compare Now →
-            </button>
-          )}
-          <button onClick={() => setCompareList([])} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', borderRadius: 10, padding: '10px 16px', fontSize: 13, cursor: 'pointer' }}>Clear</button>
-        </div>
-      )}
     </div>
   );
 }

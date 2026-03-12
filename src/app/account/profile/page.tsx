@@ -1,207 +1,243 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { CARS } from '@/lib/cars';
 
-const TABS = ['Overview','My Bookings','Favourites','Reviews','Promo & Rewards','Settings'];
+const TABS = ['Profile', 'Bookings', 'Favourites', 'Licence', 'Promos'];
 
-const MOCK_BOOKINGS = [
-  { id:'BK001', car:'Tesla Model 3', image:'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=200&q=70', pickup:'14 Mar 2026', return:'17 Mar 2026', amount:507, status:'upcoming', days:3 },
-  { id:'BK002', car:'Toyota Camry', image:'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=200&q=70', pickup:'01 Feb 2026', return:'03 Feb 2026', amount:218, status:'completed', days:2 },
-  { id:'BK003', car:'BMW X5', image:'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=200&q=70', pickup:'15 Jan 2026', return:'20 Jan 2026', amount:1195, status:'completed', days:5 },
+const MY_BOOKINGS = [
+  { id: 'BK-1901', car: 'Tesla Model 3', image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=400&q=80', pickup: 'Mar 14, 2026', ret: 'Mar 17, 2026', days: 3, amount: 507, status: 'upcoming', location: 'Melbourne CBD' },
+  { id: 'BK-1756', car: 'BMW X5', image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400&q=80', pickup: 'Feb 20, 2026', ret: 'Feb 22, 2026', days: 2, amount: 398, status: 'completed', location: 'Tullamarine', reviewLeft: false },
+  { id: 'BK-1603', car: 'Toyota RAV4', image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=400&q=80', pickup: 'Jan 10, 2026', ret: 'Jan 15, 2026', days: 5, amount: 695, status: 'completed', location: 'Frankston', reviewLeft: true },
 ];
 
-export default function AccountPage() {
-  const { user, logout, updateUser, toggleFavourite } = useAuth();
+const STATUS_CFG: Record<string, { bg: string; color: string; label: string }> = {
+  upcoming: { bg: '#dbeafe', color: '#1d4ed8', label: 'Upcoming' },
+  active: { bg: '#dcfce7', color: '#15803d', label: 'Active' },
+  completed: { bg: '#f1f5f9', color: '#64748b', label: 'Completed' },
+  cancelled: { bg: '#fee2e2', color: '#dc2626', label: 'Cancelled' },
+};
+
+export default function AccountProfile() {
+  const { user, updateUser, toggleFavourite, logout } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState('Overview');
+  const [activeTab, setActiveTab] = useState('Profile');
+  const [darkMode, setDarkMode] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editPhone, setEditPhone] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [promoCode, setPromoCode] = useState('');
   const [promoMsg, setPromoMsg] = useState('');
+  const [licenceStep, setLicenceStep] = useState(0);
 
   useEffect(() => {
-    if (!user) router.push('/login?redirect=/account');
-    else { setEditName(user.name); setEditPhone(user.phone||''); }
+    if (!user) router.push('/login?redirect=/account/profile');
+    if (user) { setName(user.name); setPhone(user.phone || ''); }
   }, [user, router]);
 
   if (!user) return null;
 
-const favCars = CARS.filter(c => user.favourites?.includes(String(c.id)));
+  const dm = darkMode;
+  const bg = dm ? '#070d1a' : '#f0f4f8';
+  const surface = dm ? '#0d1528' : '#ffffff';
+  const surface2 = dm ? '#111d35' : '#f8fafc';
+  const border = dm ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
+  const text = dm ? '#f1f5f9' : '#0f172a';
+  const muted = dm ? '#64748b' : '#94a3b8';
+  const accent = '#10b981';
+
+  const favCars = CARS.filter(c => user.favourites?.includes(String(c.id)));
+
   const applyPromo = () => {
-    if (promoCode.toUpperCase() === 'WELCOME20') {
-      updateUser({ promoCredits: (user.promoCredits || 0) + 20 });
-      setPromoMsg('🎉 $20 credit added! Code: WELCOME20');
-    } else if (promoCode.toUpperCase() === 'GLIDEGO50') {
-      updateUser({ promoCredits: (user.promoCredits || 0) + 50 });
-      setPromoMsg('🎉 $50 credit added! Code: GLIDEGO50');
-    } else {
-      setPromoMsg('❌ Invalid promo code. Try WELCOME20 or GLIDEGO50');
-    }
-    setPromoCode('');
+    const codes: Record<string, number> = { 'GLIDEGO10': 10, 'NEWUSER20': 20, 'AUSSIE15': 15 };
+    const disc = codes[promoCode.toUpperCase()];
+    if (disc) { updateUser({ promoCredits: (user.promoCredits || 0) + disc }); setPromoMsg(`🎉 $${disc} credit added!`); setPromoCode(''); }
+    else setPromoMsg('❌ Invalid promo code');
+    setTimeout(() => setPromoMsg(''), 3000);
   };
 
   return (
-    <div style={{fontFamily:"'Inter',-apple-system,sans-serif",minHeight:'100vh',background:'#f8fafc'}}>
+    <div style={{ minHeight: '100vh', background: bg, fontFamily: "'Syne','Inter',sans-serif", color: text }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0;}
-        .playfair{font-family:'Playfair Display',serif;}
-        .tab-btn{padding:10px 18px;border:none;background:transparent;font-size:14px;font-weight:500;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}
-        .tab-btn.active{color:#0f172a;border-bottom-color:#1d4ed8;font-weight:700;}
-        .card{background:white;border-radius:16px;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
-        .inp{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 14px;font-size:14px;color:#0f172a;outline:none;background:white;transition:border-color 0.2s;}
-        .inp:focus{border-color:#1d4ed8;}
-        .save-btn{background:linear-gradient(135deg,#1d4ed8,#059669);color:white;border:none;border-radius:10px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;}
-        .save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(29,78,216,0.3);}
-        label{font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.08em;display:block;margin-bottom:6px;}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:4px}
+        .inp{background:${surface2};border:1px solid ${border};border-radius:10px;padding:9px 12px;font-size:13px;color:${text};outline:none;font-family:'Inter',sans-serif;width:100%}
+        .inp:focus{border-color:#10b981}
+        .tbtn{padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;transition:all 0.2s}
+        .card{background:${surface};border:1px solid ${border};border-radius:18px;padding:22px}
+        @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .fi{animation:fi 0.3s ease}
       `}</style>
 
-      {/* Nav */}
-      <nav style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'14px 24px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
-        <Link href="/" style={{textDecoration:'none'}}>
-          <Image src="/logo.png" alt="GlideGo" width={110} height={25} style={{objectFit:'contain'}} />
-        </Link>
-        <div style={{display:'flex',alignItems:'center',gap:16}}>
-          <Link href="/#fleet" style={{fontSize:14,color:'#64748b',textDecoration:'none',fontWeight:500}}>Browse Cars</Link>
-          <Link href="/host/dashboard" style={{fontSize:14,color:'#64748b',textDecoration:'none',fontWeight:500}}>Host Portal</Link>
-          <button onClick={logout} style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:8,padding:'8px 16px',fontSize:13,fontWeight:600,color:'#dc2626',cursor:'pointer'}}>Sign Out</button>
-        </div>
-      </nav>
-
-      {/* Profile Hero */}
-      <div style={{background:'linear-gradient(135deg,#0a0f1e,#0c1a3a)',padding:'40px 24px'}}>
-        <div style={{maxWidth:1000,margin:'0 auto',display:'flex',alignItems:'center',gap:24,flexWrap:'wrap'}}>
-          <div style={{width:80,height:80,borderRadius:'50%',background:'linear-gradient(135deg,#1d4ed8,#059669)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:800,color:'white',flexShrink:0,border:'3px solid rgba(255,255,255,0.1)'}}>
-            {user.name.split(' ').map(n=>n[0]).join('')}
+      {/* HEADER */}
+      <div style={{ background: surface, borderBottom: `1px solid ${border}`, padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Link href="/" style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: muted, textDecoration: 'none' }}>←</Link>
+          <div>
+            <h1 style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.5px' }}>My Account</h1>
+            <p style={{ fontSize: 11, color: muted }}>{user.email}</p>
           </div>
-          <div style={{flex:1}}>
-            <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
-              <h1 className="playfair" style={{fontSize:28,fontWeight:800,color:'white'}}>{user.name}</h1>
-              {user.verified && <span style={{background:'rgba(52,211,153,0.15)',color:'#34d399',fontSize:11,fontWeight:700,padding:'4px 12px',borderRadius:20,border:'1px solid rgba(52,211,153,0.3)'}}>✓ Verified</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={() => setDarkMode(!dm)} style={{ width: 40, height: 22, borderRadius: 11, background: dm ? 'linear-gradient(135deg,#1d4ed8,#059669)' : '#e2e8f0', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.3s' }}>
+            <div style={{ position: 'absolute', width: 16, height: 16, borderRadius: '50%', background: 'white', top: 3, left: dm ? 21 : 3, transition: 'left 0.25s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+          </button>
+          <button onClick={() => { logout(); router.push('/'); }} style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#ef4444', cursor: 'pointer' }}>Sign Out</button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '28px 24px' }}>
+        {/* Profile Header Card */}
+        <div className="card" style={{ marginBottom: 24, display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: 'white' }}>
+              {user.name.split(' ').map((n: string) => n[0]).join('')}
             </div>
-            <div style={{display:'flex',gap:20,marginTop:8,flexWrap:'wrap'}}>
-              {[{icon:'📅',val:`Member since ${user.joinedDate||'2024'}`},{icon:'🚗',val:`${user.trips||0} trips`},{icon:'⭐',val:`${user.rating||'No'} rating`},{icon:'💰',val:`$${user.promoCredits||0} credits`}].map(s=>(
-                <div key={s.val} style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:'rgba(255,255,255,0.55)'}}>
-                  <span>{s.icon}</span>{s.val}
+            <div style={{ position: 'absolute', bottom: 2, right: 2, width: 20, height: 20, borderRadius: '50%', background: user.verified ? accent : '#f59e0b', border: `3px solid ${surface}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9 }}>
+              {user.verified ? '✓' : '!'}
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>{user.name}</h2>
+            <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: muted }}>📍 Melbourne, VIC</span>
+              <span style={{ fontSize: 12, color: muted }}>🗓️ Member since {user.joinedDate}</span>
+              <span style={{ fontSize: 12, color: muted }}>🚗 {user.trips} trips</span>
+              {user.rating && <span style={{ fontSize: 12, color: '#f59e0b' }}>⭐ {user.rating} rating</span>}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {[
+              { icon: user.verified ? '✅' : '⚠️', label: user.verified ? 'ID Verified' : 'Verify ID', color: user.verified ? accent : '#f59e0b' },
+              { icon: user.licenceUploaded ? '🪪' : '📤', label: user.licenceUploaded ? 'Licence OK' : 'Upload Licence', color: user.licenceUploaded ? accent : '#f59e0b' },
+              { icon: '💰', label: `$${user.promoCredits || 0} Credits`, color: '#8b5cf6' },
+            ].map(b => (
+              <div key={b.label} style={{ padding: '10px 14px', background: dm ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderRadius: 12, border: `1px solid ${border}`, textAlign: 'center', minWidth: 90 }}>
+                <div style={{ fontSize: 18, marginBottom: 4 }}>{b.icon}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: b.color }}>{b.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 24, overflowX: 'auto', padding: '4px 0' }}>
+          {TABS.map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className="tbtn" style={{ background: activeTab === tab ? `linear-gradient(135deg,${accent},#059669)` : (dm ? 'rgba(255,255,255,0.04)' : '#f1f5f9'), color: activeTab === tab ? 'white' : muted, whiteSpace: 'nowrap' }}>{tab}</button>
+          ))}
+        </div>
+
+        {/* PROFILE TAB */}
+        {activeTab === 'Profile' && (
+          <div className="fi card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>Personal Information</div>
+              <button onClick={() => setEditMode(!editMode)} style={{ padding: '7px 16px', background: editMode ? `rgba(16,185,129,0.1)` : dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', border: `1px solid ${editMode ? accent : border}`, borderRadius: 10, fontSize: 12, fontWeight: 600, color: editMode ? accent : muted, cursor: 'pointer' }}>
+                {editMode ? '✓ Save' : '✏️ Edit'}
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {[
+                { label: 'Full Name', val: name, setter: setName },
+                { label: 'Phone', val: phone, setter: setPhone },
+                { label: 'Email', val: user.email, setter: () => {} },
+                { label: 'Location', val: 'Melbourne, VIC', setter: () => {} },
+              ].map(f => (
+                <div key={f.label}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{f.label}</div>
+                  {editMode ? <input value={f.val} onChange={e => f.setter(e.target.value)} className="inp" /> : <div style={{ fontSize: 14, fontWeight: 500, color: text, padding: '9px 12px', background: dm ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderRadius: 10, border: `1px solid ${border}` }}>{f.val}</div>}
                 </div>
               ))}
             </div>
-          </div>
-          <Link href="/#fleet" style={{background:'linear-gradient(135deg,#1d4ed8,#059669)',color:'white',textDecoration:'none',padding:'12px 24px',borderRadius:12,fontSize:14,fontWeight:700}}>
-            🚗 Book a Car
-          </Link>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{background:'white',borderBottom:'1px solid #f1f5f9',overflowX:'auto'}}>
-        <div style={{maxWidth:1000,margin:'0 auto',display:'flex',padding:'0 24px'}}>
-          {TABS.map(t=>(
-            <button key={t} onClick={()=>setTab(t)} className={`tab-btn${tab===t?' active':''}`}>{t}</button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{maxWidth:1000,margin:'0 auto',padding:'28px 24px'}}>
-
-        {/* ── OVERVIEW ── */}
-        {tab==='Overview' && (
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
-            {[
-              {icon:'🚗',label:'Upcoming Trips',val:MOCK_BOOKINGS.filter(b=>b.status==='upcoming').length,color:'#1d4ed8',bg:'#eff6ff',link:'My Bookings'},
-              {icon:'✅',label:'Completed Trips',val:MOCK_BOOKINGS.filter(b=>b.status==='completed').length,color:'#059669',bg:'#f0fdf4',link:'My Bookings'},
-              {icon:'❤️',label:'Saved Cars',val:favCars.length,color:'#dc2626',bg:'#fef2f2',link:'Favourites'},
-              {icon:'💰',label:'Promo Credits',val:`$${user.promoCredits||0}`,color:'#d97706',bg:'#fffbeb',link:'Promo & Rewards'},
-            ].map(s=>(
-              <div key={s.label} className="card" style={{padding:24,cursor:'pointer'}} onClick={()=>setTab(s.link)}>
-                <div style={{display:'flex',alignItems:'center',gap:16}}>
-                  <div style={{width:52,height:52,borderRadius:14,background:s.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:24}}>{s.icon}</div>
-                  <div>
-                    <div className="playfair" style={{fontSize:28,fontWeight:800,color:'#0f172a'}}>{s.val}</div>
-                    <div style={{fontSize:13,color:'#64748b'}}>{s.label}</div>
-                  </div>
-                </div>
+            {editMode && (
+              <div style={{ marginTop: 16 }}>
+                <button onClick={() => { updateUser({ name, phone }); setEditMode(false); }} style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Save Changes</button>
               </div>
-            ))}
-
-            {/* Licence Status */}
-            <div className="card" style={{padding:24,gridColumn:'1/-1'}}>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
-                <div style={{display:'flex',alignItems:'center',gap:14}}>
-                  <div style={{width:52,height:52,borderRadius:14,background:user.licenceUploaded?'#f0fdf4':'#fffbeb',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24}}>🪪</div>
-                  <div>
-                    <div style={{fontSize:15,fontWeight:700,color:'#0f172a'}}>Driver's Licence</div>
-                    <div style={{fontSize:13,color:'#64748b',marginTop:2}}>{user.licenceUploaded?'Verified ✅ — You can book any vehicle':'Upload required before your first booking'}</div>
+            )}
+            <div style={{ borderTop: `1px solid ${border}`, marginTop: 24, paddingTop: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Preferences</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[['Email notifications', true], ['SMS reminders', true], ['Promotional offers', false], ['Trip updates', true]].map(([label, on]) => (
+                  <div key={String(label)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: text }}>{String(label)}</span>
+                    <div style={{ width: 38, height: 21, borderRadius: 11, background: on ? 'linear-gradient(135deg,#1d4ed8,#059669)' : (dm ? 'rgba(255,255,255,0.1)' : '#e2e8f0'), cursor: 'pointer', position: 'relative', border: 'none' }}>
+                      <div style={{ position: 'absolute', width: 15, height: 15, borderRadius: '50%', background: 'white', top: 3, left: on ? 20 : 3, transition: 'left 0.2s' }} />
+                    </div>
                   </div>
-                </div>
-                {!user.licenceUploaded && (
-                  <button onClick={()=>setTab('Settings')} style={{background:'linear-gradient(135deg,#1d4ed8,#059669)',color:'white',border:'none',borderRadius:10,padding:'10px 20px',fontSize:13,fontWeight:700,cursor:'pointer'}}>
-                    Upload Now →
-                  </button>
-                )}
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* ── MY BOOKINGS ── */}
-        {tab==='My Bookings' && (
-          <div style={{display:'flex',flexDirection:'column',gap:16}}>
-            {MOCK_BOOKINGS.map(b=>(
-              <div key={b.id} className="card" style={{display:'flex',alignItems:'center',gap:20,padding:20,flexWrap:'wrap'}}>
-                <img src={b.image} alt={b.car} style={{width:100,height:70,objectFit:'cover',borderRadius:10,flexShrink:0}} onError={e=>{(e.target as HTMLImageElement).style.display='none'}} />
-                <div style={{flex:1,minWidth:200}}>
-                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6,flexWrap:'wrap'}}>
-                    <h3 style={{fontSize:16,fontWeight:700,color:'#0f172a'}}>{b.car}</h3>
-                    <span style={{fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:20,background:b.status==='upcoming'?'#eff6ff':b.status==='completed'?'#f0fdf4':'#fef2f2',color:b.status==='upcoming'?'#1d4ed8':b.status==='completed'?'#15803d':'#dc2626'}}>
-                      {b.status}
-                    </span>
+        {/* BOOKINGS TAB */}
+        {activeTab === 'Bookings' && (
+          <div className="fi" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {MY_BOOKINGS.map(b => {
+              const s = STATUS_CFG[b.status];
+              return (
+                <div key={b.id} className="card">
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                    <img src={b.image} alt={b.car} style={{ width: 100, height: 70, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 700 }}>{b.car}</div>
+                          <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>📍 {b.location} · {b.id}</div>
+                          <div style={{ fontSize: 12, color: text, marginTop: 5 }}>{b.pickup} → {b.ret} <span style={{ color: muted }}>({b.days} days)</span></div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: accent }}>${b.amount}</div>
+                          <span style={{ fontSize: 10, fontWeight: 700, background: s.bg, color: s.color, padding: '3px 9px', borderRadius: 20, marginTop: 6, display: 'inline-block' }}>{s.label}</span>
+                        </div>
+                      </div>
+                      {b.status === 'completed' && !b.reviewLeft && (
+                        <button style={{ marginTop: 10, padding: '7px 16px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#f59e0b', cursor: 'pointer' }}>
+                          ⭐ Leave a Review
+                        </button>
+                      )}
+                      {b.status === 'upcoming' && (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                          <button style={{ padding: '7px 14px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: accent, cursor: 'pointer' }}>View Details</button>
+                          <button style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#ef4444', cursor: 'pointer' }}>Cancel</button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{fontSize:13,color:'#64748b'}}>📅 {b.pickup} → {b.return} · {b.days} days</div>
                 </div>
-                <div style={{textAlign:'right'}}>
-                  <div style={{fontSize:20,fontWeight:800,color:'#0f172a',marginBottom:8}}>${b.amount}</div>
-                  <div style={{display:'flex',gap:8}}>
-                    {b.status==='completed' && <button style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'7px 14px',fontSize:12,fontWeight:600,color:'#374151',cursor:'pointer'}}>Leave Review</button>}
-                    {b.status==='upcoming' && <button style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:8,padding:'7px 14px',fontSize:12,fontWeight:600,color:'#dc2626',cursor:'pointer'}}>Cancel</button>}
-                    <Link href={`/booking/${b.id}`} style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:8,padding:'7px 14px',fontSize:12,fontWeight:600,color:'#1d4ed8',textDecoration:'none'}}>Details</Link>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        {/* ── FAVOURITES ── */}
-        {tab==='Favourites' && (
-          <div>
-            {favCars.length===0 ? (
-              <div style={{textAlign:'center',padding:'60px 24px',color:'#94a3b8'}}>
-                <div style={{fontSize:48,marginBottom:16}}>❤️</div>
-                <div style={{fontSize:18,fontWeight:700,color:'#0f172a',marginBottom:8}}>No saved cars yet</div>
-                <div style={{fontSize:14,marginBottom:20}}>Tap the heart icon on any car to save it here</div>
-                <Link href="/#fleet" style={{background:'linear-gradient(135deg,#1d4ed8,#059669)',color:'white',textDecoration:'none',padding:'12px 28px',borderRadius:12,fontSize:14,fontWeight:700}}>Browse Cars</Link>
+        {/* FAVOURITES TAB */}
+        {activeTab === 'Favourites' && (
+          <div className="fi">
+            {favCars.length === 0 ? (
+              <div className="card" style={{ textAlign: 'center', padding: 48 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>❤️</div>
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>No favourites yet</div>
+                <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Tap the heart on any car to save it here</div>
+                <Link href="/" style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', borderRadius: 12, textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>Browse Cars</Link>
               </div>
             ) : (
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20}}>
-                {favCars.map(car=>(
-                  <div key={car.id} className="card" style={{overflow:'hidden'}}>
-                    <div style={{position:'relative',height:160,overflow:'hidden'}}>
-                      <img src={car.image} alt={car.name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                      <button onClick={()=>toggleFavourite(String(car.id))} style={{position:'absolute',top:10,right:10,width:34,height:34,borderRadius:'50%',background:'rgba(0,0,0,0.5)',border:'none',cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center'}}>❤️</button>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 18 }}>
+                {favCars.map(car => (
+                  <div key={car.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                    <div style={{ position: 'relative' }}>
+                      <img src={car.image} alt={car.name} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
+                      <button onClick={() => toggleFavourite(String(car.id))} style={{ position: 'absolute', top: 10, right: 10, width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', cursor: 'pointer', fontSize: 16 }}>❤️</button>
                     </div>
-                    <div style={{padding:16}}>
-                      <div style={{fontSize:15,fontWeight:700,color:'#0f172a',marginBottom:4}}>{car.name}</div>
-                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <div style={{fontSize:12,color:'#94a3b8'}}>⭐ {car.rating} · {car.trips} trips</div>
-                        <div style={{fontSize:16,fontWeight:800,color:'#0f172a'}}>${car.price}/day</div>
+                    <div style={{ padding: 16 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{car.name}</div>
+                      <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>{car.category} · {car.fuel}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: accent }}>${car.price}<span style={{ fontSize: 10, fontWeight: 400, color: muted }}>/day</span></span>
+                        <Link href={`/cars/${car.id}`} style={{ padding: '6px 14px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', borderRadius: 9, fontSize: 11, fontWeight: 700, textDecoration: 'none' }}>Book Now</Link>
                       </div>
-                      <Link href={`/cars/${car.id}`} style={{display:'block',marginTop:12,textAlign:'center',background:'linear-gradient(135deg,#1d4ed8,#059669)',color:'white',textDecoration:'none',padding:'9px',borderRadius:9,fontSize:13,fontWeight:700}}>Book Now</Link>
                     </div>
                   </div>
                 ))}
@@ -210,139 +246,92 @@ const favCars = CARS.filter(c => user.favourites?.includes(String(c.id)));
           </div>
         )}
 
-        {/* ── PROMO & REWARDS ── */}
-        {tab==='Promo & Rewards' && (
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
-            <div className="card" style={{padding:24}}>
-              <h3 style={{fontSize:17,fontWeight:700,color:'#0f172a',marginBottom:6}}>💰 Your Credits</h3>
-              <div className="playfair" style={{fontSize:48,fontWeight:800,color:'#059669',margin:'20px 0'}}>${user.promoCredits||0}</div>
-              <div style={{fontSize:13,color:'#64748b',marginBottom:20}}>Applied automatically at checkout</div>
-              <div style={{display:'flex',gap:10}}>
-                <input className="inp" value={promoCode} onChange={e=>setPromoCode(e.target.value.toUpperCase())} placeholder="Enter promo code" style={{flex:1}} onKeyDown={e=>e.key==='Enter'&&applyPromo()} />
-                <button onClick={applyPromo} className="save-btn" style={{whiteSpace:'nowrap'}}>Apply</button>
+        {/* LICENCE TAB */}
+        {activeTab === 'Licence' && (
+          <div className="fi card">
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 20 }}>Driver Licence Verification</div>
+            {user.licenceUploaded ? (
+              <div style={{ textAlign: 'center', padding: 32 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: accent, marginBottom: 6 }}>Licence Verified!</div>
+                <div style={{ fontSize: 13, color: muted, marginBottom: 16 }}>Your driver licence has been verified. You are approved to drive on GlideGo.</div>
+                <div style={{ display: 'inline-flex', gap: 12, padding: '14px 24px', background: dm ? 'rgba(16,185,129,0.07)' : '#dcfce7', borderRadius: 14, border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <span style={{ fontSize: 12, color: muted }}>Verified since:</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: accent }}>Jan 2024</span>
+                </div>
               </div>
-              {promoMsg && <div style={{marginTop:12,fontSize:13,color:promoMsg.includes('❌')?'#dc2626':'#059669',fontWeight:600}}>{promoMsg}</div>}
-              <div style={{marginTop:12,fontSize:11,color:'#94a3b8'}}>Try: WELCOME20 · GLIDEGO50</div>
-            </div>
-
-            <div className="card" style={{padding:24}}>
-              <h3 style={{fontSize:17,fontWeight:700,color:'#0f172a',marginBottom:16}}>🎁 Referral Program</h3>
-              <p style={{fontSize:13,color:'#64748b',lineHeight:1.7,marginBottom:16}}>Refer a friend and both get <strong style={{color:'#059669'}}>$25 credit</strong>!</p>
-              <div style={{background:'#f8fafc',border:'1px dashed #e2e8f0',borderRadius:10,padding:'12px 16px',marginBottom:16}}>
-                <div style={{fontSize:11,color:'#94a3b8',marginBottom:4}}>YOUR REFERRAL CODE</div>
-                <div style={{fontSize:18,fontWeight:800,color:'#1d4ed8',letterSpacing:'0.1em'}}>{`GLIDE${user.id.slice(-4).toUpperCase()}`}</div>
-              </div>
-              <button style={{width:'100%',background:'#f8fafc',border:'1.5px solid #e2e8f0',borderRadius:10,padding:11,fontSize:13,fontWeight:700,color:'#374151',cursor:'pointer'}} onClick={()=>navigator.clipboard?.writeText(`GLIDE${user.id.slice(-4).toUpperCase()}`)}>
-                📋 Copy Code
-              </button>
-            </div>
-
-            <div className="card" style={{padding:24,gridColumn:'1/-1'}}>
-              <h3 style={{fontSize:17,fontWeight:700,color:'#0f172a',marginBottom:16}}>🏆 Rewards Tiers</h3>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12}}>
-                {[
-                  {name:'Explorer',trips:'0-5',perk:'5% discount',color:'#64748b',bg:'#f8fafc'},
-                  {name:'Cruiser',trips:'6-15',perk:'10% discount',color:'#059669',bg:'#f0fdf4'},
-                  {name:'Road King',trips:'16-30',perk:'15% + priority',color:'#1d4ed8',bg:'#eff6ff'},
-                  {name:'Elite',trips:'31+',perk:'20% + free extras',color:'#d97706',bg:'#fffbeb'},
-                ].map(tier=>(
-                  <div key={tier.name} style={{textAlign:'center',background:tier.bg,borderRadius:12,padding:'16px 12px',border:`1px solid ${tier.color}20`}}>
-                    <div style={{fontSize:24,marginBottom:8}}>🏅</div>
-                    <div style={{fontSize:14,fontWeight:800,color:tier.color}}>{tier.name}</div>
-                    <div style={{fontSize:11,color:'#64748b',margin:'4px 0'}}>{tier.trips} trips</div>
-                    <div style={{fontSize:11,fontWeight:600,color:tier.color}}>{tier.perk}</div>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', gap: 0, marginBottom: 24 }}>
+                  {['Upload Front', 'Upload Back', 'Selfie', 'Verified'].map((step, i) => (
+                    <div key={step} style={{ flex: 1, textAlign: 'center' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: i <= licenceStep ? `linear-gradient(135deg,#10b981,#059669)` : dm ? 'rgba(255,255,255,0.08)' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px', fontSize: 12, fontWeight: 700, color: i <= licenceStep ? 'white' : muted }}>{i + 1}</div>
+                      <div style={{ fontSize: 10, color: i <= licenceStep ? accent : muted, fontWeight: i <= licenceStep ? 600 : 400 }}>{step}</div>
+                    </div>
+                  ))}
+                </div>
+                {licenceStep < 3 && (
+                  <div style={{ textAlign: 'center', padding: 28 }}>
+                    <div style={{ width: '100%', maxWidth: 320, margin: '0 auto', aspectRatio: '16/9', background: dm ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderRadius: 16, border: `2px dashed ${border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', marginBottom: 20 }}>
+                      <span style={{ fontSize: 40 }}>{licenceStep === 0 ? '🪪' : licenceStep === 1 ? '🔄' : '🤳'}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: muted }}>Click or drag to upload {licenceStep === 0 ? 'front' : licenceStep === 1 ? 'back' : 'selfie'}</span>
+                      <span style={{ fontSize: 11, color: muted }}>JPG, PNG · Max 10MB</span>
+                    </div>
+                    <button onClick={() => setLicenceStep(prev => Math.min(prev + 1, 3))} style={{ padding: '11px 28px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      {licenceStep === 2 ? 'Submit for Verification' : 'Next Step →'}
+                    </button>
                   </div>
-                ))}
+                )}
+                {licenceStep === 3 && (
+                  <div style={{ textAlign: 'center', padding: 28 }}>
+                    <div style={{ fontSize: 48, marginBottom: 12 }}>⏳</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Under Review</div>
+                    <div style={{ fontSize: 13, color: muted }}>We are verifying your licence. Usually takes 5–10 minutes.</div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* ── SETTINGS ── */}
-        {tab==='Settings' && (
-          <div style={{display:'flex',flexDirection:'column',gap:20}}>
-            {/* Profile Edit */}
-            <div className="card" style={{padding:24}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-                <h3 style={{fontSize:17,fontWeight:700,color:'#0f172a'}}>Personal Information</h3>
-                <button onClick={()=>setEditMode(!editMode)} style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'7px 16px',fontSize:13,fontWeight:600,color:'#374151',cursor:'pointer'}}>
-                  {editMode?'Cancel':'Edit'}
-                </button>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-                <div>
-                  <label>FULL NAME</label>
-                  {editMode?<input className="inp" value={editName} onChange={e=>setEditName(e.target.value)} />:<div style={{fontSize:15,fontWeight:600,color:'#0f172a',padding:'11px 14px',background:'#f8fafc',borderRadius:10}}>{user.name}</div>}
+        {/* PROMOS TAB */}
+        {activeTab === 'Promos' && (
+          <div className="fi" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div className="card">
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>💰 Your Credits</div>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <div style={{ flex: 1, padding: 20, background: 'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(59,130,246,0.08))', borderRadius: 14, border: '1px solid rgba(16,185,129,0.2)', textAlign: 'center' }}>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: accent }}>${user.promoCredits || 0}</div>
+                  <div style={{ fontSize: 12, color: muted, marginTop: 4 }}>Available Credits</div>
                 </div>
-                <div>
-                  <label>EMAIL ADDRESS</label>
-                  <div style={{fontSize:15,color:'#64748b',padding:'11px 14px',background:'#f8fafc',borderRadius:10}}>{user.email}</div>
-                </div>
-                <div>
-                  <label>PHONE NUMBER</label>
-                  {editMode?<input className="inp" value={editPhone} onChange={e=>setEditPhone(e.target.value)} placeholder="+61 4xx xxx xxx" />:<div style={{fontSize:15,fontWeight:600,color:'#0f172a',padding:'11px 14px',background:'#f8fafc',borderRadius:10}}>{user.phone||'Not set'}</div>}
-                </div>
-                <div>
-                  <label>ACCOUNT TYPE</label>
-                  <div style={{fontSize:15,fontWeight:600,color:'#1d4ed8',padding:'11px 14px',background:'#eff6ff',borderRadius:10,textTransform:'capitalize'}}>{user.role}</div>
+                <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: muted }}>Enter Promo Code:</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} placeholder="e.g. GLIDEGO10" className="inp" style={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }} />
+                    <button onClick={applyPromo} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>Apply</button>
+                  </div>
+                  {promoMsg && <div style={{ fontSize: 12, fontWeight: 600, color: promoMsg.includes('🎉') ? accent : '#ef4444' }}>{promoMsg}</div>}
                 </div>
               </div>
-              {editMode && (
-                <button onClick={()=>{updateUser({name:editName,phone:editPhone});setEditMode(false);}} className="save-btn" style={{marginTop:16}}>
-                  Save Changes
-                </button>
-              )}
             </div>
-
-            {/* Licence Upload */}
-            <div className="card" style={{padding:24}}>
-              <h3 style={{fontSize:17,fontWeight:700,color:'#0f172a',marginBottom:6}}>🪪 Driver's Licence</h3>
-              <p style={{fontSize:13,color:'#64748b',marginBottom:20}}>Required before your first booking. Accepted: Australian licence, International Driving Permit.</p>
-              {user.licenceUploaded ? (
-                <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',background:'#f0fdf4',borderRadius:12,border:'1px solid #bbf7d0'}}>
-                  <span style={{fontSize:24}}>✅</span>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:700,color:'#15803d'}}>Licence Verified</div>
-                    <div style={{fontSize:12,color:'#166534'}}>You're approved to book any vehicle</div>
-                  </div>
+            <div className="card">
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🎁 Referral Program</div>
+              <div style={{ padding: '16px', background: 'linear-gradient(135deg,rgba(16,185,129,0.06),rgba(59,130,246,0.04))', borderRadius: 12, border: '1px solid rgba(16,185,129,0.15)', marginBottom: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 4 }}>Your referral code:</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ flex: 1, padding: '10px 14px', background: dm ? 'rgba(255,255,255,0.04)' : '#f8fafc', borderRadius: 10, fontSize: 15, fontWeight: 800, color: accent, letterSpacing: '0.15em', border: `1px solid ${border}` }}>GLIDE-{user.id.slice(-4).toUpperCase()}</div>
+                  <button style={{ padding: '9px 16px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: accent, cursor: 'pointer' }}>Copy 📋</button>
                 </div>
-              ) : (
-                <div style={{border:'2px dashed #e2e8f0',borderRadius:12,padding:'28px',textAlign:'center',cursor:'pointer',background:'#f8fafc'}} onClick={()=>updateUser({licenceUploaded:true})}>
-                  <div style={{fontSize:36,marginBottom:10}}>📄</div>
-                  <div style={{fontSize:14,fontWeight:700,color:'#0f172a',marginBottom:6}}>Upload Your Licence</div>
-                  <div style={{fontSize:12,color:'#64748b',marginBottom:14}}>Front and back · JPG or PNG · Max 10MB</div>
-                  <div style={{display:'inline-block',background:'linear-gradient(135deg,#1d4ed8,#059669)',color:'white',padding:'10px 24px',borderRadius:10,fontSize:13,fontWeight:700}}>Choose File</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ padding: '14px', background: dm ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderRadius: 12, border: `1px solid ${border}`, textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#8b5cf6' }}>$20</div>
+                  <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>You earn per referral</div>
                 </div>
-              )}
-            </div>
-
-            {/* Notifications */}
-            <div className="card" style={{padding:24}}>
-              <h3 style={{fontSize:17,fontWeight:700,color:'#0f172a',marginBottom:16}}>🔔 Notifications</h3>
-              {[
-                {label:'Booking confirmations',desc:'When a booking is confirmed or changed',on:true},
-                {label:'Trip reminders',desc:'24 hours before your pickup',on:true},
-                {label:'Promo offers',desc:'Discounts and special deals',on:false},
-                {label:'Host messages',desc:'When a host sends you a message',on:true},
-              ].map(n=>(
-                <div key={n.label} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid #f8fafc'}}>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:600,color:'#0f172a'}}>{n.label}</div>
-                    <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>{n.desc}</div>
-                  </div>
-                  <div style={{width:44,height:24,borderRadius:12,background:n.on?'linear-gradient(135deg,#1d4ed8,#059669)':'#e2e8f0',cursor:'pointer',position:'relative',flexShrink:0}}>
-                    <div style={{position:'absolute',width:18,height:18,borderRadius:'50%',background:'white',top:3,left:n.on?'23px':'3px',transition:'left 0.2s',boxShadow:'0 1px 4px rgba(0,0,0,0.2)'}} />
-                  </div>
+                <div style={{ padding: '14px', background: dm ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderRadius: 12, border: `1px solid ${border}`, textAlign: 'center' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: accent }}>$10</div>
+                  <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>Friend gets on signup</div>
                 </div>
-              ))}
-            </div>
-
-            {/* Danger Zone */}
-            <div className="card" style={{padding:24,border:'1px solid #fecaca'}}>
-              <h3 style={{fontSize:17,fontWeight:700,color:'#dc2626',marginBottom:16}}>⚠️ Account Actions</h3>
-              <div style={{display:'flex',gap:12}}>
-                <button onClick={logout} style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:10,padding:'11px 20px',fontSize:13,fontWeight:700,color:'#dc2626',cursor:'pointer'}}>Sign Out</button>
-                <button style={{background:'transparent',border:'1px solid #e2e8f0',borderRadius:10,padding:'11px 20px',fontSize:13,fontWeight:700,color:'#94a3b8',cursor:'pointer'}}>Delete Account</button>
               </div>
             </div>
           </div>
