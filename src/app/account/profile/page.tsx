@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth, supabase } from '@/lib/auth-context';
 import { CARS } from '@/lib/cars';
 
-const TABS = ['Profile', 'Bookings', 'Favourites', 'Licence', 'Promos'];
+const TABS = ['Profile', 'Bookings', 'Favourites', 'Licence', 'Promos', 'Settings'];
 
 const MY_BOOKINGS = [
   { id: 'BK-1901', car: 'Tesla Model 3', image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=400&q=80', pickup: 'Mar 14, 2026', ret: 'Mar 17, 2026', days: 3, amount: 507, status: 'upcoming', location: 'Melbourne CBD' },
@@ -334,6 +334,76 @@ export default function AccountProfile() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'Settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            
+            {/* Email Verification */}
+            <div className="card">
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📧 Email Verification</div>
+              {user.verified ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12 }}>
+                  <div style={{ fontSize: 24 }}>✅</div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: accent }}>Email Verified</div>
+                    <div style={{ fontSize: 12, color: muted }}>{user.email}</div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 24 }}>⚠️</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#f59e0b' }}>Email Not Verified</div>
+                      <div style={{ fontSize: 12, color: muted }}>Verify your email to unlock bookings</div>
+                    </div>
+                  </div>
+                  <button onClick={async () => {
+                    await supabase.auth.resend({ type: 'signup', email: user.email });
+                    alert('Verification email sent! Check your inbox.');
+                  }} style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                    Resend Verification Email
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Password Change */}
+            <div className="card">
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🔑 Change Password</div>
+              <a href="/reset-password" style={{ display: 'block', width: '100%', padding: '12px', background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: text, border: `1px solid ${border}`, borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>
+                Send Password Reset Link →
+              </a>
+            </div>
+
+            {/* Danger Zone - Account Deletion */}
+            <div className="card" style={{ border: '1px solid rgba(239,68,68,0.3)', background: dm ? 'rgba(239,68,68,0.04)' : '#fff5f5' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>⚠️ Danger Zone</div>
+              <div style={{ fontSize: 13, color: muted, marginBottom: 16 }}>Once you delete your account, all your data will be permanently removed. This action cannot be undone.</div>
+              <button onClick={async () => {
+                const confirm1 = window.confirm('Are you sure you want to delete your account? This cannot be undone.');
+                if (!confirm1) return;
+                const confirm2 = window.confirm('FINAL WARNING: All your bookings, reviews and data will be deleted forever. Continue?');
+                if (!confirm2) return;
+                try {
+                  await supabase.from('users').update({ 
+                    full_name: 'Deleted User', 
+                    email: `deleted_${user.id}@glidego.com`,
+                    phone: null,
+                    avatar_url: null
+                  }).eq('id', user.id);
+                  await supabase.auth.signOut();
+                  window.location.href = '/';
+                } catch {
+                  alert('Error deleting account. Please contact support.');
+                }
+              }} style={{ padding: '11px 20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, fontSize: 13, fontWeight: 700, color: '#ef4444', cursor: 'pointer' }}>
+                Delete My Account
+              </button>
+            </div>
+
           </div>
         )}
       </div>

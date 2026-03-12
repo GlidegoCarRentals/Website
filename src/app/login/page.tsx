@@ -17,6 +17,7 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const redirect = searchParams.get('redirect') || '/';
 
   const handleSubmit = async () => {
