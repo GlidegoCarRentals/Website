@@ -157,6 +157,18 @@ function LoginForm() {
           </div>
         )}
 
+        {/* Remember Me */}
+        {mode === 'login' && (
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+            <div onClick={() => setRememberMe(!rememberMe)} style={{ width:20, height:20, borderRadius:6, border:`2px solid ${rememberMe ? '#10b981' : 'rgba(255,255,255,0.2)'}`, background: rememberMe ? '#10b981' : 'transparent', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'all 0.2s' }}>
+              {rememberMe && <span style={{ color:'white', fontSize:12, fontWeight:700 }}>✓</span>}
+            </div>
+            <span style={{ fontSize:13, color:'rgba(255,255,255,0.5)', cursor:'pointer' }} onClick={() => setRememberMe(!rememberMe)}>
+              Remember me for 30 days
+            </span>
+          </div>
+        )}
+
         {/* Submit */}
         <button onClick={handleSubmit} disabled={loading} className="sbtn" style={{ marginBottom:16 }}>
           {loading ? <span className="spin" /> : mode === 'login' ? 'Sign In →' : 'Create Account →'}
