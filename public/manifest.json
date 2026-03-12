@@ -1,0 +1,16 @@
+{
+  "name": "GlideGo Car Rental",
+  "short_name": "GlideGo",
+  "description": "Melbourne's #1 Car Rental Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1e",
+  "theme_color": "#0a0f1e",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "categories": ["travel", "automotive"],
+  "lang": "en-AU"
+}

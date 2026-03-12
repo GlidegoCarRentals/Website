@@ -1,0 +1,276 @@
+'use client';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { CARS } from '@/lib/cars';
+
+const NAV_ITEMS = [
+  { icon: '📊', label: 'Dashboard', href: '/host/dashboard' },
+  { icon: '🚗', label: 'My Vehicles', href: '/host/vehicles' },
+  { icon: '📅', label: 'Bookings', href: '/host/bookings' },
+  { icon: '💬', label: 'Messages', href: '/host/messages', badge: 3 },
+  { icon: '💰', label: 'Earnings', href: '/host/earnings' },
+  { icon: '⚙️', label: 'Settings', href: '/host/settings' },
+];
+
+const MOCK_BOOKINGS = [
+  { id:'BK001', car:'Tesla Model 3', guest:'Alex J.', pickup:'14 Mar', days:3, amount:507, status:'confirmed' },
+  { id:'BK002', car:'Toyota Camry', guest:'Priya S.', pickup:'16 Mar', days:2, amount:218, status:'pending' },
+  { id:'BK003', car:'BMW X5', guest:'James R.', pickup:'20 Mar', days:5, amount:1195, status:'confirmed' },
+  { id:'BK004', car:'Ford Ranger', guest:'Emma L.', pickup:'25 Mar', days:7, amount:1113, status:'upcoming' },
+];
+
+const MOCK_MESSAGES = [
+  { from:'Alex J.', car:'Tesla Model 3', msg:'Hi! What time can I pick up tomorrow?', time:'2h ago', unread:true },
+  { from:'Priya S.', car:'Toyota Camry', msg:'Can I get early pickup at 7am?', time:'5h ago', unread:true },
+  { from:'James R.', car:'BMW X5', msg:'Thanks! Great car!', time:'1d ago', unread:false },
+];
+
+export default function HostDashboard() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    if (!user) router.push('/login?redirect=/host/dashboard');
+  }, [user, router]);
+
+  if (!user) return null;
+
+  const hostCars = CARS.slice(0, 3);
+  const totalEarnings = 8420;
+  const thisMonth = 2340;
+  const totalTrips = user.trips || 312;
+  const avgRating = user.rating || 4.97;
+
+  return (
+    <div style={{ fontFamily: "'Inter',-apple-system,sans-serif", display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .playfair { font-family: 'Playfair Display', serif; }
+        .sidebar { width: 260px; background: #0a0f1e; min-height: 100vh; flex-shrink: 0; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transition: transform 0.3s; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.5); transition: all 0.2s; margin: 2px 12px; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.07); color: white; }
+        .nav-link.active { background: linear-gradient(135deg,rgba(29,78,216,0.3),rgba(5,150,105,0.2)); color: white; border: 1px solid rgba(52,211,153,0.15); }
+        .stat-card { background: white; border-radius: 16px; padding: 24px; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+        .booking-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #f8fafc; transition: background 0.15s; }
+        .booking-row:hover { background: #f8fafc; }
+        .booking-row:last-child { border-bottom: none; }
+        .status-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+        .card { background: white; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.04); overflow: hidden; }
+        .action-btn { padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
+        .add-vehicle-btn { background: linear-gradient(135deg,#1d4ed8,#059669); color: white; }
+        .add-vehicle-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(29,78,216,0.35); }
+        .msg-item { display: flex; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #f8fafc; cursor: pointer; transition: background 0.15s; }
+        .msg-item:hover { background: #f8fafc; }
+      `}</style>
+
+      {/* ══ SIDEBAR ══ */}
+      <aside className="sidebar">
+        <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <Image src="/logo.png" alt="GlideGo" width={110} height={25} style={{ objectFit: 'contain', filter: 'brightness(1.2)' }} />
+          </Link>
+          <div style={{ marginTop: 16, padding: '12px', background: 'rgba(255,255,255,0.04)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: 'white', flexShrink: 0 }}>
+                {user.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</div>
+                <div style={{ fontSize: 11, color: '#34d399', fontWeight: 600 }}>⭐ {avgRating} · All-Star Host</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', padding: '8px 20px 4px' }}>HOST PORTAL</div>
+          {NAV_ITEMS.map(item => (
+            <Link key={item.href} href={item.href} className={`nav-link ${item.href === '/host/dashboard' ? 'active' : ''}`}>
+              <span style={{ fontSize: 16 }}>{item.icon}</span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.badge && <span style={{ background: '#ef4444', color: 'white', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 20 }}>{item.badge}</span>}
+            </Link>
+          ))}
+          <div style={{ margin: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12 }}>
+            <Link href="/" className="nav-link">🌐 <span>View Website</span></Link>
+            <Link href="/account/profile" className="nav-link">👤 <span>My Profile</span></Link>
+            <button onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: 'none', border: 'none', color: 'rgba(239,68,68,0.7)', fontSize: 14, fontWeight: 500, cursor: 'pointer', width: '100%', borderRadius: 10, transition: 'all 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(239,68,68,0.7)')}>
+              🚪 <span>Sign Out</span>
+            </button>
+          </div>
+        </nav>
+      </aside>
+
+      {/* ══ MAIN ══ */}
+      <main style={{ marginLeft: 260, flex: 1, padding: '32px', minWidth: 0 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+          <div>
+            <h1 className="playfair" style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>
+              Good morning, {user.name.split(' ')[0]}! 👋
+            </h1>
+            <p style={{ fontSize: 14, color: '#64748b' }}>Here's what's happening with your fleet today.</p>
+          </div>
+          <Link href="/host/add-vehicle" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg,#1d4ed8,#059669)', color: 'white', textDecoration: 'none', padding: '12px 22px', borderRadius: 12, fontSize: 14, fontWeight: 700 }}>
+            + Add Vehicle
+          </Link>
+        </div>
+
+        {/* Stats Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20, marginBottom: 28 }}>
+          {[
+            { icon: '💰', label: 'Total Earnings', value: `$${totalEarnings.toLocaleString()}`, sub: '+12% this month', color: '#059669', bg: '#f0fdf4' },
+            { icon: '📅', label: 'This Month', value: `$${thisMonth.toLocaleString()}`, sub: '14 bookings', color: '#1d4ed8', bg: '#eff6ff' },
+            { icon: '🚗', label: 'Active Vehicles', value: `${hostCars.length}`, sub: '2 booked today', color: '#7c3aed', bg: '#f5f3ff' },
+            { icon: '⭐', label: 'Your Rating', value: `${avgRating}`, sub: `${totalTrips} total trips`, color: '#d97706', bg: '#fffbeb' },
+          ].map(s => (
+            <div key={s.label} className="stat-card">
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>{s.icon}</div>
+              <div className="playfair" style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{s.value}</div>
+              <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>{s.label}</div>
+              <div style={{ fontSize: 11, color: s.color, fontWeight: 600, marginTop: 4 }}>{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+          {/* Recent Bookings */}
+          <div className="card">
+            <div style={{ padding: '20px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Recent Bookings</h2>
+              <Link href="/host/bookings" style={{ fontSize: 12, color: '#1d4ed8', textDecoration: 'none', fontWeight: 600 }}>View all →</Link>
+            </div>
+            {MOCK_BOOKINGS.map(b => (
+              <div key={b.id} className="booking-row">
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{b.car}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{b.guest} · {b.pickup} · {b.days}d</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>${b.amount}</div>
+                  <span className="status-badge" style={{
+                    background: b.status === 'confirmed' ? '#f0fdf4' : b.status === 'pending' ? '#fffbeb' : '#eff6ff',
+                    color: b.status === 'confirmed' ? '#15803d' : b.status === 'pending' ? '#d97706' : '#1d4ed8',
+                  }}>{b.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Messages */}
+          <div className="card">
+            <div style={{ padding: '20px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Messages</h2>
+              <span style={{ background: '#ef4444', color: 'white', fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20 }}>2 new</span>
+            </div>
+            {MOCK_MESSAGES.map((m, i) => (
+              <div key={i} className="msg-item">
+                <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>
+                  {m.from.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{m.from}</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{m.time}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginBottom: 2, fontWeight: 500 }}>{m.car}</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.msg}</div>
+                </div>
+                {m.unread && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#1d4ed8', flexShrink: 0, marginTop: 4 }} />}
+              </div>
+            ))}
+            <div style={{ padding: '14px 20px' }}>
+              <Link href="/host/messages" style={{ display: 'block', textAlign: 'center', fontSize: 13, color: '#1d4ed8', textDecoration: 'none', fontWeight: 600 }}>View all messages →</Link>
+            </div>
+          </div>
+        </div>
+
+        {/* My Fleet */}
+        <div className="card">
+          <div style={{ padding: '20px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>My Fleet</h2>
+            <Link href="/host/vehicles" style={{ fontSize: 12, color: '#1d4ed8', textDecoration: 'none', fontWeight: 600 }}>Manage →</Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, padding: 20 }}>
+            {hostCars.map(car => (
+              <div key={car.id} style={{ border: '1px solid #f1f5f9', borderRadius: 12, overflow: 'hidden' }}>
+                <div style={{ height: 140, overflow: 'hidden', position: 'relative' }}>
+                  <img src={car.image} alt={car.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', top: 10, right: 10, background: car.available ? '#f0fdf4' : '#fef2f2', color: car.available ? '#15803d' : '#dc2626', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>
+                    {car.available ? 'Available' : 'Booked'}
+                  </div>
+                </div>
+                <div style={{ padding: '14px' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{car.name}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
+                    <span>⭐ {car.rating} · {car.trips} trips</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>${car.price}/day</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <Link href={`/host/vehicles?edit=${car.id}`} style={{ flex: 1, textAlign: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 600, color: '#374151', textDecoration: 'none' }}>Edit</Link>
+                    <Link href={`/cars/${car.id}`} style={{ flex: 1, textAlign: 'center', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 600, color: '#1d4ed8', textDecoration: 'none' }}>View</Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Earnings Chart placeholder */}
+        <div className="card" style={{ marginTop: 24, padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Earnings Overview</h2>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {['7D','1M','3M','1Y'].map(p => (
+                <button key={p} style={{ padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: p === '1M' ? '#0f172a' : '#f8fafc', color: p === '1M' ? 'white' : '#64748b', border: 'none' }}>{p}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ height: 180, background: 'linear-gradient(135deg,#f0fdf4,#eff6ff)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+            {/* Simple SVG chart */}
+            <svg width="100%" height="100%" viewBox="0 0 600 180" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0 }}>
+              <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#1d4ed8" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+              <path d="M0,140 C60,130 80,80 120,70 C160,60 180,100 240,85 C300,70 320,40 380,35 C440,30 460,60 520,45 C560,36 580,30 600,25 L600,180 L0,180 Z" fill="url(#chartGrad)" />
+              <path d="M0,140 C60,130 80,80 120,70 C160,60 180,100 240,85 C300,70 320,40 380,35 C440,30 460,60 520,45 C560,36 580,30 600,25" fill="none" stroke="#1d4ed8" strokeWidth="2.5" />
+            </svg>
+            <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+              <div className="playfair" style={{ fontSize: 32, fontWeight: 800, color: '#0f172a' }}>$2,340</div>
+              <div style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>↑ 18% vs last month</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginTop: 24 }}>
+          {[
+            { icon: '➕', label: 'Add Vehicle', desc: 'List a new car', href: '/host/add-vehicle', color: '#1d4ed8' },
+            { icon: '📷', label: 'Upload Photos', desc: 'Update car photos', href: '/host/vehicles', color: '#7c3aed' },
+            { icon: '💲', label: 'Set Pricing', desc: 'Dynamic rates', href: '/host/vehicles', color: '#059669' },
+            { icon: '📊', label: 'Analytics', desc: 'Performance data', href: '/host/earnings', color: '#d97706' },
+          ].map(a => (
+            <Link key={a.label} href={a.href} style={{ textDecoration: 'none', background: 'white', border: '1px solid #f1f5f9', borderRadius: 14, padding: '18px', display: 'flex', flexDirection: 'column', gap: 8, transition: 'all 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'; }}>
+              <div style={{ fontSize: 28 }}>{a.icon}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{a.label}</div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>{a.desc}</div>
+            </Link>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
