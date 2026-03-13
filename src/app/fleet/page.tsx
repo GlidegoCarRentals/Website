@@ -1,8 +1,9 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { CARS } from '@/lib/cars';
+import { fetchCars } from '@/lib/db-cars';
 
 const CATEGORIES = ['All', 'Economy', 'Compact', 'SUV', 'Luxury', 'Van'];
 const FUEL_TYPES = ['All', 'Petrol', 'Hybrid', 'Electric', 'Diesel'];
@@ -28,6 +29,13 @@ export default function FleetPage() {
   const [seats, setSeats] = useState(0);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [instantOnly, setInstantOnly] = useState(false);
+  const [allCars, setAllCars] = useState(CARS as any[]);
+
+  useEffect(() => {
+    fetchCars().then(dbCars => {
+      if (dbCars && dbCars.length > 0) setAllCars(dbCars);
+    });
+  }, []);
   const [availableOnly, setAvailableOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
   const [view, setView] = useState<'grid' | 'list'>('grid');

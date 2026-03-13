@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CARS } from '@/lib/cars';
+import { fetchCars } from '@/lib/db-cars';
 import { useAuth } from '@/lib/auth-context';
 
 const LOCATIONS = ['Melbourne Airport (MEL)','Melbourne CBD','Tullamarine','Southbank','St Kilda','Richmond','Docklands','Dandenong','Frankston','Geelong'];
@@ -25,12 +26,20 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const filtered = CARS.filter(c => {
+  const filtered = cars.filter(c => {
     if (category !== 'All' && c.category !== category) return false;
     if (transmission !== 'Any' && c.transmission !== transmission) return false;
     if (c.price > maxPrice) return false;
     return true;
   });
+
+  const [cars, setCars] = useState(CARS as any[]);
+
+  useEffect(() => {
+    fetchCars().then(dbCars => {
+      if (dbCars && dbCars.length > 0) setCars(dbCars);
+    });
+  }, []);
 
   const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);

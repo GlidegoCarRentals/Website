@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CARS } from '@/lib/cars';
+import { fetchCarBySlugOrId } from '@/lib/db-cars';
 
 const CAR_FALLBACK: Record<string, string> = {
   'SUV': '🚙', 'Electric': '⚡', 'Van': '🛻', 'Luxury': '🚗', 'Compact': '🚗', 'Economy': '🚗'
@@ -12,7 +13,28 @@ const CAR_FALLBACK: Record<string, string> = {
 export default function CarDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const car = CARS.find(c => c.id === Number(params.id));
+  const [car, setCar] = useState<any>(CARS.find(c => c.id === Number(params.id)) || null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const id = params.id as string;
+    setLoading(true);
+    fetchCarBySlugOrId(id).then(dbCar => {
+      if (dbCar) setCar(dbCar);
+      else {
+        // fallback to static
+        const staticCar = CARS.find(c => c.id === Number(id));
+        if (staticCar) setCar(staticCar);
+      }
+      setLoading(false);
+    });
+  }, [params.id]);
+
+  if (loading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+      <div style={{ fontSize: 40 }}>🚗</div>
+    </div>
+  );
 
   const [pickupDate, setPickupDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
