@@ -191,7 +191,7 @@ export default function CarDetailPage() {
             <div style={{ background: 'white', borderRadius: 16, padding: '24px', marginBottom: 20, border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               <h2 className="playfair" style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 16 }}>Features & Amenities</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
-                {car.allFeatures.map(f => (
+                {car.allFeatures.map((f: string) => (
                   <div key={f} className="feat-tag">
                     <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#1d4ed8', flexShrink: 0 }}>✓</span>
                     {f}
@@ -299,7 +299,7 @@ export default function CarDetailPage() {
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {[{ label: 'PICKUP DATE', val: pickupDate, set: setPickupDate }, { label: 'RETURN DATE', val: returnDate, set: setReturnDate }].map(f => (
+                  {[{ label: 'PICKUP DATE', val: pickupDate, set: setPickupDate }, { label: 'RETURN DATE', val: returnDate, set: setReturnDate }].map((f: string) => (
                     <div key={f.label}>
                       <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.1em', display: 'block', marginBottom: 7 }}>{f.label}</label>
                       <div style={{ position: 'relative' }}>
