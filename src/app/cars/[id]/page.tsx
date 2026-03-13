@@ -177,7 +177,7 @@ export default function CarDetailPage() {
                   { icon: '⚡', label: '0–100 km/h', val: car.specs.acceleration },
                   { icon: '🏎️', label: 'Top Speed', val: car.specs.topSpeed },
                   { icon: '⛽', label: 'Efficiency', val: car.specs.fuel },
-                ].map((s: string) => (
+                ].map((s: any) => (
                   <div key={s.label} className="spec-box">
                     <div style={{ fontSize: 24, marginBottom: 6 }}>{s.icon}</div>
                     <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>{s.label.toUpperCase()}</div>
@@ -191,7 +191,7 @@ export default function CarDetailPage() {
             <div style={{ background: 'white', borderRadius: 16, padding: '24px', marginBottom: 20, border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               <h2 className="playfair" style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 16 }}>Features & Amenities</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
-                {car.allFeatures.map((f: string) => (
+                {car.allFeatures.map((f: any) => (
                   <div key={f} className="feat-tag">
                     <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#1d4ed8', flexShrink: 0 }}>✓</span>
                     {f}
@@ -204,7 +204,7 @@ export default function CarDetailPage() {
             <div style={{ background: 'white', borderRadius: 16, padding: '24px', marginBottom: 20, border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               <h2 className="playfair" style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>What's Included</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
-                {car.included.map((i: string) => (
+                {car.included.map((i: any) => (
                   <div key={i} className="included-row">
                     <span style={{ fontSize: 16, flexShrink: 0 }}>✅</span> {i}
                   </div>
@@ -231,7 +231,7 @@ export default function CarDetailPage() {
                   { icon: '⏱️', label: 'Response time', val: car.host.responseTime },
                   { icon: '✅', label: 'Trips completed', val: String(car.host.trips) },
                   { icon: '⭐', label: 'Host rating', val: String(car.host.rating) },
-                ].map((s: string) => (
+                ].map((s: any) => (
                   <div key={s.label} style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 10, padding: '14px 8px', border: '1px solid #f1f5f9' }}>
                     <div style={{ fontSize: 22, marginBottom: 6 }}>{s.icon}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3, fontWeight: 600 }}>{s.label}</div>
@@ -256,7 +256,7 @@ export default function CarDetailPage() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#eff6ff,#f0fdf4)', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#1d4ed8' }}>
-                        {r.name.split(' ').map((n: string) => n[0]).join('')}
+                        {r.name.split(' ').map((n: any) => n[0]).join('')}
                       </div>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{r.name}</div>
@@ -293,13 +293,13 @@ export default function CarDetailPage() {
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, pointerEvents: 'none' }}>📍</span>
                     <select value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} className="form-input" style={{ paddingLeft: 34 }}>
-                      {LOCATIONS.map((l: string) => <option key={l} value={l}>{l}</option>)}
+                      {LOCATIONS.map((l: any) => <option key={l} value={l}>{l}</option>)}
                     </select>
                     <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8', fontSize: 11 }}>▾</span>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {[{ label: 'PICKUP DATE', val: pickupDate, set: setPickupDate }, { label: 'RETURN DATE', val: returnDate, set: setReturnDate }].map((f: string) => (
+                  {[{ label: 'PICKUP DATE', val: pickupDate, set: setPickupDate }, { label: 'RETURN DATE', val: returnDate, set: setReturnDate }].map((f: any) => (
                     <div key={f.label}>
                       <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.1em', display: 'block', marginBottom: 7 }}>{f.label}</label>
                       <div style={{ position: 'relative' }}>
@@ -317,7 +317,7 @@ export default function CarDetailPage() {
                   { label: `$${car.price} × ${days} day${days > 1 ? 's' : ''}`, val: `$${subtotal.toLocaleString()}` },
                   { label: 'Service fee (12%)', val: `$${serviceFee}` },
                   { label: `Bond (refunded after trip)`, val: `$${car.deposit}` },
-                ].map((r: string) => (
+                ].map((r: any) => (
                   <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151', marginBottom: 10 }}>
                     <span>{r.label}</span><span style={{ fontWeight: 600 }}>{r.val}</span>
                   </div>
@@ -342,7 +342,7 @@ export default function CarDetailPage() {
                   { label: 'Minimum age', val: `${car.minAge} years` },
                   { label: 'Minimum rental', val: `${car.minDays} day${car.minDays > 1 ? 's' : ''}` },
                   { label: 'Valid licence', val: 'Required' },
-                ].map((r: string) => (
+                ].map((r: any) => (
                   <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748b', marginBottom: 8 }}>
                     <span>{r.label}</span><span style={{ fontWeight: 600, color: '#374151' }}>{r.val}</span>
                   </div>
@@ -356,7 +356,7 @@ export default function CarDetailPage() {
               {CARS
                 .filter(c => c.id !== car.id)
                 .slice(0, 3)
-                .map((c: string) => (
+                .map((c: any) => (
                   <Link key={c.id} href={`/cars/${c.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
                     <div style={{ width: 50, height: 50, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#f1f5f9' }}>
                       <img src={c.image} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
