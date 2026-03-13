@@ -26,13 +26,6 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const filtered = cars.filter(c => {
-    if (category !== 'All' && c.category !== category) return false;
-    if (transmission !== 'Any' && c.transmission !== transmission) return false;
-    if (c.price > maxPrice) return false;
-    return true;
-  });
-
   const [cars, setCars] = useState(CARS as any[]);
 
   useEffect(() => {
@@ -40,6 +33,13 @@ export default function HomePage() {
       if (dbCars && dbCars.length > 0) setCars(dbCars);
     });
   }, []);
+
+  const filtered = cars.filter(c => {
+    if (category !== 'All' && c.category !== category) return false;
+    if (transmission !== 'Any' && c.transmission !== transmission) return false;
+    if (c.price > maxPrice) return false;
+    return true;
+  });
 
   const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
