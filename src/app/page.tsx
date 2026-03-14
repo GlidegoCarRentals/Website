@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { CARS } from '@/lib/cars';
 import { fetchCars } from '@/lib/db-cars';
+import { CarCardSkeleton } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth-context';
 
 const LOCATIONS = ['Melbourne Airport (MEL)','Melbourne CBD','Tullamarine','Southbank','St Kilda','Richmond','Docklands','Dandenong','Frankston','Geelong'];
@@ -27,10 +28,12 @@ export default function HomePage() {
   }, []);
 
   const [cars, setCars] = useState(CARS as any[]);
+  const [carsLoading, setCarsLoading] = useState(true);
 
   useEffect(() => {
     fetchCars().then(dbCars => {
       if (dbCars && dbCars.length > 0) setCars(dbCars);
+      setCarsLoading(false);
     });
   }, []);
 
