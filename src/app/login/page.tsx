@@ -8,6 +8,17 @@ function LoginForm() {
   const { login, signup, loginWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Handle implicit OAuth flow — token in URL hash
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      // Supabase client will auto-detect and handle this
+      // Just redirect to home after a brief moment
+      setTimeout(() => router.push('/'), 500);
+    }
+  }, [router]);
   const [mode, setMode] = useState<'login' | 'signup'>(searchParams.get('mode') === 'signup' ? 'signup' : 'login');
   const [role, setRole] = useState<'guest' | 'host'>('guest');
   const [name, setName] = useState('');
