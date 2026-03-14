@@ -51,10 +51,10 @@ export default function FleetPage() {
   const accent = '#10b981';
 
   const filtered = useMemo(() => {
-    let cars = CARS;
+    let cars = allCars;
     if (searchQ) cars = cars.filter(c => c.name.toLowerCase().includes(searchQ.toLowerCase()) || c.category.toLowerCase().includes(searchQ.toLowerCase()));
     if (category !== 'All') cars = cars.filter(c => c.category === category);
-    if (fuel !== 'All') cars = cars.filter(c => c.fuel === fuel);
+    if (fuel !== 'All') cars = cars.filter(c => (c.fuel || c.fuel_type) === fuel);
     if (transmission !== 'All') cars = cars.filter(c => c.transmission === transmission);
     if (availableOnly) cars = cars.filter(c => c.available);
     cars = cars.filter(c => c.price >= priceRange[0] && c.price <= priceRange[1]);

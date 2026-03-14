@@ -84,15 +84,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (mounted) setIsLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (!mounted) return;
         if (session?.user) {
           const profile = await fetchProfile(session.user.id);
-          setUser(profile);
-        } else {
-          setUser(null);
+          if (mounted) setUser(profile);
+        } else if (event === 'SIGNED_OUT') {
+          if (mounted) setUser(null);
         }
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
       }
     );
     return () => { mounted = false; subscription.unsubscribe(); };

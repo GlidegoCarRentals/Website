@@ -145,7 +145,7 @@ function LoginForm() {
           <div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
               <div style={{ fontSize:11, fontWeight:600, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Password</div>
-              {mode === 'login' && <button style={{ background:'none', border:'none', cursor:'pointer', fontSize:11, color:'#10b981', fontFamily:"'Inter',sans-serif" }}>Forgot password?</button>}
+              {mode === 'login' && <a href='/reset-password' style={{ fontSize:11, color:'#10b981', textDecoration:'none', fontWeight:600, fontFamily:"'Inter',sans-serif" }}>Forgot password?</a>}
             </div>
             <div style={{ position:'relative' }}>
               <input value={password} onChange={e => setPassword(e.target.value)} type={showPass ? 'text' : 'password'} placeholder="••••••••" className="inp" onKeyDown={e => e.key === 'Enter' && handleSubmit()} />
