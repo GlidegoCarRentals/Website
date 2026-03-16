@@ -1,0 +1,587 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "GlideGo" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "GlideGo" [ref=e6]
+        - generic [ref=e7]:
+          - link "Browse Cars" [ref=e8] [cursor=pointer]:
+            - /url: "#fleet"
+          - link "How It Works" [ref=e9] [cursor=pointer]:
+            - /url: "#how-it-works"
+          - link "Why GlideGo" [ref=e10] [cursor=pointer]:
+            - /url: "#why-glidego"
+          - link "All Vehicles" [ref=e11] [cursor=pointer]:
+            - /url: /fleet
+        - generic [ref=e12]:
+          - link "Sign In" [ref=e13] [cursor=pointer]:
+            - /url: /login
+          - link "Get Started" [ref=e14] [cursor=pointer]:
+            - /url: /login?mode=signup
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e19]: "Melbourne's #1 Rated — 4.9★ · 1,200+ Reviews"
+        - heading "Book Your Car in Melbourne Instantly" [level=1] [ref=e21]:
+          - text: Book Your Car
+          - text: in Melbourne
+          - text: Instantly
+        - paragraph [ref=e22]: 500+ vehicles. 70+ pickup locations. Zero hidden fees. From the airport to every suburb — we've got you covered.
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]: 🔄
+            - text: Free Cancellation
+          - generic [ref=e26]:
+            - generic [ref=e27]: ⏰
+            - text: 24/7 Support
+          - generic [ref=e28]:
+            - generic [ref=e29]: 💳
+            - text: No Hidden Fees
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: 500+
+            - generic [ref=e33]: VEHICLES
+          - generic [ref=e34]:
+            - generic [ref=e35]: 70+
+            - generic [ref=e36]: LOCATIONS
+          - generic [ref=e37]:
+            - generic [ref=e38]: 50k+
+            - generic [ref=e39]: HAPPY DRIVERS
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]: Find Your Car
+          - generic [ref=e43]: Instant booking · No credit card fees
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: PICKUP LOCATION
+            - generic [ref=e47]:
+              - generic: 📍
+              - combobox [ref=e48] [cursor=pointer]:
+                - option "Melbourne Airport (MEL)" [selected]
+                - option "Melbourne CBD"
+                - option "Tullamarine"
+                - option "Southbank"
+                - option "St Kilda"
+                - option "Richmond"
+                - option "Docklands"
+                - option "Dandenong"
+                - option "Frankston"
+                - option "Geelong"
+              - generic: ▾
+          - generic [ref=e49]:
+            - generic [ref=e50]: RETURN LOCATION
+            - generic [ref=e51]:
+              - generic: 📍
+              - combobox [ref=e52] [cursor=pointer]:
+                - option "Melbourne Airport (MEL)" [selected]
+                - option "Melbourne CBD"
+                - option "Tullamarine"
+                - option "Southbank"
+                - option "St Kilda"
+                - option "Richmond"
+                - option "Docklands"
+                - option "Dandenong"
+                - option "Frankston"
+                - option "Geelong"
+              - generic: ▾
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - generic [ref=e55]: PICKUP DATE
+              - generic [ref=e56]:
+                - generic: 📅
+                - textbox [ref=e57] [cursor=pointer]
+            - generic [ref=e58]:
+              - generic [ref=e59]: RETURN DATE
+              - generic [ref=e60]:
+                - generic: 📅
+                - textbox [ref=e61] [cursor=pointer]
+          - button "Search Available Cars →" [ref=e62] [cursor=pointer]
+          - generic [ref=e63]:
+            - generic [ref=e64]: Free cancellation
+            - generic [ref=e65]: ·
+            - generic [ref=e66]: No credit card surcharge
+            - generic [ref=e67]: ·
+            - generic [ref=e68]: Instant confirmation
+    - generic [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e72]: WHY CHOOSE GLIDEGO
+        - heading "Driving Made Simple" [level=2] [ref=e73]
+        - paragraph [ref=e74]: We've removed every friction point so you can focus on the drive.
+      - generic [ref=e75]:
+        - generic [ref=e76]:
+          - generic [ref=e77]: ⏱️
+          - heading "Instant Booking" [level=3] [ref=e78]
+          - paragraph [ref=e79]: Reserve your car in under 2 minutes. No lengthy forms.
+        - generic [ref=e80]:
+          - generic [ref=e81]: 🛡️
+          - heading "Free Cancellation" [level=3] [ref=e82]
+          - paragraph [ref=e83]: Cancel up to 24 hours before pickup at zero cost.
+        - generic [ref=e84]:
+          - generic [ref=e85]: 📍
+          - heading "70+ Melbourne Locations" [level=3] [ref=e86]
+          - paragraph [ref=e87]: Pick up from the airport, CBD, or any suburb across Melbourne.
+        - generic [ref=e88]:
+          - generic [ref=e89]: 💳
+          - heading "No Hidden Fees" [level=3] [ref=e90]
+          - paragraph [ref=e91]: The price you see is exactly what you pay. All taxes included.
+        - generic [ref=e92]:
+          - generic [ref=e93]: 🎧
+          - heading "24/7 Roadside Assist" [level=3] [ref=e94]
+          - paragraph [ref=e95]: Breakdown support available any time, day or night.
+        - generic [ref=e96]:
+          - generic [ref=e97]: ⭐
+          - heading "Top-Rated Fleet" [level=3] [ref=e98]
+          - paragraph [ref=e99]: Every car professionally cleaned and inspected before your trip.
+    - generic [ref=e101]:
+      - generic [ref=e102]:
+        - heading "Choose Your Perfect Ride" [level=2] [ref=e104]:
+          - text: Choose Your
+          - text: Perfect Ride
+        - generic [ref=e105]:
+          - generic [ref=e106]: "8"
+          - generic [ref=e107]: vehicles available
+      - generic [ref=e108]:
+        - generic [ref=e109]:
+          - button "All" [ref=e110] [cursor=pointer]
+          - button "Economy" [ref=e111] [cursor=pointer]
+          - button "Compact" [ref=e112] [cursor=pointer]
+          - button "SUV" [ref=e113] [cursor=pointer]
+          - button "Luxury" [ref=e114] [cursor=pointer]
+          - button "Sports" [ref=e115] [cursor=pointer]
+          - button "Van" [ref=e116] [cursor=pointer]
+        - generic [ref=e117]:
+          - generic [ref=e118]:
+            - generic [ref=e119]: "TRANSMISSION:"
+            - button "Any" [ref=e120] [cursor=pointer]
+            - button "Automatic" [ref=e121] [cursor=pointer]
+            - button "Manual" [ref=e122] [cursor=pointer]
+          - generic [ref=e123]:
+            - generic [ref=e124]: "MAX:"
+            - generic [ref=e125]: $400/DAY
+            - slider [ref=e126]: "400"
+      - generic [ref=e127]:
+        - link "Hyundai i30 ECONOMY Petrol ★ 4.3 (312) Hyundai i30 2024 Model 👥 5 Seats ⚡ Automatic ⛽ Petrol ✓ Bluetooth ✓ Backup Camera ✓ Apple CarPlay $59per day Book Now" [ref=e128] [cursor=pointer]:
+          - /url: /cars/22e9f977-7737-4227-a8c1-339771c651f0
+          - generic [ref=e129]:
+            - generic [ref=e130]:
+              - img "Hyundai i30" [ref=e131]
+              - generic [ref=e133]: ECONOMY
+              - generic [ref=e134]: Petrol
+              - generic [ref=e135]:
+                - generic [ref=e136]: ★
+                - generic [ref=e137]: "4.3"
+                - generic [ref=e138]: (312)
+            - generic [ref=e139]:
+              - heading "Hyundai i30" [level=3] [ref=e140]
+              - generic [ref=e141]: 2024 Model
+              - generic [ref=e142]:
+                - generic [ref=e143]:
+                  - generic [ref=e144]: 👥
+                  - generic [ref=e145]: 5 Seats
+                - generic [ref=e146]:
+                  - generic [ref=e147]: ⚡
+                  - generic [ref=e148]: Automatic
+                - generic [ref=e149]:
+                  - generic [ref=e150]: ⛽
+                  - generic [ref=e151]: Petrol
+              - generic [ref=e152]:
+                - generic [ref=e153]:
+                  - generic [ref=e154]: ✓
+                  - text: Bluetooth
+                - generic [ref=e155]:
+                  - generic [ref=e156]: ✓
+                  - text: Backup Camera
+                - generic [ref=e157]:
+                  - generic [ref=e158]: ✓
+                  - text: Apple CarPlay
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - generic [ref=e161]: $59
+                  - text: per day
+                - button "Book Now" [ref=e162]
+        - link "Tesla Model 3 LUXURY Electric ★ 4.9 (214) Tesla Model 3 2024 Model 👥 5 Seats ⚡ Automatic ⛽ Electric ✓ Autopilot ✓ 15\" Touchscreen ✓ Free Charging $149per day Book Now" [ref=e163] [cursor=pointer]:
+          - /url: /cars/78fda1b7-5767-4ec6-b307-734abb1709b4
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - img "Tesla Model 3" [ref=e166]
+              - generic [ref=e168]: LUXURY
+              - generic [ref=e169]: Electric
+              - generic [ref=e170]:
+                - generic [ref=e171]: ★
+                - generic [ref=e172]: "4.9"
+                - generic [ref=e173]: (214)
+            - generic [ref=e174]:
+              - heading "Tesla Model 3" [level=3] [ref=e175]
+              - generic [ref=e176]: 2024 Model
+              - generic [ref=e177]:
+                - generic [ref=e178]:
+                  - generic [ref=e179]: 👥
+                  - generic [ref=e180]: 5 Seats
+                - generic [ref=e181]:
+                  - generic [ref=e182]: ⚡
+                  - generic [ref=e183]: Automatic
+                - generic [ref=e184]:
+                  - generic [ref=e185]: ⛽
+                  - generic [ref=e186]: Electric
+              - generic [ref=e187]:
+                - generic [ref=e188]:
+                  - generic [ref=e189]: ✓
+                  - text: Autopilot
+                - generic [ref=e190]:
+                  - generic [ref=e191]: ✓
+                  - text: 15" Touchscreen
+                - generic [ref=e192]:
+                  - generic [ref=e193]: ✓
+                  - text: Free Charging
+              - generic [ref=e194]:
+                - generic [ref=e195]:
+                  - generic [ref=e196]: $149
+                  - text: per day
+                - button "Book Now" [ref=e197]
+        - link "Toyota RAV4 Hybrid SUV Hybrid ★ 4.7 (178) Toyota RAV4 Hybrid 2024 Model 👥 5 Seats ⚡ Automatic ⛽ Hybrid ✓ Toyota Safety Sense ✓ Wireless CarPlay ✓ Digital Key $139per day Book Now" [ref=e198] [cursor=pointer]:
+          - /url: /cars/fc65a114-0a2e-4eaa-8229-b4c33ed4a1ed
+          - generic [ref=e199]:
+            - generic [ref=e200]:
+              - img "Toyota RAV4 Hybrid" [ref=e201]
+              - generic [ref=e203]: SUV
+              - generic [ref=e204]: Hybrid
+              - generic [ref=e205]:
+                - generic [ref=e206]: ★
+                - generic [ref=e207]: "4.7"
+                - generic [ref=e208]: (178)
+            - generic [ref=e209]:
+              - heading "Toyota RAV4 Hybrid" [level=3] [ref=e210]
+              - generic [ref=e211]: 2024 Model
+              - generic [ref=e212]:
+                - generic [ref=e213]:
+                  - generic [ref=e214]: 👥
+                  - generic [ref=e215]: 5 Seats
+                - generic [ref=e216]:
+                  - generic [ref=e217]: ⚡
+                  - generic [ref=e218]: Automatic
+                - generic [ref=e219]:
+                  - generic [ref=e220]: ⛽
+                  - generic [ref=e221]: Hybrid
+              - generic [ref=e222]:
+                - generic [ref=e223]:
+                  - generic [ref=e224]: ✓
+                  - text: Toyota Safety Sense
+                - generic [ref=e225]:
+                  - generic [ref=e226]: ✓
+                  - text: Wireless CarPlay
+                - generic [ref=e227]:
+                  - generic [ref=e228]: ✓
+                  - text: Digital Key
+              - generic [ref=e229]:
+                - generic [ref=e230]:
+                  - generic [ref=e231]: $139
+                  - text: per day
+                - button "Book Now" [ref=e232]
+        - link "Ford Ranger XLT VAN Diesel ★ 4.6 (156) Ford Ranger XLT 2024 Model 👥 5 Seats ⚡ Automatic ⛽ Diesel ✓ Tow Bar (3.5T) ✓ Bull Bar ✓ Snorkel $129per day Book Now" [ref=e233] [cursor=pointer]:
+          - /url: /cars/749c0cda-a76f-477f-a282-e918189cec9c
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - img "Ford Ranger XLT" [ref=e236]
+              - generic [ref=e238]: VAN
+              - generic [ref=e239]: Diesel
+              - generic [ref=e240]:
+                - generic [ref=e241]: ★
+                - generic [ref=e242]: "4.6"
+                - generic [ref=e243]: (156)
+            - generic [ref=e244]:
+              - heading "Ford Ranger XLT" [level=3] [ref=e245]
+              - generic [ref=e246]: 2024 Model
+              - generic [ref=e247]:
+                - generic [ref=e248]:
+                  - generic [ref=e249]: 👥
+                  - generic [ref=e250]: 5 Seats
+                - generic [ref=e251]:
+                  - generic [ref=e252]: ⚡
+                  - generic [ref=e253]: Automatic
+                - generic [ref=e254]:
+                  - generic [ref=e255]: ⛽
+                  - generic [ref=e256]: Diesel
+              - generic [ref=e257]:
+                - generic [ref=e258]:
+                  - generic [ref=e259]: ✓
+                  - text: Tow Bar (3.5T)
+                - generic [ref=e260]:
+                  - generic [ref=e261]: ✓
+                  - text: Bull Bar
+                - generic [ref=e262]:
+                  - generic [ref=e263]: ✓
+                  - text: Snorkel
+              - generic [ref=e264]:
+                - generic [ref=e265]:
+                  - generic [ref=e266]: $129
+                  - text: per day
+                - button "Book Now" [ref=e267]
+        - link "Toyota Camry COMPACT Hybrid ★ 4.5 (128) Toyota Camry 2024 Model 👥 5 Seats ⚡ Automatic ⛽ Hybrid ✓ Bluetooth ✓ Backup Camera ✓ Apple CarPlay $89per day Book Now" [ref=e268] [cursor=pointer]:
+          - /url: /cars/ce70858e-f3d8-42ac-9da6-48482e9aff80
+          - generic [ref=e269]:
+            - generic [ref=e270]:
+              - img "Toyota Camry" [ref=e271]
+              - generic [ref=e273]: COMPACT
+              - generic [ref=e274]: Hybrid
+              - generic [ref=e275]:
+                - generic [ref=e276]: ★
+                - generic [ref=e277]: "4.5"
+                - generic [ref=e278]: (128)
+            - generic [ref=e279]:
+              - heading "Toyota Camry" [level=3] [ref=e280]
+              - generic [ref=e281]: 2024 Model
+              - generic [ref=e282]:
+                - generic [ref=e283]:
+                  - generic [ref=e284]: 👥
+                  - generic [ref=e285]: 5 Seats
+                - generic [ref=e286]:
+                  - generic [ref=e287]: ⚡
+                  - generic [ref=e288]: Automatic
+                - generic [ref=e289]:
+                  - generic [ref=e290]: ⛽
+                  - generic [ref=e291]: Hybrid
+              - generic [ref=e292]:
+                - generic [ref=e293]:
+                  - generic [ref=e294]: ✓
+                  - text: Bluetooth
+                - generic [ref=e295]:
+                  - generic [ref=e296]: ✓
+                  - text: Backup Camera
+                - generic [ref=e297]:
+                  - generic [ref=e298]: ✓
+                  - text: Apple CarPlay
+              - generic [ref=e299]:
+                - generic [ref=e300]:
+                  - generic [ref=e301]: $89
+                  - text: per day
+                - button "Book Now" [ref=e302]
+        - link "Kia EV6 GT-Line COMPACT Electric ★ 4.7 (93) Kia EV6 GT-Line 2024 Model 👥 5 Seats ⚡ Automatic ⛽ Electric ✓ Meridian Sound ✓ Augmented Reality HUD ✓ Vehicle-to-Load $109per day Book Now" [ref=e303] [cursor=pointer]:
+          - /url: /cars/6b78be84-8164-4057-bf56-ff235e323790
+          - generic [ref=e304]:
+            - generic [ref=e305]:
+              - img "Kia EV6 GT-Line" [ref=e306]
+              - generic [ref=e308]: COMPACT
+              - generic [ref=e309]: Electric
+              - generic [ref=e310]:
+                - generic [ref=e311]: ★
+                - generic [ref=e312]: "4.7"
+                - generic [ref=e313]: (93)
+            - generic [ref=e314]:
+              - heading "Kia EV6 GT-Line" [level=3] [ref=e315]
+              - generic [ref=e316]: 2024 Model
+              - generic [ref=e317]:
+                - generic [ref=e318]:
+                  - generic [ref=e319]: 👥
+                  - generic [ref=e320]: 5 Seats
+                - generic [ref=e321]:
+                  - generic [ref=e322]: ⚡
+                  - generic [ref=e323]: Automatic
+                - generic [ref=e324]:
+                  - generic [ref=e325]: ⛽
+                  - generic [ref=e326]: Electric
+              - generic [ref=e327]:
+                - generic [ref=e328]:
+                  - generic [ref=e329]: ✓
+                  - text: Meridian Sound
+                - generic [ref=e330]:
+                  - generic [ref=e331]: ✓
+                  - text: Augmented Reality HUD
+                - generic [ref=e332]:
+                  - generic [ref=e333]: ✓
+                  - text: Vehicle-to-Load
+              - generic [ref=e334]:
+                - generic [ref=e335]:
+                  - generic [ref=e336]: $109
+                  - text: per day
+                - button "Book Now" [ref=e337]
+        - link "BMW X5 xDrive40i SUV Petrol ★ 4.8 (89) BMW X5 xDrive40i 2023 Model 👥 5 Seats ⚡ Automatic ⛽ Petrol ✓ Leather Seats ✓ Panoramic Sunroof ✓ Harman Kardon $199per day Book Now" [ref=e338] [cursor=pointer]:
+          - /url: /cars/6a2dd118-77ff-40cf-9bb6-d24641956979
+          - generic [ref=e339]:
+            - generic [ref=e340]:
+              - img "BMW X5 xDrive40i" [ref=e341]
+              - generic [ref=e343]: SUV
+              - generic [ref=e344]: Petrol
+              - generic [ref=e345]:
+                - generic [ref=e346]: ★
+                - generic [ref=e347]: "4.8"
+                - generic [ref=e348]: (89)
+            - generic [ref=e349]:
+              - heading "BMW X5 xDrive40i" [level=3] [ref=e350]
+              - generic [ref=e351]: 2023 Model
+              - generic [ref=e352]:
+                - generic [ref=e353]:
+                  - generic [ref=e354]: 👥
+                  - generic [ref=e355]: 5 Seats
+                - generic [ref=e356]:
+                  - generic [ref=e357]: ⚡
+                  - generic [ref=e358]: Automatic
+                - generic [ref=e359]:
+                  - generic [ref=e360]: ⛽
+                  - generic [ref=e361]: Petrol
+              - generic [ref=e362]:
+                - generic [ref=e363]:
+                  - generic [ref=e364]: ✓
+                  - text: Leather Seats
+                - generic [ref=e365]:
+                  - generic [ref=e366]: ✓
+                  - text: Panoramic Sunroof
+                - generic [ref=e367]:
+                  - generic [ref=e368]: ✓
+                  - text: Harman Kardon
+              - generic [ref=e369]:
+                - generic [ref=e370]:
+                  - generic [ref=e371]: $199
+                  - text: per day
+                - button "Book Now" [ref=e372]
+        - link "Mercedes-Benz GLE 450 UNAVAILABLE SUV Hybrid Mercedes-Benz GLE 450 2023 Model 👥 5 Seats ⚡ Automatic ⛽ Hybrid ✓ Burmester Sound ✓ Air Suspension ✓ Night Vision $259per day Unavailable" [ref=e373] [cursor=pointer]:
+          - /url: /cars/a51fb051-3343-4adb-8b9e-117b6854c700
+          - generic [ref=e374]:
+            - generic [ref=e375]:
+              - img "Mercedes-Benz GLE 450" [ref=e376]
+              - generic [ref=e378]: UNAVAILABLE
+              - generic [ref=e380]: SUV
+              - generic [ref=e381]: Hybrid
+            - generic [ref=e382]:
+              - heading "Mercedes-Benz GLE 450" [level=3] [ref=e383]
+              - generic [ref=e384]: 2023 Model
+              - generic [ref=e385]:
+                - generic [ref=e386]:
+                  - generic [ref=e387]: 👥
+                  - generic [ref=e388]: 5 Seats
+                - generic [ref=e389]:
+                  - generic [ref=e390]: ⚡
+                  - generic [ref=e391]: Automatic
+                - generic [ref=e392]:
+                  - generic [ref=e393]: ⛽
+                  - generic [ref=e394]: Hybrid
+              - generic [ref=e395]:
+                - generic [ref=e396]:
+                  - generic [ref=e397]: ✓
+                  - text: Burmester Sound
+                - generic [ref=e398]:
+                  - generic [ref=e399]: ✓
+                  - text: Air Suspension
+                - generic [ref=e400]:
+                  - generic [ref=e401]: ✓
+                  - text: Night Vision
+              - generic [ref=e402]:
+                - generic [ref=e403]:
+                  - generic [ref=e404]: $259
+                  - text: per day
+                - button "Unavailable" [ref=e405]
+    - generic [ref=e407]:
+      - generic [ref=e408]:
+        - generic [ref=e409]: SIMPLE PROCESS
+        - heading "Book in 3 Easy Steps" [level=2] [ref=e410]
+        - paragraph [ref=e411]: From search to keys in under 2 minutes
+      - generic [ref=e412]:
+        - generic [ref=e413]:
+          - generic [ref=e414]: "01"
+          - generic [ref=e415]: 🔍
+          - heading "Search" [level=3] [ref=e416]
+          - paragraph [ref=e417]: Choose your pickup location, dates and browse our 500+ premium vehicles.
+          - generic [ref=e418]: →
+        - generic [ref=e419]:
+          - generic [ref=e420]: "02"
+          - generic [ref=e421]: 🚗
+          - heading "Choose" [level=3] [ref=e422]
+          - paragraph [ref=e423]: Select your car and view full details — specs, features, reviews and pricing.
+          - generic [ref=e424]: →
+        - generic [ref=e425]:
+          - generic [ref=e426]: "03"
+          - generic [ref=e427]: 💳
+          - heading "Pay Securely" [level=3] [ref=e428]
+          - paragraph [ref=e429]: Book instantly with Stripe's secure payment. No card surcharges, ever.
+          - generic [ref=e430]: →
+        - generic [ref=e431]:
+          - generic [ref=e432]: "04"
+          - generic [ref=e433]: 🗝️
+          - heading "Drive Away" [level=3] [ref=e434]
+          - paragraph [ref=e435]: Pick up at your location, keys ready, fuel full. Enjoy the open road!
+    - generic [ref=e437]:
+      - generic [ref=e438]: READY TO HIT THE ROAD?
+      - heading "Your Next Adventure Starts Right Here" [level=2] [ref=e439]:
+        - text: Your Next Adventure
+        - text: Starts Right Here
+      - paragraph [ref=e440]:
+        - text: Join 50,000+ happy customers. Book in 2 minutes — free cancellation,
+        - text: no hidden fees, instant confirmation.
+      - generic [ref=e441]:
+        - button "Browse Our Fleet →" [ref=e442] [cursor=pointer]
+        - button "📞 (03) 9600 1234" [ref=e443] [cursor=pointer]
+      - generic [ref=e444]:
+        - generic [ref=e445]:
+          - generic [ref=e446]: ✓
+          - text: Free Cancellation
+        - generic [ref=e447]:
+          - generic [ref=e448]: ✓
+          - text: No Credit Card Surcharge
+        - generic [ref=e449]:
+          - generic [ref=e450]: ✓
+          - text: Roadside Assistance Included
+        - generic [ref=e451]:
+          - generic [ref=e452]: ✓
+          - text: Clean & Inspected
+    - contentinfo [ref=e453]:
+      - generic [ref=e454]:
+        - generic [ref=e455]:
+          - generic [ref=e456]:
+            - img "GlideGo" [ref=e457]
+            - paragraph [ref=e458]: Melbourne's most trusted car rental. Quality vehicles, transparent pricing, and 24/7 roadside assistance.
+            - generic [ref=e459]:
+              - generic [ref=e460]:
+                - generic [ref=e461]: 📍
+                - text: Level 2, 390 Collins Street, Melbourne VIC 3000
+              - generic [ref=e462]:
+                - generic [ref=e463]: 📞
+                - text: (03) 9600 1234
+              - generic [ref=e464]:
+                - generic [ref=e465]: ✉️
+                - text: hello@glidego.com.au
+          - generic [ref=e466]:
+            - heading "COMPANY" [level=4] [ref=e467]
+            - generic [ref=e468]:
+              - link "About Us" [ref=e469] [cursor=pointer]:
+                - /url: "#"
+              - link "Careers" [ref=e470] [cursor=pointer]:
+                - /url: "#"
+              - link "Press" [ref=e471] [cursor=pointer]:
+                - /url: "#"
+              - link "Blog" [ref=e472] [cursor=pointer]:
+                - /url: "#"
+          - generic [ref=e473]:
+            - heading "SERVICES" [level=4] [ref=e474]
+            - generic [ref=e475]:
+              - link "Car Rentals" [ref=e476] [cursor=pointer]:
+                - /url: "#"
+              - link "Long-Term Hire" [ref=e477] [cursor=pointer]:
+                - /url: "#"
+              - link "Corporate" [ref=e478] [cursor=pointer]:
+                - /url: "#"
+              - link "Airport Transfers" [ref=e479] [cursor=pointer]:
+                - /url: "#"
+          - generic [ref=e480]:
+            - heading "SUPPORT" [level=4] [ref=e481]
+            - generic [ref=e482]:
+              - link "FAQ" [ref=e483] [cursor=pointer]:
+                - /url: "#"
+              - link "Contact Us" [ref=e484] [cursor=pointer]:
+                - /url: "#"
+              - link "Insurance" [ref=e485] [cursor=pointer]:
+                - /url: "#"
+              - link "Terms & Conditions" [ref=e486] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e487]:
+          - paragraph [ref=e488]: © 2026 GlideGo Car Rentals Pty Ltd. All rights reserved. ABN 12 345 678 901
+          - generic [ref=e489]:
+            - link "Privacy Policy" [ref=e490] [cursor=pointer]:
+              - /url: "#"
+            - link "Terms of Use" [ref=e491] [cursor=pointer]:
+              - /url: "#"
+            - link "Cookie Policy" [ref=e492] [cursor=pointer]:
+              - /url: "#"
+  - alert [ref=e493]
+```
