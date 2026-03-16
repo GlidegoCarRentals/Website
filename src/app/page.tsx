@@ -207,7 +207,7 @@ export default function HomePage() {
       <nav className={`nav${navScrolled?' nav-scrolled':''}`}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:16}}>
           <Link href="/" style={{textDecoration:'none',flexShrink:0}}>
-            <Image src="/logo.png" alt="GlideGo" width={120} height={27} style={{objectFit:'contain',filter:'brightness(1.2)'}} />
+            <Image src="/logo.png" priority alt="GlideGo" width={120} height={27} style={{objectFit:'contain',filter:'brightness(1.2)'}} />
           </Link>
           <div style={{display:'flex',alignItems:'center',gap:24}}>
             {[['#fleet','Browse Cars'],['#how-it-works','How It Works'],['#why-glidego','Why GlideGo']].map(([href,label])=>(
@@ -586,7 +586,7 @@ export default function HomePage() {
           <div style={{display:'grid',gridTemplateColumns:'2.5fr 1fr 1fr 1fr',gap:48,marginBottom:52}} className="footer-grid">
             <style>{`.footer-grid{grid-template-columns:2.5fr 1fr 1fr 1fr;}@media(max-width:768px){.footer-grid{grid-template-columns:1fr 1fr;}}`}</style>
             <div>
-              <Image src="/logo.png" alt="GlideGo" width={130} height={29} style={{objectFit:'contain',filter:'brightness(1.1)',marginBottom:16}} />
+              <Image src="/logo.png" priority alt="GlideGo" width={130} height={29} style={{objectFit:'contain',filter:'brightness(1.1)',marginBottom:16}} />
               <p style={{color:'rgba(255,255,255,0.4)',fontSize:13,lineHeight:1.8,maxWidth:280,marginBottom:24}}>
                 Melbourne's most trusted car rental. Quality vehicles, transparent pricing, and 24/7 roadside assistance.
               </p>

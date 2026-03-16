@@ -62,7 +62,7 @@ export default function Navbar({ darkMode = false, onDarkModeToggle }: NavbarPro
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
           {/* Logo */}
           <Link href="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-            <Image src="/logo.png" alt="GlideGo" width={120} height={28} style={{ objectFit: 'contain', filter: (isHome && !scrolled) || darkMode ? 'brightness(1.2)' : 'none' }} />
+            <Image src="/logo.png" priority alt="GlideGo" width={120} height={28} style={{ objectFit: 'contain', filter: (isHome && !scrolled) || darkMode ? 'brightness(1.2)' : 'none' }} />
           </Link>
 
           {/* Desktop Links */}
@@ -142,7 +142,7 @@ export default function Navbar({ darkMode = false, onDarkModeToggle }: NavbarPro
           <div className="mobile-overlay" onClick={() => setMenuOpen(false)} />
           <div className="mobile-menu">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-              <Image src="/logo.png" alt="GlideGo" width={100} height={23} style={{ objectFit: 'contain', filter: darkMode ? 'brightness(1.2)' : 'none' }} />
+              <Image src="/logo.png" priority alt="GlideGo" width={100} height={23} style={{ objectFit: 'contain', filter: darkMode ? 'brightness(1.2)' : 'none' }} />
               <button onClick={() => setMenuOpen(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: darkMode ? 'white' : '#374151' }}>✕</button>
             </div>
             {user && (
