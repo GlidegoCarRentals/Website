@@ -1,19 +1,16 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
-
-  // Session refresh karo
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Protected routes list
+  // Supabase auth cookie check karo
+  const token =
+    req.cookies.get('sb-access-token')?.value ||
+    req.cookies.get('supabase-auth-token')?.value ||
+    req.cookies.get(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`)?.value
+
+  // Protected routes
   const protectedRoutes = [
     '/dashboard',
     '/bookings',
@@ -23,27 +20,20 @@ export async function middleware(req: NextRequest) {
     '/settings',
   ]
 
-  // Check karo kya current path protected hai
   const isProtected = protectedRoutes.some(route =>
     pathname.startsWith(route)
   )
 
-  // Logged out hai aur protected route pe ja raha hai
-  if (isProtected && !session) {
+  // Logged out + protected route = login pe bhejo
+  if (isProtected && !token) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // Already logged in hai aur login/signup pe ja raha hai
-  if (session && (pathname === '/login' || pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
-  }
-
-  return res
+  return NextResponse.next()
 }
 
-// Yeh batata hai middleware kahan kahan chalega
 export const config = {
   matcher: [
     '/dashboard/:path*',
@@ -52,7 +42,5 @@ export const config = {
     '/admin/:path*',
     '/profile/:path*',
     '/settings/:path*',
-    '/login',
-    '/signup',
   ],
 }

@@ -41,7 +41,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      reply_to: REPLY_TO,
+      replyTo: REPLY_TO,
       subject,
       html,
     });
