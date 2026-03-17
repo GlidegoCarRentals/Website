@@ -30,11 +30,11 @@ export type DbCar = {
   deposit_amount: number;
   glidego_verified: boolean;
   host_id: string;
-  // Joined from users table
+  // Joined from users table (NO host_email for security)
   host_name?: string;
-  host_email?: string;
   host_avatar?: string;
   is_superhost?: boolean;
+  host_trust_score?: number;
 };
 
 // Convert DB car to the format the UI expects (matching CARS structure)
@@ -47,16 +47,6 @@ export function dbCarToUiCar(car: DbCar) {
     'PHEV': '#16a34a',
   };
 
-  const categoryMap: Record<string, string> = {
-    'Toyota': { 'Camry': 'Compact', 'RAV4 Hybrid': 'SUV', 'RAV4': 'SUV' }['default'] || 'Compact',
-    'Tesla': 'Luxury',
-    'BMW': 'SUV',
-    'Mercedes-Benz': 'Luxury',
-    'Hyundai': 'Economy',
-    'Ford': 'Van',
-    'Kia': 'Compact',
-  };
-
   const name = `${car.make} ${car.model}`;
   const photo = Array.isArray(car.photos) && car.photos.length > 0
     ? car.photos[0]
@@ -67,7 +57,7 @@ export function dbCarToUiCar(car: DbCar) {
     : 'GG';
 
   return {
-    id: car.id, // UUID string from DB
+    id: car.id,
     name,
     category: getCategoryForCar(car.make, car.model),
     fuel: car.fuel_type,
@@ -117,11 +107,47 @@ function getCategoryForCar(make: string, model: string): string {
 }
 
 function getSpecsForCar(make: string, model: string, fuel: string) {
-  // Fallback specs based on fuel type
   if (fuel === 'Electric') return { engine: 'Electric Motor', power: '300+ HP', torque: '450+ Nm', acceleration: '5.0s', topSpeed: '200 km/h', fuel: '18kWh/100km' };
   if (fuel === 'Hybrid') return { engine: 'Hybrid', power: '200+ HP', torque: '200+ Nm', acceleration: '8.0s', topSpeed: '180 km/h', fuel: '5.0L/100km' };
   if (fuel === 'Diesel') return { engine: 'Diesel', power: '200+ HP', torque: '450+ Nm', acceleration: '9.5s', topSpeed: '175 km/h', fuel: '8.5L/100km' };
   return { engine: 'Petrol', power: '150+ HP', torque: '200+ Nm', acceleration: '9.0s', topSpeed: '200 km/h', fuel: '7.0L/100km' };
+}
+
+// ============================================================
+// Cars select query — direct tables, NO view
+// host_email intentionally excluded for security
+// ============================================================
+const CARS_SELECT = `
+  id, host_id, make, model, year, colour, body_type, engine,
+  transmission, fuel_type, seats, doors, price_daily, price_weekly,
+  price_monthly, weekend_multiplier, surge_enabled, min_days, max_days,
+  min_age_years, deposit_amount, advance_notice_hrs, instant_book,
+  protection_basic, protection_standard, protection_premium,
+  location_name, address, latitude, longitude,
+  delivery_available, delivery_fee, delivery_radius_km,
+  photos, tour_video_url, features, title, description, house_rules,
+  avg_rating, total_reviews, total_trips, total_views,
+  status, available, glidego_verified, featured, slug,
+  created_at, updated_at,
+  users!host_id (
+    full_name,
+    avatar_url,
+    is_superhost,
+    trust_score
+  )
+`.trim();
+
+// Helper — flatten joined users data into car object
+function flattenCarWithHost(car: any): DbCar {
+  const host = car.users || {};
+  return {
+    ...car,
+    host_name: host.full_name || null,
+    host_avatar: host.avatar_url || null,
+    is_superhost: host.is_superhost || false,
+    host_trust_score: host.trust_score || null,
+    users: undefined,
+  };
 }
 
 // ============================================================
@@ -130,18 +156,17 @@ function getSpecsForCar(make: string, model: string, fuel: string) {
 export async function fetchCars(): Promise<ReturnType<typeof dbCarToUiCar>[]> {
   try {
     const { data, error } = await supabase
-      .from('cars_with_host')
-      .select('*')
+      .from('cars')
+      .select(CARS_SELECT)
       .eq('status', 'active')
       .order('total_trips', { ascending: false });
 
     if (error) throw error;
     if (!data || data.length === 0) throw new Error('No cars in DB');
 
-    return data.map(dbCarToUiCar);
+    return data.map(flattenCarWithHost).map(dbCarToUiCar);
   } catch (err) {
     console.warn('DB fetch failed, using static data:', err);
-    // Fallback to static cars.ts data
     return CARS as any;
   }
 }
@@ -149,10 +174,9 @@ export async function fetchCars(): Promise<ReturnType<typeof dbCarToUiCar>[]> {
 // Fetch single car by slug or id
 export async function fetchCarBySlugOrId(slugOrId: string): Promise<ReturnType<typeof dbCarToUiCar> | null> {
   try {
-    // Try UUID first
     const isUuid = /^[0-9a-f-]{36}$/.test(slugOrId);
 
-    const query = supabase.from('cars_with_host').select('*');
+    const query = supabase.from('cars').select(CARS_SELECT).eq('status', 'active');
     const { data, error } = isUuid
       ? await query.eq('id', slugOrId).single()
       : await query.eq('slug', slugOrId).single();
@@ -160,9 +184,8 @@ export async function fetchCarBySlugOrId(slugOrId: string): Promise<ReturnType<t
     if (error) throw error;
     if (!data) throw new Error('Car not found');
 
-    return dbCarToUiCar(data);
+    return dbCarToUiCar(flattenCarWithHost(data));
   } catch {
-    // Fallback: find in static data by numeric id or slug
     const numId = parseInt(slugOrId);
     const staticCar = CARS.find(c => c.id === numId) as any;
     return staticCar || null;
