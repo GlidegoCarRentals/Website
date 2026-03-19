@@ -25,7 +25,7 @@ const BOOKINGS = [
 const MESSAGES = [
   { id: 1, from: 'Alex Johnson', avatar: 'AJ', car: 'Tesla Model 3', msg: 'Hi! What time can I pick up tomorrow?', time: '2h ago', unread: true, online: true },
   { id: 2, from: 'Priya Sharma', avatar: 'PS', car: 'Toyota Camry', msg: 'Can I get early pickup at 7am?', time: '5h ago', unread: true, online: false },
-  { id: 3, from: 'James Richardson', avatar: 'JR', car: 'BMW X5', msg: 'Amazing car! Will book again ⭐⭐⭐⭐⭐', time: '1d ago', unread: false, online: false },
+  { id: 3, from: 'James Richardson', avatar: 'JR', car: 'BMW X5', msg: 'Amazing car! Will book again ★★★★★', time: '1d ago', unread: false, online: false },
   { id: 4, from: 'Emma Liu', avatar: 'EL', car: 'Ford Ranger', msg: 'Do you include a tow bar adapter?', time: '2d ago', unread: false, online: true },
 ];
 
@@ -46,11 +46,97 @@ const VEHICLE_STATS = [
 
 const STATUS_CFG: Record<string, { bg: string; color: string; label: string }> = {
   confirmed: { bg: '#dcfce7', color: '#15803d', label: 'Confirmed' },
-  pending: { bg: '#fef9c3', color: '#a16207', label: 'Pending' },
-  upcoming: { bg: '#dbeafe', color: '#1d4ed8', label: 'Upcoming' },
+  pending:   { bg: '#fef9c3', color: '#a16207', label: 'Pending' },
+  upcoming:  { bg: '#dbeafe', color: '#1d4ed8', label: 'Upcoming' },
   completed: { bg: '#f1f5f9', color: '#64748b', label: 'Completed' },
 };
 
+// ─────────────────────────────────────────────
+// KPI Card
+// ─────────────────────────────────────────────
+function KpiCard({ stat, surface, accent, muted, text }: any) {
+  return (
+    <div className="sc" style={{ background: surface }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        <div style={{ fontSize: 24 }}>{stat.icon}</div>
+        {stat.trend && (
+          <span style={{ fontSize: 10, fontWeight: 700, color: accent, background: 'rgba(16,185,129,0.1)', padding: '3px 8px', borderRadius: 20 }}>
+            {stat.trend}
+          </span>
+        )}
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 800, color: stat.color, letterSpacing: '-1px', marginBottom: 4 }}>{stat.value}</div>
+      <div style={{ fontSize: 11, color: muted }}>{stat.label}</div>
+      <div style={{ fontSize: 10, color: muted, marginTop: 3, opacity: 0.7 }}>{stat.sub}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Booking Row
+// ─────────────────────────────────────────────
+function BookingRow({ b, border, text, muted, accent, dm }: any) {
+  const s = STATUS_CFG[b.status];
+  return (
+    <tr className="brow" style={{ borderBottom: `1px solid ${border}`, transition: 'background 0.15s' }}>
+      <td style={{ padding: '10px 7px', fontSize: 10, fontWeight: 700, color: muted }}>{b.id}</td>
+      <td style={{ padding: '10px 7px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'white', flexShrink: 0 }}>{b.guestAvatar}</div>
+          <span style={{ fontSize: 11, fontWeight: 600, color: text, whiteSpace: 'nowrap' }}>{b.guest}</span>
+        </div>
+      </td>
+      <td style={{ padding: '10px 7px', fontSize: 11, color: text, whiteSpace: 'nowrap' }}>{b.car}</td>
+      <td style={{ padding: '10px 7px' }}>
+        <div style={{ fontSize: 10, color: text, whiteSpace: 'nowrap' }}>{b.pickup} → {b.ret}</div>
+        <div style={{ fontSize: 9, color: muted }}>{b.days} days</div>
+      </td>
+      <td style={{ padding: '10px 7px', fontSize: 12, fontWeight: 700, color: accent, whiteSpace: 'nowrap' }}>${b.amount}</td>
+      <td style={{ padding: '10px 7px' }}>
+        <span style={{ background: s.bg, color: s.color, fontSize: 9, fontWeight: 700, padding: '3px 9px', borderRadius: 20, whiteSpace: 'nowrap' }}>{s.label}</span>
+      </td>
+      <td style={{ padding: '10px 7px' }}>
+        {b.status === 'pending' ? (
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button className="abtn" style={{ background: 'rgba(16,185,129,0.15)', color: accent, padding: '4px 9px', fontSize: 10 }}>✓</button>
+            <button className="abtn" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '4px 9px', fontSize: 10 }}>✕</button>
+          </div>
+        ) : (
+          <button className="abtn" style={{ background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: muted, padding: '4px 9px', fontSize: 10 }}>View</button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Vehicle Performance Card
+// ─────────────────────────────────────────────
+function VehicleCard({ v, dm, text, muted, accent, accentBlue, border }: any) {
+  return (
+    <div style={{ padding: '12px 14px', background: dm ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderRadius: 12, border: `1px solid ${border}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: text }}>{v.car}</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: accent }}>${v.earnings.toLocaleString()}</div>
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+        <span style={{ fontSize: 10, color: muted }}>{v.trips} trips</span>
+        <span style={{ fontSize: 10, color: '#f59e0b' }}>★ {v.rating}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1, height: 5, borderRadius: 3, background: dm ? 'rgba(255,255,255,0.07)' : '#e2e8f0', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${v.utilization}%`, background: `linear-gradient(90deg,${accent},${accentBlue})`, borderRadius: 3 }} />
+        </div>
+        <span style={{ fontSize: 10, fontWeight: 700, color: accent, minWidth: 32 }}>{v.utilization}%</span>
+      </div>
+      <div style={{ fontSize: 9, color: muted, marginTop: 3 }}>Utilization rate</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Main Dashboard
+// ─────────────────────────────────────────────
 export default function HostDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -76,8 +162,14 @@ export default function HostDashboard() {
   const accent = '#10b981';
   const accentBlue = '#3b82f6';
   const maxE = Math.max(...EARNINGS_DATA.map(e => e.amount));
-
   const sideW = sidebarOpen ? 250 : 64;
+
+  const kpiStats = [
+    { label: 'Total Earnings', value: '$14,287', sub: '+$2,340 this month', icon: '💰', color: accent, trend: '+18%' },
+    { label: 'Active Bookings', value: '4', sub: '2 pending approval', icon: '◷', color: accentBlue, trend: '+2' },
+    { label: 'Overall Rating', value: `${user.rating || 4.97}★`, sub: '312 total reviews', icon: '★', color: '#f59e0b', trend: '+0.02' },
+    { label: 'Vehicles Listed', value: '3', sub: '100% utilization', icon: '⊞', color: '#8b5cf6', trend: '' },
+  ];
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: bg, fontFamily: "'Syne','Inter',sans-serif", color: text }}>
@@ -101,20 +193,35 @@ export default function HostDashboard() {
       `}</style>
 
       {/* SIDEBAR */}
-      <aside style={{ width: sideW, background: surface, borderRight: `1px solid ${border}`, display: 'flex', flexDirection: 'column', transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)', overflow: 'hidden', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50, flexShrink: 0 }}>
+      <aside style={{ width: sideW, background: surface, borderRight: `1px solid ${border}`, display: 'flex', flexDirection: 'column', transition: 'width 0.3s', overflow: 'hidden', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50, flexShrink: 0 }}>
         <div style={{ padding: '18px 14px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${border}`, flexShrink: 0 }}>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width: 34, height: 34, borderRadius: 10, background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', border: `1px solid ${border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: text, fontSize: 14 }}>
             {sidebarOpen ? '←' : '→'}
           </button>
-          {sidebarOpen && <div style={{ whiteSpace: 'nowrap' }}><div style={{ fontSize: 15, fontWeight: 800, color: accent }}>GlideGo</div><div style={{ fontSize: 10, color: muted }}>Host Portal</div></div>}
+          {sidebarOpen && (
+            <div style={{ whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: accent }}>GlideGo</div>
+              <div style={{ fontSize: 10, color: muted }}>Host Portal</div>
+            </div>
+          )}
         </div>
 
         <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
           {SIDEBAR_ITEMS.map(item => (
-            <button key={item.id} onClick={() => { setActiveTab(item.id); item.href && router.push(item.href); }} className={`sl ${activeTab === item.id ? 'act' : ''}`} style={{ color: activeTab === item.id ? accent : muted, marginBottom: 2 }} title={!sidebarOpen ? item.label : ''}>
+            <button
+              key={item.id}
+              onClick={() => { setActiveTab(item.id); if (item.href) router.push(item.href); }}
+              className={`sl ${activeTab === item.id ? 'act' : ''}`}
+              style={{ color: activeTab === item.id ? accent : muted, marginBottom: 2 }}
+              title={!sidebarOpen ? item.label : ''}
+            >
               <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
-              {sidebarOpen && <><span style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>{item.label}</span>{item.badge && <span style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 20 }}>{item.badge}</span>}</>}
-              {!sidebarOpen && item.badge && <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, background: '#ef4444', borderRadius: '50%' }} />}
+              {sidebarOpen && (
+                <>
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>{item.label}</span>
+                  {item.badge && <span style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 20 }}>{item.badge}</span>}
+                </>
+              )}
             </button>
           ))}
         </nav>
@@ -122,17 +229,25 @@ export default function HostDashboard() {
         <div style={{ padding: '10px 8px', borderTop: `1px solid ${border}`, flexShrink: 0 }}>
           {sidebarOpen ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: dm ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderRadius: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', flexShrink: 0 }}>{user.name.split(' ').map((n: string) => n[0]).join('')}</div>
-              <div style={{ overflow: 'hidden' }}><div style={{ fontSize: 11, fontWeight: 700, color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div><div style={{ fontSize: 10, color: accent, fontWeight: 600 }}>⭐ {user.rating || 4.97} · All-Star Host</div></div>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', flexShrink: 0 }}>
+                {user.name.split(' ').map((n: string) => n[0]).join('')}
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+                <div style={{ fontSize: 10, color: accent, fontWeight: 600 }}>★ {user.rating || 4.97} · All-Star Host</div>
+              </div>
             </div>
           ) : (
-            <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', margin: '0 auto' }}>{user.name.split(' ').map((n: string) => n[0]).join('')}</div>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'white', margin: '0 auto' }}>
+              {user.name.split(' ').map((n: string) => n[0]).join('')}
+            </div>
           )}
         </div>
       </aside>
 
       {/* MAIN */}
-      <main style={{ flex: 1, marginLeft: sideW, transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)', minHeight: '100vh', overflow: 'auto' }}>
+      <main style={{ flex: 1, marginLeft: sideW, transition: 'margin-left 0.3s', minHeight: '100vh', overflow: 'auto' }}>
+
         {/* TOP BAR */}
         <div style={{ background: surface, borderBottom: `1px solid ${border}`, padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40, backdropFilter: 'blur(20px)' }}>
           <div>
@@ -141,7 +256,7 @@ export default function HostDashboard() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={() => setDarkMode(!dm)} style={{ width: 40, height: 22, borderRadius: 11, background: dm ? 'linear-gradient(135deg,#1d4ed8,#059669)' : '#e2e8f0', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.3s', flexShrink: 0 }}>
-              <div style={{ position: 'absolute', width: 16, height: 16, borderRadius: '50%', background: 'white', top: 3, left: dm ? 21 : 3, transition: 'left 0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+              <div style={{ position: 'absolute', width: 16, height: 16, borderRadius: '50%', background: 'white', top: 3, left: dm ? 21 : 3, transition: 'left 0.25s' }} />
             </button>
             <div style={{ position: 'relative' }}>
               <button onClick={() => setNotifOpen(!notifOpen)} style={{ width: 38, height: 38, borderRadius: 12, background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', border: `1px solid ${border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: text, position: 'relative' }}>
@@ -152,13 +267,16 @@ export default function HostDashboard() {
                   <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: text }}>Notifications</div>
                   {[
                     { icon: '💰', msg: 'New booking — Tesla Model 3 from Alex J.', time: '2m ago', dot: true },
-                    { icon: '⭐', msg: 'James R. left a 5-star review!', time: '1h ago', dot: true },
+                    { icon: '★', msg: 'James R. left a 5-star review!', time: '1h ago', dot: true },
                     { icon: '💬', msg: 'New message from Priya S.', time: '3h ago', dot: false },
                     { icon: '📅', msg: 'BMW X5 pickup tomorrow 9am', time: '6h ago', dot: false },
                   ].map((n, i) => (
                     <div key={i} style={{ display: 'flex', gap: 10, padding: '9px 0', borderBottom: i < 3 ? `1px solid ${border}` : 'none', alignItems: 'flex-start' }}>
                       <span style={{ fontSize: 14 }}>{n.icon}</span>
-                      <div style={{ flex: 1 }}><div style={{ fontSize: 11, color: text, lineHeight: 1.5 }}>{n.msg}</div><div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{n.time}</div></div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: text, lineHeight: 1.5 }}>{n.msg}</div>
+                        <div style={{ fontSize: 10, color: muted, marginTop: 2 }}>{n.time}</div>
+                      </div>
                       {n.dot && <div style={{ width: 7, height: 7, borderRadius: '50%', background: accentBlue, flexShrink: 0, marginTop: 4 }} />}
                     </div>
                   ))}
@@ -169,24 +287,11 @@ export default function HostDashboard() {
           </div>
         </div>
 
-        <div style={{ padding: '28px' }} className="fi">
+        <div style={{ padding: 28 }} className="fi">
           {/* KPI STATS */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18, marginBottom: 28 }}>
-            {[
-              { label: 'Total Earnings', value: '$14,287', sub: '+$2,340 this month', icon: '💰', color: accent, trend: '+18%' },
-              { label: 'Active Bookings', value: '4', sub: '2 pending approval', icon: '◷', color: accentBlue, trend: '+2' },
-              { label: 'Overall Rating', value: `${user.rating || 4.97}★`, sub: '312 total reviews', icon: '⭐', color: '#f59e0b', trend: '+0.02' },
-              { label: 'Vehicles Listed', value: '3', sub: '100% utilization', icon: '⊞', color: '#8b5cf6', trend: '' },
-            ].map((stat, i) => (
-              <div key={i} className="sc" style={{ background: surface }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                  <div style={{ fontSize: 24 }}>{stat.icon}</div>
-                  {stat.trend && <span style={{ fontSize: 10, fontWeight: 700, color: accent, background: dm ? 'rgba(16,185,129,0.1)' : '#dcfce7', padding: '3px 8px', borderRadius: 20 }}>{stat.trend}</span>}
-                </div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: stat.color, letterSpacing: '-1px', marginBottom: 4 }}>{stat.value}</div>
-                <div style={{ fontSize: 11, color: muted }}>{stat.label}</div>
-                <div style={{ fontSize: 10, color: muted, marginTop: 3, opacity: 0.7 }}>{stat.sub}</div>
-              </div>
+            {kpiStats.map((stat, i) => (
+              <KpiCard key={i} stat={stat} surface={surface} accent={accent} muted={muted} text={text} />
             ))}
           </div>
 
@@ -195,9 +300,14 @@ export default function HostDashboard() {
             {/* Earnings Chart */}
             <div className="sc" style={{ background: surface }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <div><div style={{ fontSize: 15, fontWeight: 700 }}>Earnings Overview</div><div style={{ fontSize: 11, color: muted, marginTop: 2 }}>Last 6 months · AUD</div></div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>Earnings Overview</div>
+                  <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>Last 6 months · AUD</div>
+                </div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  {['6M', '1Y', 'All'].map(t => <button key={t} className="abtn" style={{ background: t === '6M' ? 'rgba(16,185,129,0.1)' : 'transparent', color: t === '6M' ? accent : muted, padding: '5px 12px', fontSize: 10 }}>{t}</button>)}
+                  {['6M', '1Y', 'All'].map(t => (
+                    <button key={t} className="abtn" style={{ background: t === '6M' ? 'rgba(16,185,129,0.1)' : 'transparent', color: t === '6M' ? accent : muted, padding: '5px 12px', fontSize: 10 }}>{t}</button>
+                  ))}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 130 }}>
@@ -263,7 +373,7 @@ export default function HostDashboard() {
                   </div>
                 </div>
               )}
-              <Link href="/host/messages" style={{ display: 'block', textAlign: 'center', padding: '9px', marginTop: 10, background: `rgba(16,185,129,0.08)`, borderRadius: 9, fontSize: 11, fontWeight: 600, color: accent, textDecoration: 'none' }}>View all messages →</Link>
+              <Link href="/host/messages" style={{ display: 'block', textAlign: 'center', padding: 9, marginTop: 10, background: 'rgba(16,185,129,0.08)', borderRadius: 9, fontSize: 11, fontWeight: 600, color: accent, textDecoration: 'none' }}>View all messages →</Link>
             </div>
           </div>
 
@@ -284,37 +394,9 @@ export default function HostDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {BOOKINGS.map(b => {
-                      const s = STATUS_CFG[b.status];
-                      return (
-                        <tr key={b.id} className="brow" style={{ borderBottom: `1px solid ${border}`, transition: 'background 0.15s' }}>
-                          <td style={{ padding: '10px 7px', fontSize: 10, fontWeight: 700, color: muted }}>{b.id}</td>
-                          <td style={{ padding: '10px 7px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#1d4ed8,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'white', flexShrink: 0 }}>{b.guestAvatar}</div>
-                              <span style={{ fontSize: 11, fontWeight: 600, color: text, whiteSpace: 'nowrap' }}>{b.guest}</span>
-                            </div>
-                          </td>
-                          <td style={{ padding: '10px 7px', fontSize: 11, color: text, whiteSpace: 'nowrap' }}>{b.car}</td>
-                          <td style={{ padding: '10px 7px' }}>
-                            <div style={{ fontSize: 10, color: text, whiteSpace: 'nowrap' }}>{b.pickup} → {b.ret}</div>
-                            <div style={{ fontSize: 9, color: muted }}>{b.days} days</div>
-                          </td>
-                          <td style={{ padding: '10px 7px', fontSize: 12, fontWeight: 700, color: accent, whiteSpace: 'nowrap' }}>${b.amount}</td>
-                          <td style={{ padding: '10px 7px' }}><span style={{ background: s.bg, color: s.color, fontSize: 9, fontWeight: 700, padding: '3px 9px', borderRadius: 20, whiteSpace: 'nowrap' }}>{s.label}</span></td>
-                          <td style={{ padding: '10px 7px' }}>
-                            {b.status === 'pending' ? (
-                              <div style={{ display: 'flex', gap: 4 }}>
-                                <button className="abtn" style={{ background: 'rgba(16,185,129,0.15)', color: accent, padding: '4px 9px', fontSize: 10 }}>✓</button>
-                                <button className="abtn" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '4px 9px', fontSize: 10 }}>✕</button>
-                              </div>
-                            ) : (
-                              <button className="abtn" style={{ background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: muted, padding: '4px 9px', fontSize: 10 }}>View</button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {BOOKINGS.map(b => (
+                      <BookingRow key={b.id} b={b} border={border} text={text} muted={muted} accent={accent} dm={dm} />
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -324,26 +406,10 @@ export default function HostDashboard() {
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Vehicle Performance</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {VEHICLE_STATS.map((v, i) => (
-                  <div key={i} style={{ padding: '12px 14px', background: dm ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderRadius: 12, border: `1px solid ${border}` }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: text }}>{v.car}</div>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: accent }}>${v.earnings.toLocaleString()}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-                      <span style={{ fontSize: 10, color: muted }}>{v.trips} trips</span>
-                      <span style={{ fontSize: 10, color: '#f59e0b' }}>⭐ {v.rating}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ flex: 1, height: 5, borderRadius: 3, background: dm ? 'rgba(255,255,255,0.07)' : '#e2e8f0', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${v.utilization}%`, background: `linear-gradient(90deg,${accent},${accentBlue})`, borderRadius: 3 }} />
-                      </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: accent, minWidth: 32 }}>{v.utilization}%</span>
-                    </div>
-                    <div style={{ fontSize: 9, color: muted, marginTop: 3 }}>Utilization rate</div>
-                  </div>
+                  <VehicleCard key={i} v={v} dm={dm} text={text} muted={muted} accent={accent} accentBlue={accentBlue} border={border} />
                 ))}
               </div>
-              <Link href="/host/add-vehicle" style={{ display: 'block', textAlign: 'center', padding: '9px', marginTop: 12, background: 'rgba(16,185,129,0.08)', borderRadius: 9, fontSize: 11, fontWeight: 600, color: accent, textDecoration: 'none' }}>+ Add New Vehicle</Link>
+              <Link href="/host/add-vehicle" style={{ display: 'block', textAlign: 'center', padding: 9, marginTop: 12, background: 'rgba(16,185,129,0.08)', borderRadius: 9, fontSize: 11, fontWeight: 600, color: accent, textDecoration: 'none' }}>+ Add New Vehicle</Link>
             </div>
           </div>
 
@@ -356,7 +422,7 @@ export default function HostDashboard() {
                 { icon: '📅', label: 'Block Dates', href: '/host/vehicles', color: accentBlue },
                 { icon: '💸', label: 'Set Pricing', href: '/host/vehicles', color: '#8b5cf6' },
                 { icon: '📊', label: 'Analytics', href: '/host/earnings', color: '#f59e0b' },
-                { icon: '⭐', label: 'Reviews', href: '/reviews', color: '#ec4899' },
+                { icon: '★', label: 'Reviews', href: '/reviews', color: '#ec4899' },
                 { icon: '🔧', label: 'Settings', href: '/host/settings', color: '#64748b' },
               ].map((a, i) => (
                 <Link key={i} href={a.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, padding: '16px 10px', background: dm ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderRadius: 12, border: `1px solid ${border}`, textDecoration: 'none', transition: 'all 0.2s' }}>
