@@ -7,7 +7,6 @@ interface Toast {
   id: string;
   type: ToastType;
   message: string;
-  icon?: string;
 }
 
 interface ToastContextType {
@@ -27,24 +26,52 @@ const ICONS: Record<ToastType, string> = {
   warning: '⚠️',
 };
 
+// ─────────────────────────────────────────────
+// Helper — remove toast with animation
+// ─────────────────────────────────────────────
+function animateAndRemove(id: string, setToasts: React.Dispatch<React.SetStateAction<Toast[]>>) {
+  const el = document.getElementById(`toast-${id}`);
+  if (el) {
+    el.classList.add('hiding');
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 300);
+  } else {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }
+}
+
+// ─────────────────────────────────────────────
+// Single Toast Item
+// ─────────────────────────────────────────────
+function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+  return (
+    <div
+      id={`toast-${toast.id}`}
+      className={`toast toast-${toast.type}`}
+      onClick={() => onRemove(toast.id)}
+      style={{ cursor: 'pointer' }}
+    >
+      <span style={{ fontSize: 18, flexShrink: 0 }}>{ICONS[toast.type]}</span>
+      <span style={{ flex: 1 }}>{toast.message}</span>
+      <span style={{ opacity: 0.7, fontSize: 18, flexShrink: 0 }}>×</span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Toast Provider
+// ─────────────────────────────────────────────
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const removeToast = useCallback((id: string) => {
-    const el = document.getElementById(`toast-${id}`);
-    if (el) {
-      el.classList.add('hiding');
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 300);
-    } else {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }
+    animateAndRemove(id, setToasts);
   }, []);
 
   const addToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = Math.random().toString(36).slice(2);
     setToasts(prev => [...prev.slice(-3), { id, type, message }]);
-    setTimeout(() => removeToast(id), 4000);
-  }, [removeToast]);
+    setTimeout(() => animateAndRemove(id, setToasts), 4000);
+  }, []);
 
   const ctx: ToastContextType = {
     toast: addToast,
@@ -59,23 +86,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="toast-container">
         {toasts.map(t => (
-          <div
-            key={t.id}
-            id={`toast-${t.id}`}
-            className={`toast toast-${t.type}`}
-            onClick={() => removeToast(t.id)}
-            style={{ cursor: 'pointer' }}
-          >
-            <span style={{ fontSize: 18, flexShrink: 0 }}>{ICONS[t.type]}</span>
-            <span style={{ flex: 1 }}>{t.message}</span>
-            <span style={{ opacity: 0.7, fontSize: 18, flexShrink: 0 }}>×</span>
-          </div>
+          <ToastItem key={t.id} toast={t} onRemove={removeToast} />
         ))}
       </div>
     </ToastContext.Provider>
   );
 }
 
+// ─────────────────────────────────────────────
+// Hook
+// ─────────────────────────────────────────────
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used within ToastProvider');
