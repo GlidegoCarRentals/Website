@@ -152,23 +152,18 @@ function loginJourney() {
 function apiJourney() {
   const start = Date.now();
 
-  // Test Supabase REST API (cars endpoint)
-  const res = http.get(
-    `https://rtbmmuhsisccrxmndivx.supabase.co/rest/v1/cars?status=eq.active&select=id,make,model,price_daily&limit=10`,
-    {
-      headers: {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0Ym1tdWhzaXNjY3J4bW5kaXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NjMzMzMsImV4cCI6MjA1NzMzOTMzM30.QdS9mM3XZQO0HjV7f2aQmqnmZSwA1iOQjjVKaGZiRnI',
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  // Test fleet page instead of direct Supabase API
+  // (No hardcoded keys needed)
+  const res = http.get(`${BASE_URL}/fleet`, {
+    headers: { 'Accept': 'text/html' },
+  });
 
   apiTime.add(Date.now() - start);
 
   const success = check(res, {
-    'API — status 200': (r) => r.status === 200,
+    'API — fleet responds': (r) => r.status === 200,
     'API — responds under 2s': (r) => r.timings.duration < 2000,
-    'API — returns JSON': (r) => r.headers['Content-Type'] && r.headers['Content-Type'].includes('json'),
+    'API — has content': (r) => r.body.length > 100,
   });
 
   errorRate.add(!success);
