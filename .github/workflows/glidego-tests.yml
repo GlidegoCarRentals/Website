@@ -1,0 +1,112 @@
+name: GlideGo 24/7 Automated Tests
+
+on:
+  # Run every 15 minutes
+  schedule:
+    - cron: '*/15 * * * *'
+  # Also run on every push to main
+  push:
+    branches: [main]
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  playwright-tests:
+    name: 🎭 Playwright E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: glidego-tests/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: glidego-tests
+        run: npm ci
+
+      - name: 🌐 Install Playwright browsers
+        working-directory: glidego-tests
+        run: npx playwright install --with-deps chromium
+
+      - name: 🎭 Run Playwright tests
+        working-directory: glidego-tests
+        run: npx playwright test
+        env:
+          BASE_URL: https://glidego.vercel.app
+
+      - name: 📊 Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: glidego-tests/playwright-report/
+          retention-days: 7
+
+      - name: 🔔 Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Tests FAILED at $(date)"
+          echo "Run: ${{ github.run_number }}"
+          echo "Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  health-check:
+    name: 🏥 Site Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 🔍 Check Homepage
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://glidego.vercel.app)
+          echo "Homepage status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Homepage DOWN! Status: $STATUS"
+            exit 1
+          fi
+          echo "✅ Homepage UP"
+
+      - name: 🔍 Check Fleet Page
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://glidego.vercel.app/fleet)
+          echo "Fleet page status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Fleet page DOWN! Status: $STATUS"
+            exit 1
+          fi
+          echo "✅ Fleet page UP"
+
+      - name: 🔍 Check Login Page
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://glidego.vercel.app/login)
+          echo "Login page status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Login page DOWN! Status: $STATUS"
+            exit 1
+          fi
+          echo "✅ Login page UP"
+
+      - name: 🔍 Check API Response Time
+        run: |
+          TIME=$(curl -s -o /dev/null -w "%{time_total}" https://glidego.vercel.app)
+          echo "Response time: ${TIME}s"
+          # Fail if over 5 seconds
+          if (( $(echo "$TIME > 5.0" | bc -l) )); then
+            echo "❌ Site too slow: ${TIME}s"
+            exit 1
+          fi
+          echo "✅ Response time OK: ${TIME}s"
+
+      - name: 📊 Health check summary
+        if: always()
+        run: |
+          echo "================================"
+          echo "GlideGo Health Check Complete"
+          echo "Time: $(date)"
+          echo "================================"
