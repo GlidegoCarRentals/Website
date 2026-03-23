@@ -163,13 +163,13 @@ export default function HostDashboard() {
   const [chatMsg, setChatMsg] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
 
+  const { dm, bg, surface, border, text, muted, accent } = useTheme(darkMode);
+
   useEffect(() => {
     if (!user) router.push('/login?redirect=/host/dashboard');
   }, [user, router]);
 
   if (!user) return null;
-
-  const { dm, bg, surface, border, text, muted, accent } = useTheme(darkMode);
   const accentBlue = '#3b82f6';
   const maxE = Math.max(...EARNINGS_DATA.map(e => e.amount));
   const sideW = sidebarOpen ? 250 : 64;

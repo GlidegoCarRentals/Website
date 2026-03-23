@@ -380,13 +380,13 @@ export default function AccountProfile() {
   const [activeTab, setActiveTab] = useState('Profile');
   const [darkMode, setDarkMode] = useState(true);
 
+  const { dm, bg, surface, surface2, border, text, muted, accent } = useTheme(darkMode);
+
   useEffect(() => {
     if (!user) router.push('/login?redirect=/account/profile');
   }, [user, router]);
 
   if (!user) return null;
-
-  const { dm, bg, surface, surface2, border, text, muted, accent } = useTheme(darkMode);
 
   const favCars = CARS.filter(c => user.favourites?.includes(String(c.id)));
 

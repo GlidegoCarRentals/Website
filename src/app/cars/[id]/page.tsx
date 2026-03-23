@@ -30,16 +30,16 @@ export default function CarDetailPage() {
     });
   }, [params.id]);
 
+  const [pickupDate, setPickupDate] = useState('');
+  const [returnDate, setReturnDate] = useState('');
+  const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
+  const [imgError, setImgError] = useState(false);
+
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
       <div style={{ fontSize: 40 }}>🚗</div>
     </div>
   );
-
-  const [pickupDate, setPickupDate] = useState('');
-  const [returnDate, setReturnDate] = useState('');
-  const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
-  const [imgError, setImgError] = useState(false);
 
   const LOCATIONS = ['Melbourne Airport (MEL)', 'Melbourne CBD', 'Tullamarine', 'Southbank', 'St Kilda', 'Richmond', 'Docklands', 'Dandenong', 'Frankston'];
 
