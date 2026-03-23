@@ -355,6 +355,23 @@ function SettingsTab({ user, accent, muted, border, dm, text }: any) {
 }
 
 // ─────────────────────────────────────────────
+// Theme Helper
+// ─────────────────────────────────────────────
+function useTheme(darkMode: boolean) {
+  const dm = darkMode;
+  return {
+    dm,
+    bg:       dm ? '#070d1a' : '#f0f4f8',
+    surface:  dm ? '#0d1528' : '#ffffff',
+    surface2: dm ? '#111d35' : '#f8fafc',
+    border:   dm ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
+    text:     dm ? '#f1f5f9' : '#0f172a',
+    muted:    dm ? '#64748b' : '#94a3b8',
+    accent:   '#10b981',
+  };
+}
+
+// ─────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────
 export default function AccountProfile() {
@@ -369,14 +386,7 @@ export default function AccountProfile() {
 
   if (!user) return null;
 
-  const dm = darkMode;
-  const bg = dm ? '#070d1a' : '#f0f4f8';
-  const surface = dm ? '#0d1528' : '#ffffff';
-  const surface2 = dm ? '#111d35' : '#f8fafc';
-  const border = dm ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
-  const text = dm ? '#f1f5f9' : '#0f172a';
-  const muted = dm ? '#64748b' : '#94a3b8';
-  const accent = '#10b981';
+  const { dm, bg, surface, surface2, border, text, muted, accent } = useTheme(darkMode);
 
   const favCars = CARS.filter(c => user.favourites?.includes(String(c.id)));
 
