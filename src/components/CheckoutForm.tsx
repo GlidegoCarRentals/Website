@@ -26,7 +26,7 @@ export default function CheckoutForm({ bookingId, totalAmount, onSuccess }: Chec
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/booking/confirmation?bookingId=${bookingId}`,
+          return_url: `${window.location.origin}/payment-success?bookingId=${bookingId}`,
         },
         redirect: 'if_required',
       });

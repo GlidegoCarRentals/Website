@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { CARS } from '@/lib/cars';
 import { fetchCarBySlugOrId } from '@/lib/db-cars';
+import { supabase } from '@/lib/auth-context';
 
 const CAR_FALLBACK: Record<string, string> = {
   'SUV': '🚙', 'Electric': '⚡', 'Van': '🛻', 'Luxury': '🚗', 'Compact': '🚗', 'Economy': '🚗'
@@ -15,7 +16,10 @@ export default function CarDetailPage() {
   const router = useRouter();
   const [car, setCar] = useState<any>(CARS.find(c => c.id === Number(params.id)) || null);
   const [loading, setLoading] = useState(true);
-
+const [pickupDate, setPickupDate] = useState('');
+const [returnDate, setReturnDate] = useState('');
+const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
+const [imgError, setImgError] = useState(false);
   useEffect(() => {
     const id = params.id as string;
     setLoading(true);
@@ -29,11 +33,6 @@ export default function CarDetailPage() {
       setLoading(false);
     });
   }, [params.id]);
-
-  const [pickupDate, setPickupDate] = useState('');
-  const [returnDate, setReturnDate] = useState('');
-  const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
-  const [imgError, setImgError] = useState(false);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
@@ -60,10 +59,50 @@ export default function CarDetailPage() {
   const serviceFee = Math.round(subtotal * 0.12);
   const total = subtotal + serviceFee;
 
-  const handleBook = () => {
+  const handleBook = async () => {
     if (!pickupDate || !returnDate) { alert('Please select pickup and return dates'); return; }
     if (!car.available) { alert('This car is currently unavailable. Please choose another vehicle.'); return; }
-    router.push(`/checkout?carId=${car.id}&amount=${total}`);
+
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert('Please login to book a car'); router.push('/login?redirect=/cars/' + car.id); return; }
+
+      // Create booking in Supabase
+      const { data: booking, error } = await supabase
+        .from('bookings')
+        .insert({
+          car_id: car.id,
+          guest_id: user.id,
+          host_id: car.host_id || null,
+          pickup_date: pickupDate,
+          return_date: returnDate,
+          pickup_location: pickupLocation,
+          days,
+          subtotal,
+          service_fee: serviceFee,
+          total_amount: total,
+          bond_amount: car.deposit || 0,
+          status: 'pending_payment',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Booking error:', error);
+        // If booking creation fails, still proceed with checkout using carId
+        router.push(`/checkout?carId=${car.id}&amount=${total}&pickup=${pickupDate}&return=${returnDate}`);
+        return;
+      }
+
+      // Redirect to checkout with bookingId
+      router.push(`/checkout?bookingId=${booking.id}&amount=${total}`);
+
+    } catch (err) {
+      console.error('Error:', err);
+      // Fallback — proceed to checkout anyway
+      router.push(`/checkout?carId=${car.id}&amount=${total}&pickup=${pickupDate}&return=${returnDate}`);
+    }
   };
 
   return (

@@ -4,30 +4,19 @@ import type { NextRequest } from 'next/server'
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Supabase auth cookie check karo
   const token =
     req.cookies.get('sb-access-token')?.value ||
-    req.cookies.get('supabase-auth-token')?.value ||
-    req.cookies.get(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`)?.value
+    req.cookies.get('sb-rtbmmuhsisccrxmndivx-auth-token')?.value ||
+    req.cookies.get('sb-rtbmmuhsisccrxmndivx-auth-token.0')?.value ||
+    [...req.cookies.getAll()].find(c => c.name.startsWith('sb-') && c.name.includes('auth'))?.value
 
-  // Protected routes
-  const protectedRoutes = [
-    '/dashboard',
-    '/bookings',
-    '/host',
-    '/admin',
-    '/profile',
-    '/settings',
-  ]
+  const protectedRoutes = ['/dashboard', '/host', '/admin', '/account']
 
-  const isProtected = protectedRoutes.some(route =>
-    pathname.startsWith(route)
-  )
+  const isProtected = protectedRoutes.some(route => pathname.startsWith(route))
 
-  // Logged out + protected route = login pe bhejo
   if (isProtected && !token) {
     const loginUrl = new URL('/login', req.url)
-    loginUrl.searchParams.set('redirectTo', pathname)
+    loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -35,12 +24,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/bookings/:path*',
-    '/host/:path*',
-    '/admin/:path*',
-    '/profile/:path*',
-    '/settings/:path*',
-  ],
+  matcher: ['/dashboard/:path*', '/host/:path*', '/admin/:path*', '/account/:path*'],
 }
