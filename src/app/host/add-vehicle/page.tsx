@@ -296,7 +296,7 @@ export default function AddVehiclePage() {
         {step===4 && (
           <div>
             <h2 className="playfair" style={{fontSize:28,fontWeight:800,color:'#0f172a',marginBottom:8}}>Availability Calendar</h2>
-            <p style={{fontSize:14,color:'#64748b',marginBottom:24}}>Block dates when your car isn't available. You can update this anytime from your dashboard.</p>
+            <p style={{fontSize:14,color:'#64748b',marginBottom:24}}>Block dates when your car isn&apos;t available. You can update this anytime from your dashboard.</p>
             <div style={{background:'white',borderRadius:16,border:'1px solid #f1f5f9',padding:24,marginBottom:24}}>
               <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4,marginBottom:16}}>
                 {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>(
@@ -321,7 +321,7 @@ export default function AddVehiclePage() {
             </div>
 
             <div style={{background:'#f0fdf4',borderRadius:14,border:'1px solid #bbf7d0',padding:20}}>
-              <div style={{fontSize:15,fontWeight:700,color:'#0f172a',marginBottom:12}}>🎉 You're all set!</div>
+              <div style={{fontSize:15,fontWeight:700,color:'#0f172a',marginBottom:12}}>🎉 You&apos;re all set!</div>
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
                 {[
                   `${form.make} ${form.model} ${form.year}`,

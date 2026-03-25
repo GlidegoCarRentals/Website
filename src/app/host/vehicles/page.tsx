@@ -13,7 +13,13 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 
 export default function HostVehiclesPage() {
   const [vehicles, setVehicles] = useState(
-    CARS.map(c => ({ ...c, status: c.available ? 'available' : 'booked', trips30d: Math.floor(Math.random() * 15 + 2), earnings30d: Math.floor(Math.random() * 2000 + 400) }))
+    CARS.map(c => ({
+      ...c,
+      status: c.available ? 'available' : 'booked',
+      // Deterministic values to keep React purity/lint happy.
+      trips30d: ((c.id * 7) % 15) + 2,
+      earnings30d: ((c.id * 1234) % 2000) + 400,
+    }))
   );
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -217,7 +223,7 @@ export default function HostVehiclesPage() {
             <div style={{ fontSize: 36, marginBottom: 16, textAlign: 'center' }}>🗑️</div>
             <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginBottom: 8, textAlign: 'center' }}>Remove Vehicle?</h3>
             <p style={{ fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 1.6, marginBottom: 24 }}>
-              This will remove <strong>{vehicles.find(v => v.id === deleteConfirm)?.name}</strong> from your fleet. Existing bookings won't be affected.
+              This will remove <strong>{vehicles.find(v => v.id === deleteConfirm)?.name}</strong> from your fleet. Existing bookings won&apos;t be affected.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
               <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#374151' }}>Cancel</button>

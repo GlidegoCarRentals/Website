@@ -295,7 +295,7 @@ export default function HomePage() {
             <div>
               <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.06)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:50,padding:'8px 18px',fontSize:13,color:'rgba(255,255,255,0.8)',marginBottom:28,fontWeight:500}}>
                 <span style={{width:8,height:8,borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 10px #10b981'}} />
-                Melbourne's #1 Rated — 4.9★ · 1,200+ Reviews
+                Melbourne&apos;s #1 Rated — 4.9★ · 1,200+ Reviews
               </div>
 
               <h1 className="playfair" style={{fontSize:'clamp(44px,5.5vw,78px)',lineHeight:1.02,color:'white',fontWeight:900,marginBottom:22,letterSpacing:'-0.02em'}}>
@@ -305,7 +305,7 @@ export default function HomePage() {
               </h1>
 
               <p style={{fontSize:17,color:'rgba(255,255,255,0.55)',lineHeight:1.8,marginBottom:36,maxWidth:500}}>
-                500+ vehicles. 70+ pickup locations. Zero hidden fees. From the airport to every suburb — we've got you covered.
+                500+ vehicles. 70+ pickup locations. Zero hidden fees. From the airport to every suburb — we&apos;ve got you covered.
               </p>
 
               <div style={{display:'flex',flexWrap:'wrap',gap:14,marginBottom:56}}>
@@ -381,7 +381,7 @@ export default function HomePage() {
           <div style={{textAlign:'center',marginBottom:52}}>
             <div style={{fontSize:11,fontWeight:700,color:'#34d399',letterSpacing:'0.15em',marginBottom:14}}>WHY CHOOSE GLIDEGO</div>
             <h2 className="playfair" style={{fontSize:'clamp(28px,4vw,48px)',color:'white',fontWeight:800,marginBottom:14}}>Driving Made Simple</h2>
-            <p style={{color:'rgba(255,255,255,0.45)',fontSize:15,maxWidth:500,margin:'0 auto'}}>We've removed every friction point so you can focus on the drive.</p>
+            <p style={{color:'rgba(255,255,255,0.45)',fontSize:15,maxWidth:500,margin:'0 auto'}}>We&apos;ve removed every friction point so you can focus on the drive.</p>
           </div>
           <div className="feat-grid" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:18}}>
             {[
@@ -588,7 +588,7 @@ export default function HomePage() {
             <div>
               <Image src="/logo.png" priority alt="GlideGo" width={130} height={29} style={{objectFit:'contain',filter:'brightness(1.1)',marginBottom:16}} />
               <p style={{color:'rgba(255,255,255,0.4)',fontSize:13,lineHeight:1.8,maxWidth:280,marginBottom:24}}>
-                Melbourne's most trusted car rental. Quality vehicles, transparent pricing, and 24/7 roadside assistance.
+                Melbourne&apos;s most trusted car rental. Quality vehicles, transparent pricing, and 24/7 roadside assistance.
               </p>
               <div style={{display:'flex',flexDirection:'column',gap:10}}>
                 {[{icon:'📍',text:'Level 2, 390 Collins Street, Melbourne VIC 3000'},{icon:'📞',text:'(03) 9600 1234'},{icon:'✉️',text:'hello@glidego.com.au'}].map(c=>(
