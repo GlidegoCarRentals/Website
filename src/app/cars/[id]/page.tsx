@@ -22,7 +22,6 @@ const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
 const [imgError, setImgError] = useState(false);
   useEffect(() => {
     const id = params.id as string;
-    setLoading(true);
     fetchCarBySlugOrId(id).then(dbCar => {
       if (dbCar) setCar(dbCar);
       else {
@@ -241,7 +240,7 @@ const [imgError, setImgError] = useState(false);
 
             {/* What's Included */}
             <div style={{ background: 'white', borderRadius: 16, padding: '24px', marginBottom: 20, border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-              <h2 className="playfair" style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>What's Included</h2>
+              <h2 className="playfair" style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>What&apos;s Included</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
                 {car.included.map((i: any) => (
                   <div key={i} className="included-row">

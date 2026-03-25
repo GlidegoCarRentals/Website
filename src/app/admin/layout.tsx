@@ -1,21 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // This runs only on the client (component is marked "use client").
+    try {
+      return localStorage.getItem('admin_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
   const pathname = usePathname();
-
-  useEffect(() => {
-    const auth = localStorage.getItem('admin_auth');
-    if (auth === 'true') setIsAuthenticated(true);
-    setLoading(false);
-  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,14 +32,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     localStorage.removeItem('admin_auth');
     setIsAuthenticated(false);
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   if (!isAuthenticated) {
     return (

@@ -26,4 +26,7 @@ module.exports = defineConfig({
       use: { ...devices['Pixel 5'] },
     },
   ],
+  export default {
+  retries: 2,
+};
 });

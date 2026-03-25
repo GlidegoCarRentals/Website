@@ -125,6 +125,7 @@ export default function HostMessagesPage() {
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const nextMessageIdRef = useRef<number>(1000);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -134,7 +135,7 @@ export default function HostMessagesPage() {
     const content = msg || text.trim();
     if (!content) return;
     const newMsg = {
-      id: Date.now(), from: 'host' as const, text: content,
+      id: nextMessageIdRef.current++, from: 'host' as const, text: content,
       time: new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' }),
       date: 'Today',
     };

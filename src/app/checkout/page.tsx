@@ -22,11 +22,7 @@ function CheckoutContent() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!referenceId || !totalAmount) {
-      setError('Missing booking details.');
-      setIsLoading(false);
-      return;
-    }
+    if (!referenceId || !totalAmount) return;
 
     fetch('/api/payments/create-payment-intent', {
       method: 'POST',
@@ -51,6 +47,23 @@ function CheckoutContent() {
   const handlePaymentSuccess = () => {
     window.location.href = `/payment-success?bookingId=${referenceId}`;
   };
+
+  if (!referenceId || !totalAmount) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-md">
+          <div className="text-4xl mb-4">❌</div>
+          <p className="text-red-700 font-medium mb-4">Missing booking details.</p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

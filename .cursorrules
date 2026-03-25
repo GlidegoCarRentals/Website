@@ -1,0 +1,14 @@
+Project: Car Rental Platform (Glidego)
+
+Tech Stack:
+- Next.js 15
+- Firebase (Database + Auth)
+- Stripe (Payments)
+- Vercel (Deployment)
+
+Rules:
+- Clean and production-ready code only
+- Always fix errors, not just suggest
+- Maintain existing structure
+- Do not break working features
+- Always explain changes simply
