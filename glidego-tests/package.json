@@ -20,4 +20,10 @@
     "playwright": "^1.58.2",
     "playwright-core": "^1.58.2"
   }
+  "scripts": {
+  "lint:fix": "eslint . --fix",
+  "format": "prettier --write .",
+  "test": "playwright test",
+  "audit:fix": "npm audit fix"
+}
 }

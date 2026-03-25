@@ -12,7 +12,7 @@ export function middleware(req: NextRequest) {
 
   const protectedRoutes = ['/dashboard', '/host', '/admin', '/account']
 
-  const isProtected = protectedRoutes.some(route => pathname.startsWith(route))
+  const isProtected = false
 
   if (isProtected && !token) {
     const loginUrl = new URL('/login', req.url)
