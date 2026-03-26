@@ -1,30 +1,39 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin, hash } = new URL(request.url);
-  const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
-  const errorParam = searchParams.get('error');
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/'
 
-  // If there's an error param, redirect to login
-  if (errorParam) {
-    return NextResponse.redirect(`${origin}/login?error=${errorParam}`);
-  }
-
-  // PKCE flow — code exchange
   if (code) {
-    const supabase = createClient(
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {}
+          },
+        },
+      }
+    )
+
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  // Implicit flow — token is in URL hash (handled client-side)
-  // Just redirect to home and let client-side Supabase handle the hash
-  return NextResponse.redirect(`${origin}/`);
+  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
 }

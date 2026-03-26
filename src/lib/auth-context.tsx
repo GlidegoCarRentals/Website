@@ -1,11 +1,16 @@
 'use client';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
-const supabase = createClient(
+// ─────────────────────────────────────────────
+// Supabase client — SSR compatible
+// ─────────────────────────────────────────────
+const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+export { supabase };
 
 export interface User {
   id: string;
@@ -75,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+
+    // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       if (session?.user) {
@@ -83,6 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (mounted) setIsLoading(false);
     });
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -95,7 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) setIsLoading(false);
       }
     );
-    return () => { mounted = false; subscription.unsubscribe(); };
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -117,8 +130,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!name.trim()) return { ok: false, error: 'Please enter your full name.' };
     if (password.length < 6) return { ok: false, error: 'Password must be at least 6 characters.' };
     const { data, error } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { full_name: name, role } },
+      email,
+      password,
+      options: {
+        data: { full_name: name, role },
+      },
     });
     if (error) {
       if (error.message.includes('already registered')) return { ok: false, error: 'This email is already registered. Please sign in.' };
@@ -136,7 +152,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     });
   };
 
@@ -152,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
     if (updates.avatar !== undefined) dbUpdates.avatar_url = updates.avatar;
     if (updates.role !== undefined) dbUpdates.role = updates.role;
+    if (updates.promoCredits !== undefined) dbUpdates.promo_credits = updates.promoCredits;
     if (Object.keys(dbUpdates).length > 0) {
       await supabase.from('users').update(dbUpdates).eq('id', user.id);
     }
@@ -189,5 +212,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
-
-export { supabase };
