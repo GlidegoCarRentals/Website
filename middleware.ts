@@ -1,28 +1,38 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
 
-  const token =
-    req.cookies.get('sb-access-token')?.value ||
-    req.cookies.get('sb-rtbmmuhsisccrxmndivx-auth-token')?.value ||
-    req.cookies.get('sb-rtbmmuhsisccrxmndivx-auth-token.0')?.value ||
-    [...req.cookies.getAll()].find(c => c.name.startsWith('sb-') && c.name.includes('auth'))?.value
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
 
-  const protectedRoutes = ['/dashboard', '/host', '/admin', '/account']
+  // IMPORTANT: Refresh session — cookies update hoti hain
+  await supabase.auth.getUser()
 
-  const isProtected = false
-
-  if (isProtected && !token) {
-    const loginUrl = new URL('/login', req.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  return NextResponse.next()
+  return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/host/:path*', '/admin/:path*', '/account/:path*'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
