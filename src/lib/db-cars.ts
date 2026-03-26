@@ -171,6 +171,26 @@ export async function fetchCars(): Promise<ReturnType<typeof dbCarToUiCar>[]> {
   }
 }
 
+// Host-scoped fetch used by `/host/vehicles`
+export async function fetchCarsByHostId(hostId: string): Promise<ReturnType<typeof dbCarToUiCar>[]> {
+  try {
+    const { data, error } = await supabase
+      .from('cars')
+      .select(CARS_SELECT)
+      .eq('host_id', hostId)
+      .eq('status', 'active')
+      .order('total_trips', { ascending: false });
+
+    if (error) throw error;
+    if (!data || data.length === 0) return [];
+
+    return data.map(flattenCarWithHost).map(dbCarToUiCar);
+  } catch (err) {
+    console.warn('Host DB fetch failed, using empty list:', err);
+    return [];
+  }
+}
+
 // Fetch single car by slug or id
 export async function fetchCarBySlugOrId(slugOrId: string): Promise<ReturnType<typeof dbCarToUiCar> | null> {
   try {

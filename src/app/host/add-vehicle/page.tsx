@@ -1,8 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import RegoLookup from '@/components/RegoLookup';
+import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/components/Toast';
 
 const STEPS = ['Basic Info', 'Features', 'Photos', 'Pricing', 'Availability'];
 const CATEGORIES = ['Economy','Compact','SUV','Luxury','Sports','Van','Electric','Ute'];
@@ -21,11 +24,19 @@ const LOCATIONS = ['Melbourne Airport (MEL)','Melbourne CBD','Tullamarine','Sout
 
 export default function AddVehiclePage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+  const toast = useToast();
+
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState('');
+
   const [form, setForm] = useState({
     make:'', model:'', year:'2024', category:'SUV', fuel:'Petrol', transmission:'Automatic',
-    seats:'5', color:'', rego:'', description:'',
+    seats:'5', color:'', rego:'', regoState:'VIC', engine:'', title:'',
+    description:'',
     features:[] as string[],
     photos:[] as string[],
     pricePerDay:'', weeklyDiscount:'10', monthlyDiscount:'20',
@@ -34,23 +45,125 @@ export default function AddVehiclePage() {
     bondAmount:'500',
   });
 
+  const isHostUser = user?.role === 'host' || user?.role === 'admin';
+  const ready = !authLoading && isHostUser;
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isHostUser) {
+      router.replace(`/login?redirect=/host/add-vehicle`);
+    }
+  }, [authLoading, isHostUser, router]);
+
   const update = (k: string, v: any) => setForm(f => ({...f,[k]:v}));
   const toggleFeature = (f: string) => update('features', form.features.includes(f) ? form.features.filter(x=>x!==f) : [...form.features,f]);
 
   const stepValid = () => {
-    if (step===0) return form.make && form.model && form.year && form.category;
+    if (step===0) {
+      const descWords = form.description.split(' ').filter(Boolean).length;
+      return form.make && form.model && form.year && form.category && form.color && descWords >= 20;
+    }
     if (step===1) return true;
-    if (step===2) return true;
+    if (step===2) return form.photos.length > 0;
     if (step===3) return form.pricePerDay;
     return true;
   };
 
   const handleSubmit = async () => {
+    if (!ready) return;
+    setSubmitError(null);
     setSubmitting(true);
-    await new Promise(r=>setTimeout(r,1500));
-    alert('✅ Vehicle listed successfully! It will appear in the fleet after review.');
-    router.push('/host/vehicles');
+    try {
+      if (!form.make || !form.model) throw new Error('Please complete basic vehicle info.');
+      if (!form.description.trim()) throw new Error('Please add a vehicle description.');
+      if (!form.pricePerDay) throw new Error('Please add your daily price.');
+      if (!form.photos.length) throw new Error('Please add at least one image URL in Step 2.');
+
+      const res = await fetch('/api/host/cars/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title || `${form.make} ${form.model}`,
+          rego: form.rego,
+          regoState: form.regoState,
+
+          make: form.make,
+          model: form.model,
+          year: Number(form.year),
+          colour: form.color,
+          category: form.category,
+
+          fuel: form.fuel,
+          transmission: form.transmission,
+          seats: Number(form.seats),
+          engine: form.engine,
+
+          description: form.description,
+          features: form.features,
+          photos: form.photos,
+
+          pricePerDay: Number(form.pricePerDay),
+          weeklyDiscount: Number(form.weeklyDiscount),
+          monthlyDiscount: Number(form.monthlyDiscount),
+          bondAmount: Number(form.bondAmount),
+
+          location: form.location,
+          minDays: Number(form.minDays),
+          minAge: Number(form.minAge),
+
+          instantBook: form.instantBook,
+          deliveryAvailable: form.deliveryAvailable,
+          deliveryFee: Number(form.deliveryFee),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to publish listing');
+      }
+
+      toast.success('✅ Vehicle listed successfully! Redirecting to your fleet...');
+      setTimeout(() => router.push('/host/vehicles'), 650);
+    } catch (err: any) {
+      const msg = err?.message || 'Something went wrong';
+      setSubmitError(msg);
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const displayYearRange = useMemo(() => Array.from({ length: 15 }, (_, i) => 2024 - i), []);
+
+  const addPhotoUrl = () => {
+    const url = photoUrl.trim();
+    if (!url) return;
+    if (!/^https?:\/\//i.test(url)) {
+      setSubmitError('Please enter a valid URL starting with http:// or https://');
+      return;
+    }
+    if (form.photos.length >= 20) {
+      setSubmitError('Max 20 photos allowed.');
+      return;
+    }
+    setForm(f => ({ ...f, photos: Array.from(new Set([...f.photos, url])) }));
+    setPhotoUrl('');
+    setSubmitError(null);
+  };
+
+  const removePhotoUrl = (url: string) => {
+    setForm(f => ({ ...f, photos: f.photos.filter(p => p !== url) }));
+  };
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontWeight: 800 }}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (!ready) return null;
 
   return (
     <div style={{fontFamily:"'Inter',-apple-system,sans-serif",minHeight:'100vh',background:'#f8fafc'}}>
@@ -107,16 +220,36 @@ export default function AddVehiclePage() {
             <h2 className="playfair" style={{fontSize:28,fontWeight:800,color:'#0f172a',marginBottom:8}}>Basic Vehicle Info</h2>
             <p style={{fontSize:14,color:'#64748b',marginBottom:28}}>Tell us about your vehicle</p>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>
-              {[{k:'make',l:'MAKE / BRAND',ph:'e.g. Toyota'},{k:'model',l:'MODEL',ph:'e.g. Camry'},{k:'color',l:'COLOR',ph:'e.g. White'},{k:'rego',l:'REGISTRATION PLATE',ph:'e.g. ABC123'}].map(f=>(
+              {[{k:'make',l:'MAKE / BRAND',ph:'e.g. Toyota'},{k:'model',l:'MODEL',ph:'e.g. Camry'},{k:'color',l:'COLOR',ph:'e.g. White'}].map(f=>(
                 <div key={f.k}>
                   <label>{f.l}</label>
                   <input className="inp" value={(form as any)[f.k]} onChange={e=>update(f.k,e.target.value)} placeholder={f.ph} />
                 </div>
               ))}
+              <RegoLookup
+                rego={form.rego}
+                onRegChange={(next) => update('rego', next)}
+                onCarDetails={(d) => {
+                  update('make', d.make);
+                  update('model', d.model);
+                  update('year', d.year);
+                  update('color', d.color);
+                  if ((d as any).bodyType) update('category', (d as any).bodyType);
+                  if ((d as any).fuelType) update('fuel', (d as any).fuelType);
+                  if ((d as any).transmission) update('transmission', (d as any).transmission);
+                  if ((d as any).engine) update('engine', (d as any).engine);
+                }}
+              />
+              <div>
+                <label>REGO STATE</label>
+                <select className="inp" value={form.regoState} onChange={e=>update('regoState',e.target.value)}>
+                  {['VIC','NSW','QLD','SA','WA','TAS','ACT','NT'].map(s=><option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
               <div>
                 <label>YEAR</label>
                 <select className="inp" value={form.year} onChange={e=>update('year',e.target.value)}>
-                  {Array.from({length:15},(_,i)=>2024-i).map(y=><option key={y} value={y}>{y}</option>)}
+                  {displayYearRange.map(y=><option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
               <div>
@@ -136,6 +269,10 @@ export default function AddVehiclePage() {
                 <select className="inp" value={form.transmission} onChange={e=>update('transmission',e.target.value)}>
                   {TRANSMISSIONS.map(t=><option key={t} value={t}>{t}</option>)}
                 </select>
+              </div>
+              <div>
+                <label>ENGINE (AUTO-FILL)</label>
+                <input className="inp" value={form.engine} onChange={e=>update('engine',e.target.value)} placeholder="e.g. 2.0L Turbo Petrol" />
               </div>
               <div>
                 <label>SEATS</label>
@@ -158,6 +295,17 @@ export default function AddVehiclePage() {
               <div style={{fontSize:11,color:'#94a3b8',marginTop:4}}>
                 {form.description.split(' ').filter(Boolean).length} words · Aim for 100+ for better search ranking
               </div>
+            </div>
+
+            <div style={{marginTop:18}}>
+              <label>VEHICLE TITLE</label>
+              <input
+                className="inp"
+                value={form.title}
+                onChange={e=>update('title',e.target.value)}
+                placeholder={`${form.make || 'Toyota'} ${form.model || 'Camry'} • ${form.rego ? form.rego : 'REGO'}`}
+              />
+              <div style={{fontSize:11,color:'#94a3b8',marginTop:4}}>Used for listing display and search.</div>
             </div>
           </div>
         )}
@@ -191,6 +339,47 @@ export default function AddVehiclePage() {
               <div style={{fontSize:13,color:'#64748b',marginBottom:16}}>JPG, PNG up to 10MB each · Recommended: exterior front, back, sides, interior, dashboard</div>
               <div style={{display:'inline-block',background:'linear-gradient(135deg,#1d4ed8,#059669)',color:'white',padding:'10px 24px',borderRadius:10,fontSize:14,fontWeight:600}}>Choose Photos</div>
             </div>
+
+            <div style={{marginTop:18}}>
+              <label>Add Photo URL</label>
+              <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                <input className="inp" value={photoUrl} onChange={e=>setPhotoUrl(e.target.value)} placeholder="https://example.com/photo.jpg" />
+                <button type="button"
+                  onClick={addPhotoUrl}
+                  disabled={!photoUrl.trim()}
+                  className="next-btn"
+                  style={{padding:'12px 18px',fontSize:14}}>
+                  + Add
+                </button>
+              </div>
+              <div style={{fontSize:11,color:'#94a3b8',marginTop:6}}>
+                For now we store image URLs (mock). Next we can plug Supabase Storage uploads.
+              </div>
+
+              {form.photos.length > 0 && (
+                <div style={{marginTop:14,display:'flex',flexWrap:'wrap',gap:10}}>
+                  {form.photos.map((p) => (
+                    <div key={p} style={{width:108}}>
+                      <div style={{width:108,height:66,borderRadius:10,overflow:'hidden',border:'1px solid #e2e8f0',background:'white',marginBottom:6}}>
+                        <img
+                          src={p}
+                          alt="vehicle"
+                          style={{width:'100%',height:'100%',objectFit:'cover'}}
+                          onError={(e)=>{(e.currentTarget as HTMLImageElement).style.display='none'}}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={()=>removePhotoUrl(p)}
+                        style={{width:'100%',padding:'7px 0',border:'none',borderRadius:10,background:'#fef2f2',color:'#dc2626',fontWeight:800,cursor:'pointer'}}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div style={{marginTop:20}}>
               <div style={{fontSize:13,fontWeight:700,color:'#0f172a',marginBottom:12}}>📋 Photo checklist for maximum bookings:</div>
               {['Front exterior (daytime, clear background)','Rear exterior','Driver & passenger sides','Interior front seats','Interior rear seats','Dashboard & infotainment','Boot / cargo space','Any special features (sunroof, charging port, etc.)'].map(tip=>(
@@ -339,6 +528,11 @@ export default function AddVehiclePage() {
         )}
 
         {/* Navigation buttons */}
+        {submitError && (
+          <div style={{maxWidth:800, margin:'14px auto 0', padding:'12px 16px', background:'#fef2f2', border:'1px solid #fecaca', borderRadius:12, color:'#b91c1c', fontWeight:800, fontSize:13}}>
+            ⚠️ {submitError}
+          </div>
+        )}
         <div style={{display:'flex',justifyContent:'space-between',marginTop:36}}>
           <button onClick={()=>setStep(s=>Math.max(0,s-1))} className="back-btn" style={{display:step===0?'none':'block'}}>
             ← Back

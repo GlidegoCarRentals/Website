@@ -1,8 +1,16 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CARS } from '@/lib/cars';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { fetchCarsByHostId } from '@/lib/db-cars';
+
+function hashToInt(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   available: { bg: '#f0fdf4', color: '#15803d' },
@@ -12,20 +20,45 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export default function HostVehiclesPage() {
-  const [vehicles, setVehicles] = useState(
-    CARS.map(c => ({
-      ...c,
-      status: c.available ? 'available' : 'booked',
-      // Deterministic values to keep React purity/lint happy.
-      trips30d: ((c.id * 7) % 15) + 2,
-      earnings30d: ((c.id * 1234) % 2000) + 400,
-    }))
-  );
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const isHostUser = user?.role === 'host' || user?.role === 'admin';
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isHostUser) {
+      router.replace(`/login?redirect=/host/vehicles`);
+      return;
+    }
+
+    (async () => {
+      setLoading(true);
+      const cars = await fetchCarsByHostId(user.id);
+      setVehicles(
+        cars.map(c => {
+          const idStr = String(c.id);
+          const h = hashToInt(idStr);
+          return {
+            ...c,
+            id: idStr,
+            status: c.available ? 'available' : 'inactive',
+            trips30d: (h % 15) + 2,
+            earnings30d: (h % 2000) + 400,
+          };
+        })
+      );
+      setLoading(false);
+    })();
+  }, [authLoading, isHostUser, router, user?.id]);
 
   const filtered = vehicles.filter(v => {
     const matchSearch = v.name.toLowerCase().includes(search.toLowerCase());
@@ -34,29 +67,37 @@ export default function HostVehiclesPage() {
   });
 
   const startEdit = (v: typeof vehicles[0]) => {
-    setEditingId(v.id);
+    setEditingId(String(v.id));
     setEditPrice(String(v.price));
   };
 
-  const saveEdit = (id: number) => {
-    setVehicles(vs => vs.map(v => v.id === id ? { ...v, price: Number(editPrice) } : v));
+  const saveEdit = (id: string) => {
+    setVehicles(vs => vs.map(v => String(v.id) === id ? { ...v, price: Number(editPrice) } : v));
     setEditingId(null);
   };
 
-  const toggleStatus = (id: number) => {
+  const toggleStatus = (id: string) => {
     setVehicles(vs => vs.map(v => {
-      if (v.id !== id) return v;
+      if (String(v.id) !== id) return v;
       const next: Record<string, string> = { available: 'maintenance', maintenance: 'inactive', inactive: 'available', booked: 'available' };
       return { ...v, status: next[v.status] || 'available' };
     }));
   };
 
-  const deleteVehicle = (id: number) => {
+  const deleteVehicle = (id: string) => {
     setVehicles(vs => vs.filter(v => v.id !== id));
     setDeleteConfirm(null);
   };
 
   const totalEarnings = vehicles.reduce((s, v) => s + v.earnings30d, 0);
+
+  if (loading) {
+    return (
+      <div style={{ fontFamily: "'Inter',-apple-system,sans-serif", minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontWeight: 800 }}>
+        Loading your vehicles...
+      </div>
+    );
+  }
 
   return (
     <div style={{ fontFamily: "'Inter',-apple-system,sans-serif", minHeight: '100vh', background: '#f8fafc' }}>
