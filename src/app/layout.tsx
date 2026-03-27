@@ -1,12 +1,3 @@
-// Top pe add karo
-'use client' ke baad:
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-
-// Children wrap karo:
-<ErrorBoundary>
-  {children}
-</ErrorBoundary>
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
