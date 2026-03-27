@@ -154,7 +154,7 @@ function useTheme(darkMode: boolean) {
 // Main Dashboard
 // ─────────────────────────────────────────────
 export default function HostDashboard() {
-  const { user, logout } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -166,10 +166,10 @@ export default function HostDashboard() {
   const { dm, bg, surface, border, text, muted, accent } = useTheme(darkMode);
 
   useEffect(() => {
-    if (!user) router.push('/login?redirect=/host/dashboard');
-  }, [user, router]);
+    if (!isLoading && !user) router.push('/login?redirect=/host/dashboard');
+  }, [isLoading, user, router]);
 
-  if (!user) return null;
+  if (isLoading || !user) return null;
   const accentBlue = '#3b82f6';
   const maxE = Math.max(...EARNINGS_DATA.map(e => e.amount));
   const sideW = sidebarOpen ? 250 : 64;

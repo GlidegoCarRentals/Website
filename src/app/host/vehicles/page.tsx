@@ -19,6 +19,13 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   inactive: { bg: '#f8fafc', color: '#94a3b8' },
 };
 
+function normalizeVehicleStatus(status: string | undefined, available: boolean) {
+  if (status === 'booked' || status === 'maintenance' || status === 'inactive') {
+    return status;
+  }
+  return available ? 'available' : 'inactive';
+}
+
 export default function HostVehiclesPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -50,7 +57,7 @@ export default function HostVehiclesPage() {
           return {
             ...c,
             id: idStr,
-            status: c.available ? 'available' : 'inactive',
+            status: normalizeVehicleStatus((c as any).status, c.available),
             trips30d: (h % 15) + 2,
             earnings30d: (h % 2000) + 400,
           };

@@ -41,7 +41,8 @@ export default function VehiclesPage() {
     if (editingId !== null) {
       setVehicles(vehicles.map(v => v.id === editingId ? { ...v, ...form } : v));
     } else {
-      setVehicles([...vehicles, { ...form, id: Date.now() }]);
+      const nextId = vehicles.reduce((max, vehicle) => Math.max(max, vehicle.id), 0) + 1;
+      setVehicles([...vehicles, { ...form, id: nextId }]);
     }
     setForm(defaultForm);
     setShowForm(false);

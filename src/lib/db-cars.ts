@@ -82,6 +82,7 @@ export function dbCarToUiCar(car: DbCar) {
     deposit: car.deposit_amount,
     minAge: car.min_age_years,
     minDays: 1,
+    status: car.status,
     glidego_verified: car.glidego_verified,
     specs: getSpecsForCar(car.make, car.model, car.fuel_type),
     included: ['Insurance Included', 'Unlimited KM in VIC', 'Free Cancellation', '24/7 Roadside Assist'],
@@ -178,7 +179,7 @@ export async function fetchCarsByHostId(hostId: string): Promise<ReturnType<type
       .from('cars')
       .select(CARS_SELECT)
       .eq('host_id', hostId)
-      .eq('status', 'active')
+      .neq('status', 'deleted')
       .order('total_trips', { ascending: false });
 
     if (error) throw error;

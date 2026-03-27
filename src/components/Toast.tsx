@@ -39,6 +39,14 @@ function animateAndRemove(id: string, setToasts: React.Dispatch<React.SetStateAc
   }
 }
 
+function createToastId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `toast-${Date.now()}-${Math.round(performance.now())}`;
+}
+
 // ─────────────────────────────────────────────
 // Single Toast Item
 // ─────────────────────────────────────────────
@@ -68,7 +76,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = Math.random().toString(36).slice(2);
+    const id = createToastId();
     setToasts(prev => [...prev.slice(-3), { id, type, message }]);
     setTimeout(() => animateAndRemove(id, setToasts), 4000);
   }, []);

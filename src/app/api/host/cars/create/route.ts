@@ -49,6 +49,12 @@ function slugify(s: string) {
     .replace(/(^-|-$)/g, '');
 }
 
+function normalizeRego(rego?: string) {
+  if (!rego) return null;
+  const normalized = rego.replace(/[\s-]/g, '').toUpperCase();
+  return normalized || null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = createServerClient(
@@ -75,8 +81,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as CreateCarPayload;
-    if (!body?.make || !body?.model) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!body?.make?.trim() || !body?.model?.trim()) {
+      return NextResponse.json({ error: 'Make and model are required.' }, { status: 400 });
     }
 
     // Ensure user is a host (defense-in-depth; RLS should also enforce this).
@@ -102,26 +108,41 @@ export async function POST(req: NextRequest) {
 
     const features = Array.isArray(body.features) ? body.features : [];
     const photos = Array.isArray(body.photos) ? body.photos : [];
+    const rego = normalizeRego(body.rego);
 
     if (photos.length === 0) {
       return NextResponse.json({ error: 'Please add at least one photo URL.' }, { status: 400 });
+    }
+
+    if (!body.description?.trim()) {
+      return NextResponse.json({ error: 'Please add a vehicle description.' }, { status: 400 });
+    }
+
+    if (priceDaily < 10) {
+      return NextResponse.json({ error: 'Daily price must be at least $10.' }, { status: 400 });
+    }
+
+    if (year < 1990 || year > new Date().getFullYear() + 1) {
+      return NextResponse.json({ error: 'Please enter a valid vehicle year.' }, { status: 400 });
     }
 
     if (!body.location) {
       return NextResponse.json({ error: 'Missing location' }, { status: 400 });
     }
 
-    const title = body.title?.trim() || `${body.make} ${body.model}`;
+    const title = body.title?.trim() || `${body.make.trim()} ${body.model.trim()}`;
 
-    const slug = slugify(`${title}-${body.location}-${year}`);
+    const slug = slugify(`${title}-${body.location}-${year}-${crypto.randomUUID().slice(0, 8)}`);
 
     const insertPayload: Record<string, any> = {
       host_id: user.id,
+      rego,
+      rego_state: body.regoState || null,
 
-      make: body.make,
-      model: body.model,
+      make: body.make.trim(),
+      model: body.model.trim(),
       year,
-      colour: body.colour || body.colour?.trim(),
+      colour: body.colour?.trim() || null,
 
       body_type: body.category,
       engine: body.engine || 'Auto (mock) engine',
@@ -164,7 +185,7 @@ export async function POST(req: NextRequest) {
       features,
 
       title,
-      description: body.description || '',
+      description: body.description.trim(),
       house_rules: null,
 
       status: 'active',
@@ -176,7 +197,11 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase.from('cars').insert(insertPayload).select('*').single();
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      const status = error.code === '23505' ? 409 : 500;
+      const message = error.code === '23505'
+        ? 'A vehicle with this registration or slug already exists.'
+        : error.message;
+      return NextResponse.json({ error: message }, { status });
     }
 
     return NextResponse.json({ success: true, carId: data?.id || null }, { status: 200 });
@@ -187,4 +212,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

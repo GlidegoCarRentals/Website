@@ -29,6 +29,7 @@ export default function AddVehiclePage() {
 
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState('');
@@ -55,8 +56,18 @@ export default function AddVehiclePage() {
     }
   }, [authLoading, isHostUser, router]);
 
-  const update = (k: string, v: any) => setForm(f => ({...f,[k]:v}));
+  const update = (k: string, v: any, options?: { markTouched?: boolean }) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    if (options?.markTouched !== false) {
+      setTouchedFields((prev) => ({ ...prev, [k]: true }));
+    }
+  };
   const toggleFeature = (f: string) => update('features', form.features.includes(f) ? form.features.filter(x=>x!==f) : [...form.features,f]);
+
+  const applyAutoFill = (key: string, value?: string) => {
+    if (!value || touchedFields[key]) return;
+    update(key, value, { markTouched: false });
+  };
 
   const stepValid = () => {
     if (step===0) {
@@ -230,14 +241,20 @@ export default function AddVehiclePage() {
                 rego={form.rego}
                 onRegChange={(next) => update('rego', next)}
                 onCarDetails={(d) => {
-                  update('make', d.make);
-                  update('model', d.model);
-                  update('year', d.year);
-                  update('color', d.color);
-                  if ((d as any).bodyType) update('category', (d as any).bodyType);
-                  if ((d as any).fuelType) update('fuel', (d as any).fuelType);
-                  if ((d as any).transmission) update('transmission', (d as any).transmission);
-                  if ((d as any).engine) update('engine', (d as any).engine);
+                  applyAutoFill('make', d.make);
+                  applyAutoFill('model', d.model);
+                  applyAutoFill('year', d.year);
+                  applyAutoFill('color', d.color);
+                  if ((d as any).bodyType && CATEGORIES.includes((d as any).bodyType)) {
+                    applyAutoFill('category', (d as any).bodyType);
+                  }
+                  if ((d as any).fuelType && FUELS.includes((d as any).fuelType)) {
+                    applyAutoFill('fuel', (d as any).fuelType);
+                  }
+                  if ((d as any).transmission && TRANSMISSIONS.includes((d as any).transmission)) {
+                    applyAutoFill('transmission', (d as any).transmission);
+                  }
+                  if ((d as any).engine) applyAutoFill('engine', (d as any).engine);
                 }}
               />
               <div>

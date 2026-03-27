@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const error = searchParams.get('error')
-  const next = searchParams.get('next') ?? '/'
+  const nextParam = searchParams.get('next') ?? '/'
+  const next = nextParam.startsWith('/') ? nextParam : '/'
 
   // Supabase returned an error directly (e.g. trigger failure)
   if (error) {
@@ -54,8 +55,9 @@ export async function GET(request: NextRequest) {
             'User',
           role: authUser.user_metadata?.role || 'guest',
           promo_credits: 20,
+          email_verified: Boolean(authUser.email_confirmed_at),
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'id', ignoreDuplicates: false })
+        }, { onConflict: 'id' })
       }
 
       return NextResponse.redirect(`${origin}${next}`)

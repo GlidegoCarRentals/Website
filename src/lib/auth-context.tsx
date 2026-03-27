@@ -9,6 +9,13 @@ const supabase = createBrowserClient(
 
 export { supabase };
 
+const VALID_ROLES = ['guest', 'host', 'admin'] as const;
+type ValidRole = (typeof VALID_ROLES)[number];
+
+function sanitizeRole(role: unknown): ValidRole {
+  return VALID_ROLES.includes(role as ValidRole) ? (role as ValidRole) : 'guest';
+}
+
 export interface User {
   id: string;
   name: string;
@@ -34,7 +41,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   signup: (name: string, email: string, password: string, role?: 'guest' | 'host') => Promise<{ ok: boolean; error?: string }>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: (nextPath?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   toggleFavourite: (carId: string) => Promise<void>;
@@ -62,8 +69,7 @@ async function fetchProfile(userId: string): Promise<User | null> {
     if (!data) return null;
 
     // Validate role — prevent invalid roles
-    const validRoles = ['guest', 'host', 'admin'];
-    const role = validRoles.includes(data.role) ? data.role : 'guest';
+    const role = sanitizeRole(data.role);
 
     return {
       id: data.id,
@@ -91,6 +97,30 @@ async function fetchProfile(userId: string): Promise<User | null> {
   }
 }
 
+async function ensureUserProfile(authUser: {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+  email_confirmed_at?: string | null;
+}) {
+  await supabase.from('users').upsert(
+    {
+      id: authUser.id,
+      email: authUser.email ?? '',
+      full_name:
+        authUser.user_metadata?.full_name ||
+        authUser.user_metadata?.name ||
+        authUser.email?.split('@')[0] ||
+        'User',
+      role: sanitizeRole(authUser.user_metadata?.role),
+      promo_credits: 20,
+      email_verified: Boolean(authUser.email_confirmed_at),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'id' }
+  );
+}
+
 // ─────────────────────────────────────────────
 // AuthProvider
 // ─────────────────────────────────────────────
@@ -105,7 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && mounted) {
-          const profile = await fetchProfile(session.user.id);
+          let profile = await fetchProfile(session.user.id);
+          if (!profile) {
+            await ensureUserProfile(session.user);
+            profile = await fetchProfile(session.user.id);
+          }
           if (mounted) setUser(profile);
         }
       } catch (err) {
@@ -125,18 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const authUser = session.user;
 
           // Ensure public.users row exists (handles trigger failure on OAuth)
-          await supabase.from('users').upsert({
-            id: authUser.id,
-            email: authUser.email ?? '',
-            full_name:
-              authUser.user_metadata?.full_name ||
-              authUser.user_metadata?.name ||
-              authUser.email?.split('@')[0] ||
-              'User',
-            role: authUser.user_metadata?.role || 'guest',
-            promo_credits: 20,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'id', ignoreDuplicates: true });
+          await ensureUserProfile(authUser);
 
           const profile = await fetchProfile(authUser.id);
           if (mounted) {
@@ -190,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.user) {
+        await ensureUserProfile(data.user);
         const profile = await fetchProfile(data.user.id);
         setUser(profile);
         return { ok: true };
@@ -239,11 +263,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.user) {
-        // Update user profile in DB
-        await supabase
-          .from('users')
-          .update({ role, full_name: name.trim(), promo_credits: 20 })
-          .eq('id', data.user.id);
+        await ensureUserProfile({
+          ...data.user,
+          user_metadata: {
+            ...data.user.user_metadata,
+            full_name: name.trim(),
+            role,
+          },
+        });
 
         const profile = await fetchProfile(data.user.id);
         setUser(profile);
@@ -260,12 +287,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ─────────────────────────────────────────────
   // Google OAuth
   // ─────────────────────────────────────────────
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (nextPath = '/') => {
+    const next = nextPath.startsWith('/') ? nextPath : '/';
     try {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

@@ -375,7 +375,7 @@ function useTheme(darkMode: boolean) {
 // Main Page
 // ─────────────────────────────────────────────
 export default function AccountProfile() {
-  const { user, updateUser, toggleFavourite, logout } = useAuth();
+  const { user, isLoading, updateUser, toggleFavourite, logout } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Profile');
   const [darkMode, setDarkMode] = useState(true);
@@ -383,10 +383,10 @@ export default function AccountProfile() {
   const { dm, bg, surface, surface2, border, text, muted, accent } = useTheme(darkMode);
 
   useEffect(() => {
-    if (!user) router.push('/login?redirect=/account/profile');
-  }, [user, router]);
+    if (!isLoading && !user) router.push('/login?redirect=/account/profile');
+  }, [isLoading, user, router]);
 
-  if (!user) return null;
+  if (isLoading || !user) return null;
 
   const favCars = CARS.filter(c => user.favourites?.includes(String(c.id)));
 
