@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { fetchCarsByHostId } from '@/lib/db-cars';
+import { fetchCarsByHostId, updateCarPrice, updateCarStatus, deleteCarById } from '@/lib/db-cars';
 
 function hashToInt(s: string) {
   let h = 0;
@@ -71,22 +71,28 @@ export default function HostVehiclesPage() {
     setEditPrice(String(v.price));
   };
 
-  const saveEdit = (id: string) => {
-    setVehicles(vs => vs.map(v => String(v.id) === id ? { ...v, price: Number(editPrice) } : v));
+  const saveEdit = async (id: string) => {
+    const newPrice = Number(editPrice);
+    setVehicles(vs => vs.map(v => String(v.id) === id ? { ...v, price: newPrice } : v));
     setEditingId(null);
+    await updateCarPrice(id, newPrice);
   };
 
-  const toggleStatus = (id: string) => {
+  const toggleStatus = async (id: string) => {
+    const next: Record<string, string> = { available: 'maintenance', maintenance: 'inactive', inactive: 'available', booked: 'available' };
+    let newStatus = 'available';
     setVehicles(vs => vs.map(v => {
       if (String(v.id) !== id) return v;
-      const next: Record<string, string> = { available: 'maintenance', maintenance: 'inactive', inactive: 'available', booked: 'available' };
-      return { ...v, status: next[v.status] || 'available' };
+      newStatus = next[v.status] || 'available';
+      return { ...v, status: newStatus };
     }));
+    await updateCarStatus(id, newStatus);
   };
 
-  const deleteVehicle = (id: string) => {
+  const deleteVehicle = async (id: string) => {
     setVehicles(vs => vs.filter(v => v.id !== id));
     setDeleteConfirm(null);
+    await deleteCarById(id);
   };
 
   const totalEarnings = vehicles.reduce((s, v) => s + v.earnings30d, 0);

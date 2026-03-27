@@ -1,4 +1,33 @@
-export default function PaymentSuccess() {
+'use client';
+
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/auth-context';
+
+function PaymentSuccessContent() {
+  const searchParams = useSearchParams();
+  const bookingId = searchParams.get('bookingId');
+  const [updated, setUpdated] = useState(false);
+
+  useEffect(() => {
+    if (!bookingId) return;
+
+    // Update booking status to confirmed
+    const updateBooking = async () => {
+      const isUuid = /^[0-9a-f-]{36}$/i.test(bookingId);
+      if (!isUuid) return;
+
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+        .eq('id', bookingId);
+
+      if (!error) setUpdated(true);
+    };
+
+    updateBooking();
+  }, [bookingId]);
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ background: 'white', borderRadius: 24, padding: 48, textAlign: 'center', maxWidth: 440, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
@@ -14,5 +43,17 @@ export default function PaymentSuccess() {
         </a>
       </div>
     </div>
+  );
+}
+
+export default function PaymentSuccess() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, border: '4px solid #1d4ed8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

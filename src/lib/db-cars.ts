@@ -191,6 +191,34 @@ export async function fetchCarsByHostId(hostId: string): Promise<ReturnType<type
   }
 }
 
+// Update car price
+export async function updateCarPrice(carId: string, newPrice: number): Promise<boolean> {
+  const { error } = await supabase
+    .from('cars')
+    .update({ price_daily: newPrice, updated_at: new Date().toISOString() })
+    .eq('id', carId);
+  return !error;
+}
+
+// Update car status (available/inactive/maintenance)
+export async function updateCarStatus(carId: string, status: string): Promise<boolean> {
+  const available = status === 'available';
+  const { error } = await supabase
+    .from('cars')
+    .update({ status, available, updated_at: new Date().toISOString() })
+    .eq('id', carId);
+  return !error;
+}
+
+// Soft-delete car (set status to deleted)
+export async function deleteCarById(carId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('cars')
+    .update({ status: 'deleted', available: false, updated_at: new Date().toISOString() })
+    .eq('id', carId);
+  return !error;
+}
+
 // Fetch single car by slug or id
 export async function fetchCarBySlugOrId(slugOrId: string): Promise<ReturnType<typeof dbCarToUiCar> | null> {
   try {
