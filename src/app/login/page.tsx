@@ -9,16 +9,33 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Handle implicit OAuth flow — token in URL hash
+  // Handle OAuth errors and implicit flow from URL hash/params
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token')) {
-      // Supabase client will auto-detect and handle this
-      // Just redirect to home after a brief moment
-      setTimeout(() => router.push('/'), 500);
+
+    // Check query param error (from our callback redirect)
+    const urlError = searchParams.get('error');
+    if (urlError) {
+      setError(decodeURIComponent(urlError));
+      return;
     }
-  }, [router]);
+
+    // Check hash for Supabase errors or tokens
+    const hash = window.location.hash;
+    if (hash) {
+      const hashParams = new URLSearchParams(hash.slice(1));
+      const hashError = hashParams.get('error_description') || hashParams.get('error');
+      if (hashError) {
+        setError(decodeURIComponent(hashError.replace(/\+/g, ' ')));
+        // Clean up the URL
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+      if (hash.includes('access_token')) {
+        setTimeout(() => router.push('/'), 500);
+      }
+    }
+  }, [router, searchParams]);
   const [mode, setMode] = useState<'login' | 'signup'>(searchParams.get('mode') === 'signup' ? 'signup' : 'login');
   const [role, setRole] = useState<'guest' | 'host'>('guest');
   const [name, setName] = useState('');

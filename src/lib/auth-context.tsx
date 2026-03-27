@@ -122,7 +122,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
 
         if (event === 'SIGNED_IN' && session?.user) {
-          const profile = await fetchProfile(session.user.id);
+          const authUser = session.user;
+
+          // Ensure public.users row exists (handles trigger failure on OAuth)
+          await supabase.from('users').upsert({
+            id: authUser.id,
+            email: authUser.email ?? '',
+            full_name:
+              authUser.user_metadata?.full_name ||
+              authUser.user_metadata?.name ||
+              authUser.email?.split('@')[0] ||
+              'User',
+            role: authUser.user_metadata?.role || 'guest',
+            promo_credits: 20,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id', ignoreDuplicates: true });
+
+          const profile = await fetchProfile(authUser.id);
           if (mounted) {
             setUser(profile);
             setIsLoading(false);
