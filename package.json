@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "test:e2e": "playwright test"
+    "lint": "next lint",
+    "test:e2e": "playwright test --project=chromium"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.44.0",

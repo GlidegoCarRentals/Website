@@ -6,17 +6,8 @@ import type { NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const error = searchParams.get('error')
-  const nextParam = searchParams.get('next') ?? '/'
-  const next = nextParam.startsWith('/') ? nextParam : '/'
-
-  // Supabase returned an error directly (e.g. trigger failure)
-  if (error) {
-    const desc = searchParams.get('error_description') || 'Login failed'
-    return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(desc)}`
-    )
-  }
+  const requestedNext = searchParams.get('next') ?? '/'
+  const next = requestedNext.startsWith('/') ? requestedNext : '/'
 
   if (code) {
     const cookieStore = await cookies()
@@ -39,30 +30,29 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) {
+      const user = data.user
+      if (user) {
+        const role = user.user_metadata?.role === 'admin' || user.user_metadata?.role === 'host'
+          ? user.user_metadata.role
+          : 'guest'
 
-    if (!exchangeError) {
-      // Upsert user profile — ensures public.users row exists even if trigger failed
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        await supabase.from('users').upsert({
-          id: authUser.id,
-          email: authUser.email ?? '',
-          full_name:
-            authUser.user_metadata?.full_name ||
-            authUser.user_metadata?.name ||
-            authUser.email?.split('@')[0] ||
-            'User',
-          role: authUser.user_metadata?.role || 'guest',
-          promo_credits: 20,
-          email_verified: Boolean(authUser.email_confirmed_at),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' })
+        await supabase.from('users').upsert(
+          {
+            id: user.id,
+            email: user.email || '',
+            full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : '',
+            role,
+            promo_credits: 20,
+          },
+          { onConflict: 'id' }
+        )
       }
 
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=Login+failed.+Please+try+again.`)
+  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
 }

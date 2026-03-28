@@ -11,42 +11,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace('/login?redirect=/admin');
+    if (isLoading) return;
+    if (!user) {
+      router.replace(`/login?redirect=${encodeURIComponent(pathname || '/admin')}`);
+      return;
     }
-  }, [isLoading, router, user]);
+    if (user.role !== 'admin') {
+      router.replace('/');
+    }
+  }, [isLoading, pathname, router, user]);
 
-  if (isLoading || !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center px-4 text-gray-500">
-        Loading admin panel...
-      </div>
-    );
-  }
-
-  if (user.role !== 'admin') {
+  if (isLoading || !user || user.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
-          <div className="text-4xl mb-2">🚫</div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin access required</h1>
-          <p className="text-gray-500 text-sm mt-2">Your account is signed in, but it does not have admin permissions.</p>
-          <Link
-            href="/"
-            className="inline-block mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
-          >
-            Return Home
-          </Link>
+        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
+          <div className="text-center mb-6">
+            <div className="text-4xl mb-2">🚗</div>
+            <h1 className="text-2xl font-bold text-gray-900">Checking Admin Access</h1>
+            <p className="text-gray-500 text-sm mt-1">GlideGo Admin Panel</p>
+          </div>
+          <div className="space-y-3">
+            <div className="h-10 w-10 mx-auto rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
+            <p className="text-sm text-gray-500 text-center">
+              {isLoading ? 'Authenticating your session...' : 'Redirecting...'}
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   const navItems = [
-    { href: '/admin', label: 'Dashboard' },
-    { href: '/admin/vehicles', label: 'Vehicles' },
-    { href: '/admin/bookings', label: 'Bookings' },
-    { href: '/admin/revenue', label: 'Revenue' },
+    { href: '/admin', label: '📊 Dashboard' },
+    { href: '/admin/vehicles', label: '🚗 Vehicles' },
+    { href: '/admin/bookings', label: '📅 Bookings' },
+    { href: '/admin/revenue', label: '💰 Revenue' },
   ];
 
   return (
@@ -59,27 +58,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           <div className="flex gap-1">
             {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
+              <Link key={item.href} href={item.href}
                 className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
                   pathname === item.href ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
+                }`}>
                 {item.label}
               </Link>
             ))}
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">View Site</Link>
-          <button
-            onClick={() => {
-              logout();
-              router.push('/');
-            }}
-            className="text-sm text-red-500 hover:text-red-700 font-medium bg-red-50 px-3 py-1.5 rounded-lg"
-          >
+          <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">View Site ↗</Link>
+          <button onClick={() => logout()}
+            className="text-sm text-red-500 hover:text-red-700 font-medium bg-red-50 px-3 py-1.5 rounded-lg">
             Logout
           </button>
         </div>

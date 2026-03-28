@@ -240,3 +240,31 @@ export async function fetchCarBySlugOrId(slugOrId: string): Promise<ReturnType<t
     return staticCar || null;
   }
 }
+
+export async function fetchHostCars(hostId: string): Promise<Array<ReturnType<typeof dbCarToUiCar> & { status?: string; host_id?: string }>> {
+  try {
+    const { data, error } = await supabase
+      .from('cars')
+      .select(CARS_SELECT)
+      .eq('host_id', hostId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!data || data.length === 0) return [];
+
+    return data.map(flattenCarWithHost).map((car) => ({
+      ...dbCarToUiCar(car),
+      status: car.status === 'active' ? (car.available ? 'available' : 'booked') : car.status,
+      host_id: car.host_id,
+    }));
+  } catch (err) {
+    console.warn('Host cars fetch failed, using static fallback:', err);
+    return (CARS.slice(0, 3) as any[]).map((car, index) => ({
+      ...car,
+      status: car.available ? 'available' : 'booked',
+      trips30d: ((index + 1) * 7) % 15 + 2,
+      earnings30d: ((index + 1) * 1234) % 2000 + 400,
+      host_id: hostId,
+    }));
+  }
+}

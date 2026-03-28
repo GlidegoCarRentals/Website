@@ -375,7 +375,7 @@ function useTheme(darkMode: boolean) {
 // Main Page
 // ─────────────────────────────────────────────
 export default function AccountProfile() {
-  const { user, isLoading, updateUser, toggleFavourite, logout } = useAuth();
+  const { user, updateUser, toggleFavourite, logout, isLoading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Profile');
   const [darkMode, setDarkMode] = useState(true);

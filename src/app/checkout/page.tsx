@@ -10,11 +10,11 @@ import { useAuth } from '@/lib/auth-context';
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 function CheckoutContent() {
+  const { user, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
   const carId = searchParams.get('carId');
   const totalAmount = parseFloat(searchParams.get('amount') || '0');
-  const { user } = useAuth();
 
   // Accept either bookingId or carId
   const referenceId = bookingId || carId;
@@ -24,7 +24,7 @@ function CheckoutContent() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!referenceId || !totalAmount) return;
+    if (!referenceId || !totalAmount || authLoading) return;
 
     fetch('/api/payments/create-payment-intent', {
       method: 'POST',
@@ -33,8 +33,8 @@ function CheckoutContent() {
         bookingId: referenceId,
         totalAmount,
         customerEmail: user?.email || '',
-        customerName: user?.name || '',
-        skipDatabase: true,
+        customerName: user?.name || 'Customer',
+        skipDatabase: !bookingId,
       }),
     })
       .then((res) => res.json())
@@ -44,7 +44,7 @@ function CheckoutContent() {
       })
       .catch(() => setError('Failed to initialise payment. Please try again.'))
       .finally(() => setIsLoading(false));
-  }, [referenceId, totalAmount, user?.email, user?.name]);
+  }, [authLoading, bookingId, referenceId, totalAmount, user?.email, user?.name]);
 
   const handlePaymentSuccess = () => {
     window.location.href = `/payment-success?bookingId=${referenceId}`;

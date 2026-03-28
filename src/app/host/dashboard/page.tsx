@@ -154,7 +154,7 @@ function useTheme(darkMode: boolean) {
 // Main Dashboard
 // ─────────────────────────────────────────────
 export default function HostDashboard() {
-  const { user, isLoading } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');

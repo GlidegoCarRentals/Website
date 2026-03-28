@@ -1,214 +1,148 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-type CreateCarPayload = {
-  title?: string;
-  rego?: string;
-  regoState?: string;
-
-  make: string;
-  model: string;
-  year: number | string;
-  colour: string;
-  category: string; // UI "category" maps to DB body_type
-
-  fuel: string; // UI fuel maps to DB fuel_type
-  transmission: string; // UI maps to DB transmission
-  seats: number | string;
-  engine?: string;
-
-  description: string;
-  features: string[];
-  photos: string[];
-
-  pricePerDay: number | string;
-  weeklyDiscount: number | string;
-  monthlyDiscount: number | string;
-  bondAmount: number | string;
-
-  location: string; // UI location name maps to DB location_name
-
-  minDays: number | string;
-  minAge: number | string;
-
-  instantBook: boolean;
-  deliveryAvailable: boolean;
-  deliveryFee: number | string;
-};
-
-function toNumber(v: unknown, fallback: number) {
-  const n = typeof v === 'number' ? v : Number(v);
-  return Number.isFinite(n) ? n : fallback;
+type Payload = {
+  make?: string
+  model?: string
+  year?: number
+  fuel_type?: string
+  transmission?: string
+  seats?: number
+  colour?: string
+  rego?: string
+  description?: string
+  features?: string[]
+  photos?: string[]
+  price_daily?: number
+  price_weekly?: number
+  location_name?: string
+  min_days?: number
+  min_age_years?: number
+  instant_book?: boolean
+  delivery_available?: boolean
+  delivery_fee?: number
+  deposit_amount?: number
+  body_type?: string
 }
 
-function slugify(s: string) {
-  return s
+function slugify(value: string) {
+  return value
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
 }
 
-function normalizeRego(rego?: string) {
-  if (!rego) return null;
-  const normalized = rego.replace(/[\s-]/g, '').toUpperCase();
-  return normalized || null;
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return req.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            // Session cookies updates are handled by `middleware.ts` already.
-            // For this API route we only need to read the current session.
-            void cookiesToSet;
-          },
+export async function POST(request: Request) {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
         },
-      }
-    );
-
-    const { data: authData } = await supabase.auth.getUser();
-    const user = authData?.user;
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {}
+        },
+      },
     }
+  )
 
-    const body = (await req.json()) as CreateCarPayload;
-    if (!body?.make?.trim() || !body?.model?.trim()) {
-      return NextResponse.json({ error: 'Make and model are required.' }, { status: 400 });
-    }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    // Ensure user is a host (defense-in-depth; RLS should also enforce this).
-    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'host' && profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Host access required' }, { status: 403 });
-    }
-
-    const year = toNumber(body.year, new Date().getFullYear());
-    const seats = toNumber(body.seats, 5);
-    const priceDaily = toNumber(body.pricePerDay, 0);
-    const weeklyDiscount = toNumber(body.weeklyDiscount, 10);
-    const monthlyDiscount = toNumber(body.monthlyDiscount, 20);
-
-    // Current UI treats discounts as % off, not absolute weekly/monthly prices.
-    const priceWeekly = Math.round(priceDaily * 7 * (1 - weeklyDiscount / 100));
-    const priceMonthly = Math.round(priceDaily * 30 * (1 - monthlyDiscount / 100));
-
-    const depositAmount = toNumber(body.bondAmount, 500);
-    const minDays = toNumber(body.minDays, 1);
-    const minAge = toNumber(body.minAge, 21);
-    const deliveryFee = toNumber(body.deliveryFee, 0);
-
-    const features = Array.isArray(body.features) ? body.features : [];
-    const photos = Array.isArray(body.photos) ? body.photos : [];
-    const rego = normalizeRego(body.rego);
-
-    if (photos.length === 0) {
-      return NextResponse.json({ error: 'Please add at least one photo URL.' }, { status: 400 });
-    }
-
-    if (!body.description?.trim()) {
-      return NextResponse.json({ error: 'Please add a vehicle description.' }, { status: 400 });
-    }
-
-    if (priceDaily < 10) {
-      return NextResponse.json({ error: 'Daily price must be at least $10.' }, { status: 400 });
-    }
-
-    if (year < 1990 || year > new Date().getFullYear() + 1) {
-      return NextResponse.json({ error: 'Please enter a valid vehicle year.' }, { status: 400 });
-    }
-
-    if (!body.location) {
-      return NextResponse.json({ error: 'Missing location' }, { status: 400 });
-    }
-
-    const title = body.title?.trim() || `${body.make.trim()} ${body.model.trim()}`;
-
-    const slug = slugify(`${title}-${body.location}-${year}-${crypto.randomUUID().slice(0, 8)}`);
-
-    const insertPayload: Record<string, any> = {
-      host_id: user.id,
-      rego,
-      rego_state: body.regoState || null,
-
-      make: body.make.trim(),
-      model: body.model.trim(),
-      year,
-      colour: body.colour?.trim() || null,
-
-      body_type: body.category,
-      engine: body.engine || 'Auto (mock) engine',
-      transmission: body.transmission,
-      fuel_type: body.fuel,
-
-      seats,
-      doors: 4,
-
-      price_daily: priceDaily,
-      price_weekly: priceWeekly,
-      price_monthly: priceMonthly,
-
-      weekend_multiplier: 1.0,
-      surge_enabled: false,
-
-      min_days: minDays,
-      max_days: 90,
-      min_age_years: minAge,
-      deposit_amount: depositAmount,
-
-      advance_notice_hrs: 24,
-      instant_book: body.instantBook,
-
-      protection_basic: 15,
-      protection_standard: 29,
-      protection_premium: 49,
-
-      location_name: body.location,
-      address: null,
-      latitude: null,
-      longitude: null,
-
-      delivery_available: body.deliveryAvailable,
-      delivery_fee: deliveryFee,
-      delivery_radius_km: 10,
-
-      photos,
-      tour_video_url: null,
-      features,
-
-      title,
-      description: body.description.trim(),
-      house_rules: null,
-
-      status: 'active',
-      available: true,
-      glidego_verified: false,
-      featured: false,
-      slug,
-    };
-
-    const { data, error } = await supabase.from('cars').insert(insertPayload).select('*').single();
-    if (error) {
-      const status = error.code === '23505' ? 409 : 500;
-      const message = error.code === '23505'
-        ? 'A vehicle with this registration or slug already exists.'
-        : error.message;
-      return NextResponse.json({ error: message }, { status });
-    }
-
-    return NextResponse.json({ success: true, carId: data?.id || null }, { status: 200 });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || 'Internal server error' },
-      { status: 500 }
-    );
+  if (!user) {
+    return NextResponse.json({ error: 'Please sign in to list a vehicle.' }, { status: 401 })
   }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile || (profile.role !== 'host' && profile.role !== 'admin')) {
+    return NextResponse.json({ error: 'Only hosts can add vehicles.' }, { status: 403 })
+  }
+
+  const payload = (await request.json()) as Payload
+  const make = payload.make?.trim()
+  const model = payload.model?.trim()
+  const rego = payload.rego?.trim().toUpperCase()
+  const year = Number(payload.year)
+  const priceDaily = Number(payload.price_daily)
+  const seats = Number(payload.seats || 5)
+  const minDays = Number(payload.min_days || 1)
+  const minAge = Number(payload.min_age_years || 21)
+  const deliveryFee = Number(payload.delivery_fee || 0)
+  const depositAmount = Number(payload.deposit_amount || 0)
+  const locationName = payload.location_name?.trim()
+
+  if (!make || !model || !rego || !locationName) {
+    return NextResponse.json({ error: 'Make, model, registration, and location are required.' }, { status: 400 })
+  }
+
+  if (!Number.isFinite(year) || year < 2000 || year > new Date().getFullYear() + 1) {
+    return NextResponse.json({ error: 'Enter a valid vehicle year.' }, { status: 400 })
+  }
+
+  if (!Number.isFinite(priceDaily) || priceDaily < 20) {
+    return NextResponse.json({ error: 'Daily price must be at least $20.' }, { status: 400 })
+  }
+
+  const baseSlug = slugify(`${make}-${model}-${rego}`)
+  const slug = baseSlug || `vehicle-${Date.now()}`
+
+  const insertPayload = {
+    host_id: user.id,
+    make,
+    model,
+    year,
+    fuel_type: payload.fuel_type || 'Petrol',
+    transmission: payload.transmission || 'Automatic',
+    seats,
+    colour: payload.colour?.trim() || null,
+    description: payload.description?.trim() || '',
+    features: Array.isArray(payload.features) ? payload.features : [],
+    photos: Array.isArray(payload.photos) && payload.photos.length > 0
+      ? payload.photos
+      : ['https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&q=80'],
+    price_daily: priceDaily,
+    price_weekly: Number.isFinite(Number(payload.price_weekly)) ? Number(payload.price_weekly) : Math.round(priceDaily * 6.5),
+    location_name: locationName,
+    min_days: minDays,
+    min_age_years: minAge,
+    instant_book: Boolean(payload.instant_book),
+    delivery_available: Boolean(payload.delivery_available),
+    delivery_fee: deliveryFee,
+    deposit_amount: depositAmount,
+    body_type: payload.body_type || null,
+    status: 'active',
+    available: true,
+    glidego_verified: false,
+    slug,
+    title: `${make} ${model}`,
+  }
+
+  const { data, error } = await supabase
+    .from('cars')
+    .insert(insertPayload)
+    .select('id, slug')
+    .single()
+
+  if (error) {
+    const message = /duplicate/i.test(error.message)
+      ? 'This registration or slug already exists. Please verify the vehicle details.'
+      : error.message
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+
+  return NextResponse.json({ ok: true, car: data })
 }

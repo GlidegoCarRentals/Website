@@ -1,20 +1,16 @@
 'use client';
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 
+// ─────────────────────────────────────────────
+// Supabase client — SSR compatible
+// ─────────────────────────────────────────────
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 export { supabase };
-
-const VALID_ROLES = ['guest', 'host', 'admin'] as const;
-type ValidRole = (typeof VALID_ROLES)[number];
-
-function sanitizeRole(role: unknown): ValidRole {
-  return VALID_ROLES.includes(role as ValidRole) ? (role as ValidRole) : 'guest';
-}
 
 export interface User {
   id: string;
@@ -50,80 +46,98 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// ─────────────────────────────────────────────
-// fetchProfile — with retry and fallback
-// ─────────────────────────────────────────────
-async function fetchProfile(userId: string): Promise<User | null> {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+function normalizeRole(role: unknown): User['role'] {
+  return role === 'admin' || role === 'host' ? role : 'guest';
+}
 
-    if (error) {
-      console.error('fetchProfile error:', error.message);
-      return null;
-    }
-
-    if (!data) return null;
-
-    // Validate role — prevent invalid roles
-    const role = sanitizeRole(data.role);
-
-    return {
-      id: data.id,
-      name: data.full_name || data.email?.split('@')[0] || 'User',
-      email: data.email || '',
-      avatar: data.avatar_url || undefined,
-      role,
-      phone: data.phone || undefined,
-      verified: Boolean(data.email_verified),
-      licenceUploaded: Boolean(data.licence_url),
-      licenceVerified: Boolean(data.licence_verified),
-      trips: Number(data.total_trips) || 0,
-      hostTrips: Number(data.host_trips) || 0,
-      joinedDate: data.created_at
-        ? new Date(data.created_at).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })
-        : undefined,
-      promoCredits: parseFloat(String(data.promo_credits || '20')) || 20,
-      favourites: Array.isArray(data.favourites) ? data.favourites : [],
-      isSuperhost: Boolean(data.is_superhost),
-      trustScore: Number(data.trust_score) || 50,
-    };
-  } catch (err) {
-    console.error('fetchProfile unexpected error:', err);
-    return null;
-  }
+function formatJoinedDate(createdAt?: string | null) {
+  return createdAt
+    ? new Date(createdAt).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })
+    : undefined;
 }
 
 async function ensureUserProfile(authUser: {
   id: string;
-  email?: string;
+  email?: string | null;
   user_metadata?: Record<string, unknown>;
-  email_confirmed_at?: string | null;
 }) {
+  const metadata = authUser.user_metadata || {};
+  const fullName = typeof metadata.full_name === 'string' ? metadata.full_name : '';
+  const role = normalizeRole(metadata.role);
+
   await supabase.from('users').upsert(
     {
       id: authUser.id,
-      email: authUser.email ?? '',
-      full_name:
-        authUser.user_metadata?.full_name ||
-        authUser.user_metadata?.name ||
-        authUser.email?.split('@')[0] ||
-        'User',
-      role: sanitizeRole(authUser.user_metadata?.role),
+      email: authUser.email || '',
+      full_name: fullName,
+      role,
       promo_credits: 20,
-      email_verified: Boolean(authUser.email_confirmed_at),
-      updated_at: new Date().toISOString(),
     },
     { onConflict: 'id' }
   );
 }
 
-// ─────────────────────────────────────────────
-// AuthProvider
-// ─────────────────────────────────────────────
+async function fetchProfile(userId: string): Promise<User | null> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    name: data.full_name || '',
+    email: data.email,
+    avatar: data.avatar_url,
+    role: normalizeRole(data.role),
+    phone: data.phone,
+    verified: data.email_verified || false,
+    licenceUploaded: !!data.licence_url,
+    licenceVerified: data.licence_verified || false,
+    trips: data.total_trips || 0,
+    hostTrips: data.host_trips || 0,
+    joinedDate: formatJoinedDate(data.created_at),
+    promoCredits: parseFloat(data.promo_credits || '20'),
+    isSuperhost: data.is_superhost || false,
+    trustScore: data.trust_score || 50,
+  };
+}
+
+async function loadProfile(authUser: {
+  id: string;
+  email?: string | null;
+  email_confirmed_at?: string | null;
+  user_metadata?: Record<string, unknown>;
+}): Promise<User> {
+  await ensureUserProfile(authUser);
+  const profile = await fetchProfile(authUser.id);
+
+  if (profile) {
+    return {
+      ...profile,
+      email: profile.email || authUser.email || '',
+      verified: profile.verified || Boolean(authUser.email_confirmed_at),
+      name: profile.name || (typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : authUser.email || 'GlideGo User'),
+      role: normalizeRole(profile.role || authUser.user_metadata?.role),
+    };
+  }
+
+  return {
+    id: authUser.id,
+    name: typeof authUser.user_metadata?.full_name === 'string' ? authUser.user_metadata.full_name : authUser.email || 'GlideGo User',
+    email: authUser.email || '',
+    role: normalizeRole(authUser.user_metadata?.role),
+    verified: Boolean(authUser.email_confirmed_at),
+    licenceUploaded: false,
+    licenceVerified: false,
+    promoCredits: 20,
+    joinedDate: undefined,
+    favourites: [],
+    trips: 0,
+    hostTrips: 0,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,51 +145,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user && mounted) {
-          let profile = await fetchProfile(session.user.id);
-          if (!profile) {
-            await ensureUserProfile(session.user);
-            profile = await fetchProfile(session.user.id);
-          }
-          if (mounted) setUser(profile);
-        }
-      } catch (err) {
-        console.error('initAuth error:', err);
-      } finally {
-        if (mounted) setIsLoading(false);
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+      if (session?.user) {
+        const profile = await loadProfile(session.user);
+        if (mounted) setUser(profile);
       }
-    };
+      if (mounted) setIsLoading(false);
+    });
 
-    initAuth();
-
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
-
-        if (event === 'SIGNED_IN' && session?.user) {
-          const authUser = session.user;
-
-          // Ensure public.users row exists (handles trigger failure on OAuth)
-          await ensureUserProfile(authUser);
-
-          const profile = await fetchProfile(authUser.id);
-          if (mounted) {
-            setUser(profile);
-            setIsLoading(false);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          if (mounted) {
-            setUser(null);
-            setIsLoading(false);
-          }
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          // Session refreshed — update user silently
-          const profile = await fetchProfile(session.user.id);
+        if (session?.user) {
+          const profile = await loadProfile(session.user);
           if (mounted) setUser(profile);
+        } else if (event === 'SIGNED_OUT') {
+          if (mounted) setUser(null);
         }
+        if (mounted) setIsLoading(false);
       }
     );
 
@@ -185,215 +175,110 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // ─────────────────────────────────────────────
-  // Login
-  // ─────────────────────────────────────────────
   const login = async (email: string, password: string) => {
-    try {
-      // Input validation
-      if (!email?.trim()) return { ok: false, error: 'Please enter your email.' };
-      if (!password) return { ok: false, error: 'Please enter your password.' };
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
-
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          return { ok: false, error: 'Wrong email or password. Please try again.' };
-        }
-        if (error.message.includes('Email not confirmed')) {
-          return { ok: false, error: 'Please verify your email before logging in.' };
-        }
-        if (error.message.includes('Too many requests')) {
-          return { ok: false, error: 'Too many login attempts. Please wait a moment.' };
-        }
-        return { ok: false, error: error.message };
-      }
-
-      if (data.user) {
-        await ensureUserProfile(data.user);
-        const profile = await fetchProfile(data.user.id);
-        setUser(profile);
-        return { ok: true };
-      }
-
-      return { ok: false, error: 'Something went wrong. Please try again.' };
-    } catch (err) {
-      console.error('login error:', err);
-      return { ok: false, error: 'Network error. Please check your connection.' };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      if (error.message.includes('Invalid login')) return { ok: false, error: 'Wrong email or password. Please try again.' };
+      if (error.message.includes('Email not confirmed')) return { ok: false, error: 'Please check your email and click the verification link first.' };
+      return { ok: false, error: error.message };
     }
+    if (data.user) {
+      const profile = await loadProfile(data.user);
+      setUser(profile);
+      return { ok: true };
+    }
+    return { ok: false, error: 'Something went wrong. Please try again.' };
   };
 
-  // ─────────────────────────────────────────────
-  // Signup
-  // ─────────────────────────────────────────────
-  const signup = async (
-    name: string,
-    email: string,
-    password: string,
-    role: 'guest' | 'host' = 'guest'
-  ) => {
-    try {
-      // Validation
-      if (!name?.trim()) return { ok: false, error: 'Please enter your full name.' };
-      if (name.trim().length < 2) return { ok: false, error: 'Name must be at least 2 characters.' };
-      if (!email?.trim()) return { ok: false, error: 'Please enter your email.' };
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: 'Please enter a valid email address.' };
-      if (!password) return { ok: false, error: 'Please enter a password.' };
-      if (password.length < 6) return { ok: false, error: 'Password must be at least 6 characters.' };
-
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: { full_name: name.trim(), role },
-        },
-      });
-
-      if (error) {
-        if (error.message.includes('already registered')) {
-          return { ok: false, error: 'This email is already registered. Please sign in.' };
-        }
-        if (error.message.includes('Password should be')) {
-          return { ok: false, error: 'Password is too weak. Use at least 6 characters.' };
-        }
-        return { ok: false, error: error.message };
-      }
-
-      if (data.user) {
-        await ensureUserProfile({
-          ...data.user,
-          user_metadata: {
-            ...data.user.user_metadata,
-            full_name: name.trim(),
-            role,
-          },
-        });
-
-        const profile = await fetchProfile(data.user.id);
-        setUser(profile);
-        return { ok: true };
-      }
-
-      return { ok: false, error: 'Something went wrong. Please try again.' };
-    } catch (err) {
-      console.error('signup error:', err);
-      return { ok: false, error: 'Network error. Please check your connection.' };
+  const signup = async (name: string, email: string, password: string, role: 'guest' | 'host' = 'guest') => {
+    if (!name.trim()) return { ok: false, error: 'Please enter your full name.' };
+    if (password.length < 6) return { ok: false, error: 'Password must be at least 6 characters.' };
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name, role },
+      },
+    });
+    if (error) {
+      if (error.message.includes('already registered')) return { ok: false, error: 'This email is already registered. Please sign in.' };
+      return { ok: false, error: error.message };
     }
+    if (data.user) {
+      await ensureUserProfile({
+        id: data.user.id,
+        email: data.user.email,
+        user_metadata: { ...data.user.user_metadata, full_name: name, role },
+      });
+      const profile = await loadProfile({
+        ...data.user,
+        user_metadata: { ...data.user.user_metadata, full_name: name, role },
+      });
+      setUser(profile);
+      return { ok: true };
+    }
+    return { ok: false, error: 'Something went wrong. Please try again.' };
   };
 
-  // ─────────────────────────────────────────────
-  // Google OAuth
-  // ─────────────────────────────────────────────
   const loginWithGoogle = async (nextPath = '/') => {
-    const next = nextPath.startsWith('/') ? nextPath : '/';
-    try {
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+    const safeNext = nextPath.startsWith('/') ? nextPath : '/';
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
         },
-      });
-    } catch (err) {
-      console.error('Google OAuth error:', err);
-    }
+      },
+    });
   };
 
-  // ─────────────────────────────────────────────
-  // Logout
-  // ─────────────────────────────────────────────
   const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUser(null);
-    } catch (err) {
-      console.error('logout error:', err);
-      // Force clear user even if signOut fails
-      setUser(null);
-    }
+    await supabase.auth.signOut();
+    setUser(null);
   };
 
-  // ─────────────────────────────────────────────
-  // Update User
-  // ─────────────────────────────────────────────
   const updateUser = async (updates: Partial<User>) => {
     if (!user) return;
-
-    try {
-      const dbUpdates: Record<string, unknown> = {};
-      if (updates.name !== undefined) dbUpdates.full_name = updates.name;
-      if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
-      if (updates.avatar !== undefined) dbUpdates.avatar_url = updates.avatar;
-      if (updates.role !== undefined) dbUpdates.role = updates.role;
-      if (updates.promoCredits !== undefined) dbUpdates.promo_credits = updates.promoCredits;
-
-      if (Object.keys(dbUpdates).length > 0) {
-        const { error } = await supabase
-          .from('users')
-          .update(dbUpdates)
-          .eq('id', user.id);
-
-        if (error) console.error('updateUser DB error:', error.message);
-      }
-
-      setUser(prev => prev ? { ...prev, ...updates } : null);
-    } catch (err) {
-      console.error('updateUser error:', err);
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.name !== undefined) dbUpdates.full_name = updates.name;
+    if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+    if (updates.avatar !== undefined) dbUpdates.avatar_url = updates.avatar;
+    if (updates.role !== undefined) dbUpdates.role = updates.role;
+    if (updates.promoCredits !== undefined) dbUpdates.promo_credits = updates.promoCredits;
+    if (Object.keys(dbUpdates).length > 0) {
+      await supabase.from('users').update(dbUpdates).eq('id', user.id);
     }
+    setUser(prev => prev ? { ...prev, ...updates } : null);
   };
 
-  // ─────────────────────────────────────────────
-  // Toggle Favourite
-  // ─────────────────────────────────────────────
   const toggleFavourite = async (carId: string) => {
     if (!user) return;
-
-    try {
-      const favs = user.favourites || [];
-      const isFaved = favs.includes(carId);
-
-      if (isFaved) {
-        await supabase
-          .from('favourites')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('car_id', carId);
-        setUser(prev => prev ? { ...prev, favourites: favs.filter(f => f !== carId) } : null);
-      } else {
-        await supabase
-          .from('favourites')
-          .insert({ user_id: user.id, car_id: carId });
-        setUser(prev => prev ? { ...prev, favourites: [...favs, carId] } : null);
-      }
-    } catch (err) {
-      console.error('toggleFavourite error:', err);
+    const favs = user.favourites || [];
+    const isFaved = favs.includes(carId);
+    if (isFaved) {
+      await supabase.from('favourites').delete().eq('user_id', user.id).eq('car_id', carId);
+      setUser(prev => prev ? { ...prev, favourites: favs.filter(f => f !== carId) } : null);
+    } else {
+      await supabase.from('favourites').insert({ user_id: user.id, car_id: carId });
+      setUser(prev => prev ? { ...prev, favourites: [...favs, carId] } : null);
     }
   };
 
-  // ─────────────────────────────────────────────
-  // Refresh User
-  // ─────────────────────────────────────────────
-  const refreshUser = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      const profile = await fetchProfile(user.id);
-      setUser(profile);
-    } catch (err) {
-      console.error('refreshUser error:', err);
+  const refreshUser = async () => {
+    if (!user) return;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
+      setUser(null);
+      return;
     }
-  }, [user?.id]);
+    const profile = await loadProfile(authUser);
+    setUser(profile);
+  };
 
   return (
-    <AuthContext.Provider value={{
-      user, isLoading, login, signup, loginWithGoogle,
-      logout, updateUser, toggleFavourite, refreshUser,
-    }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, loginWithGoogle, logout, updateUser, toggleFavourite, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

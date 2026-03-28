@@ -1,7 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/lib/auth-context';
+import { fetchHostBookings } from '@/lib/db-bookings';
 
 const BOOKINGS_DATA = [
   { id:'BK-001', guest:'Alex Johnson', avatar:'AJ', car:'Tesla Model 3', pickup:'14 Mar 2026', return:'17 Mar 2026', days:3, amount:507, bond:500, status:'confirmed', licenceVerified:true, rating:4.9, trips:12, requested:'10 Mar 2026' },
@@ -12,9 +14,37 @@ const BOOKINGS_DATA = [
 ];
 
 export default function HostBookingsPage() {
+  const { user, isLoading } = useAuth();
   const [bookings, setBookings] = useState(BOOKINGS_DATA);
+  const [loadError, setLoadError] = useState('');
   const [tab, setTab] = useState('all');
   const [selected, setSelected] = useState<typeof BOOKINGS_DATA[0] | null>(null);
+
+  useEffect(() => {
+    if (isLoading || !user) return;
+
+    fetchHostBookings(user.id)
+      .then((data) => {
+        const next = data.map((booking) => ({
+          id: booking.id,
+          guest: booking.guest,
+          avatar: booking.avatar,
+          car: booking.car,
+          pickup: booking.pickup,
+          return: booking.return,
+          days: booking.days,
+          amount: booking.amount,
+          bond: booking.bond,
+          status: booking.bookingStatus,
+          licenceVerified: booking.licenceVerified,
+          rating: booking.rating,
+          trips: booking.trips,
+          requested: booking.requested,
+        }));
+        if (next.length) setBookings(next as typeof BOOKINGS_DATA);
+      })
+      .catch(() => setLoadError('Bookings load nahi ho paaye.'));
+  }, [isLoading, user]);
 
   const changeStatus = (id: string, status: string) => {
     setBookings(bs => bs.map(b => b.id === id ? { ...b, status } : b));
@@ -68,6 +98,7 @@ export default function HostBookingsPage() {
 
           {/* Table */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
+            {loadError && <div style={{ marginBottom: 16, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 14px', color: '#b91c1c', fontSize: 13, fontWeight: 600 }}>{loadError}</div>}
             <div className="card" style={{ overflow: 'hidden' }}>
               {/* Header row */}
               <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 130px 90px 90px 110px 160px', gap: 14, padding: '11px 20px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>

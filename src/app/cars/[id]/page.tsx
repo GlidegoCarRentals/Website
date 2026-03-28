@@ -74,6 +74,10 @@ const [imgError, setImgError] = useState(false);
           car_id: car.id,
           guest_id: user.id,
           host_id: car.host_id || null,
+          customer_email: user.email || null,
+          customer_name: user.user_metadata?.full_name || user.email || 'Customer',
+          car_name: car.name,
+          car_category: car.category,
           pickup_date: pickupDate,
           return_date: returnDate,
           pickup_location: pickupLocation,
@@ -83,6 +87,8 @@ const [imgError, setImgError] = useState(false);
           total_amount: total,
           bond_amount: car.deposit || 0,
           status: 'pending_payment',
+          payment_status: 'pending',
+          booking_status: 'pending',
         })
         .select()
         .single();
