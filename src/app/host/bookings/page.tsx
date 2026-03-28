@@ -43,7 +43,7 @@ export default function HostBookingsPage() {
         }));
         if (next.length) setBookings(next as typeof BOOKINGS_DATA);
       })
-      .catch(() => setLoadError('Bookings load nahi ho paaye.'));
+      .catch(() => setLoadError('Bookings could not be loaded.'));
   }, [isLoading, user]);
 
   const changeStatus = (id: string, status: string) => {

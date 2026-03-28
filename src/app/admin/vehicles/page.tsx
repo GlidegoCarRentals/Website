@@ -19,7 +19,7 @@ export default function VehiclesPage() {
         weeklyRate: vehicle.weeklyPrice,
         status: vehicle.available ? 'active' : 'inactive',
       }))))
-      .catch(() => setError('Vehicles load nahi ho paaye.'));
+      .catch(() => setError('Vehicles could not be loaded.'));
   }, []);
 
   const persistVehicle = async (id: string, body: Record<string, unknown>) => {
@@ -37,7 +37,7 @@ export default function VehiclesPage() {
     const response = await fetch(`/api/host/cars/${id}`, { method: 'DELETE' });
     const result = await response.json();
     if (!response.ok) {
-      setError(result.error || 'Vehicle delete nahi hua.');
+      setError(result.error || 'The vehicle could not be deleted.');
       return;
     }
     setVehicles((items) => items.filter((vehicle) => vehicle.id !== id));
@@ -78,7 +78,7 @@ export default function VehiclesPage() {
                         const updated = await persistVehicle(vehicle.id, { status: event.target.value });
                         setVehicles((items) => items.map((item) => item.id === vehicle.id ? { ...item, status: updated.status } : item));
                       } catch (err) {
-                        setError(err instanceof Error ? err.message : 'Vehicle status update nahi hua.');
+                        setError(err instanceof Error ? err.message : 'The vehicle status could not be updated.');
                       }
                     }}
                     className="text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-200 cursor-pointer"
@@ -97,7 +97,7 @@ export default function VehiclesPage() {
                         const updated = await persistVehicle(vehicle.id, { price_daily: Number(nextRate) });
                         setVehicles((items) => items.map((item) => item.id === vehicle.id ? { ...item, dailyRate: updated.price_daily } : item));
                       } catch (err) {
-                        setError(err instanceof Error ? err.message : 'Vehicle update nahi hua.');
+                        setError(err instanceof Error ? err.message : 'The vehicle could not be updated.');
                       }
                     }} className="text-blue-600 hover:text-blue-800 font-medium text-xs">Edit</button>
                     <button onClick={() => handleDelete(vehicle.id)} className="text-red-500 hover:text-red-700 font-medium text-xs">Delete</button>

@@ -111,7 +111,7 @@ export default function AddVehiclePage() {
   const runRegoLookup = async () => {
     const rego = form.rego.trim().toUpperCase();
     if (!rego) {
-      setLookupMessage('Pehle registration plate enter karo.');
+      setLookupMessage('Enter a registration plate first.');
       return;
     }
 
@@ -187,7 +187,7 @@ export default function AddVehiclePage() {
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Vehicle create nahi ho paya.');
+      if (!response.ok) throw new Error(result.error || 'The vehicle could not be created.');
 
       await refreshUser();
       router.push('/host/vehicles');

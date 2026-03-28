@@ -213,6 +213,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       if (error.message.includes('Invalid login')) return { ok: false, error: 'Wrong email or password. Please try again.' };
       if (error.message.includes('Email not confirmed')) return { ok: false, error: 'Please check your email and click the verification link first.' };
+      if (error.message.toLowerCase().includes('rate limit')) {
+        return { ok: false, error: 'Too many login attempts. Please wait a few minutes and try again.' };
+      }
       return { ok: false, error: error.message };
     }
     if (data.user) {
@@ -236,6 +239,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) {
       if (error.message.includes('already registered')) return { ok: false, error: 'This email is already registered. Please sign in.' };
+      if (error.message.toLowerCase().includes('rate limit')) {
+        return { ok: false, error: 'Email sending is temporarily rate-limited. Please wait a few minutes before creating another account.' };
+      }
       return { ok: false, error: error.message };
     }
     if (data.user) {

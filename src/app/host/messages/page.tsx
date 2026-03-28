@@ -142,7 +142,7 @@ export default function HostMessagesPage() {
         setConversations(data as any);
         setSelected(data[0] as any);
       })
-      .catch(() => setLoadError('Messages load nahi ho paaye.'));
+      .catch(() => setLoadError('Messages could not be loaded.'));
   }, [isLoading, user]);
 
   const sendMessage = (msg?: string) => {

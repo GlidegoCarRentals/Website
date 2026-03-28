@@ -22,8 +22,8 @@ function LoginForm() {
   const errorCode = searchParams.get('error');
   const callbackError = errorCode
     ? ({
-        auth_callback_failed: 'Google sign-in complete nahi hua. Please dobara try karo.',
-        access_denied: 'Aapko is section ko access karne ki permission nahi hai.',
+        auth_callback_failed: 'Google sign-in could not be completed. Please try again.',
+        access_denied: 'You do not have permission to access this section.',
       } as Record<string, string>)[errorCode] || errorCode
     : '';
 
@@ -53,7 +53,7 @@ function LoginForm() {
       } else {
         const { ok, error: err } = await signup(name, email, password, role);
         if (ok) {
-          setSuccess('Account created! Verification email bhej di gayi hai. Email confirm karke phir sign in karo.');
+          setSuccess('Account created. We sent a verification email. Confirm your email address, then sign in.');
           setMode('login');
         } else {
           setError(err || 'Signup failed');

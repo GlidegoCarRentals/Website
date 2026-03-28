@@ -37,7 +37,7 @@ export default function HostVehiclesPage() {
     if (!isLoading && user) {
       fetchHostCars(user.id)
         .then((cars) => setVehicles(cars.map((car: any) => ({ ...car, id: String(car.id) }))))
-        .catch(() => setLoadError('Vehicles load nahi ho paaye.'))
+        .catch(() => setLoadError('Vehicles could not be loaded.'))
         .finally(() => setPageLoading(false));
     }
   }, [isLoading, router, user]);
@@ -73,7 +73,7 @@ export default function HostVehiclesPage() {
       setVehicles((items) => items.map((vehicle) => vehicle.id === id ? { ...vehicle, price: updated.price_daily } : vehicle));
       setEditingId(null);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Vehicle price save nahi ho paya.');
+      setActionError(err instanceof Error ? err.message : 'The vehicle price could not be saved.');
     }
   };
 
@@ -86,7 +86,7 @@ export default function HostVehiclesPage() {
       const updated = await persistVehicle(id, { status: nextStatus[current.status] || 'active' });
       setVehicles((items) => items.map((vehicle) => vehicle.id === id ? { ...vehicle, status: updated.status, available: updated.available } : vehicle));
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Vehicle status update nahi ho paya.');
+      setActionError(err instanceof Error ? err.message : 'The vehicle status could not be updated.');
     }
   };
 
@@ -98,7 +98,7 @@ export default function HostVehiclesPage() {
       setVehicles((items) => items.filter((vehicle) => vehicle.id !== id));
       setDeleteConfirm(null);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Vehicle delete nahi ho paya.');
+      setActionError(err instanceof Error ? err.message : 'The vehicle could not be deleted.');
     }
   };
 

@@ -12,7 +12,7 @@ export default function BookingsPage() {
   useEffect(() => {
     fetchAdminBookings()
       .then((data) => setBookings(data))
-      .catch(() => setError('Bookings load nahi ho paaye.'));
+      .catch(() => setError('Bookings could not be loaded.'));
   }, []);
 
   const filtered = bookings
@@ -35,7 +35,7 @@ export default function BookingsPage() {
       const updated = await updateBooking(id, { booking_status: bookingStatus });
       setBookings((items) => items.map((booking) => booking.id === id ? { ...booking, bookingStatus: updated.booking_status, status: updated.booking_status } : booking));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Booking status update nahi ho paya.');
+      setError(err instanceof Error ? err.message : 'The booking status could not be updated.');
     }
   };
 
@@ -44,7 +44,7 @@ export default function BookingsPage() {
       const updated = await updateBooking(id, { booking_status: 'cancelled', payment_status: 'refunded' });
       setBookings((items) => items.map((booking) => booking.id === id ? { ...booking, bookingStatus: updated.booking_status, status: updated.booking_status, paymentStatus: updated.payment_status } : booking));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Refund process nahi hua.');
+      setError(err instanceof Error ? err.message : 'The refund could not be processed.');
     }
   };
 

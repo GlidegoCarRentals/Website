@@ -56,7 +56,7 @@ export default function HostEarningsPage() {
           })) as any);
         }
       })
-      .catch(() => setLoadError('Earnings load nahi ho paaye.'));
+      .catch(() => setLoadError('Earnings could not be loaded.'));
   }, [isLoading, user]);
 
   const maxEarnings = Math.max(...monthlyData.map((item) => item.earnings), 1);
