@@ -37,7 +37,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   signup: (name: string, email: string, password: string, role?: 'guest' | 'host') => Promise<{ ok: boolean; error?: string }>;
-  loginWithGoogle: (nextPath?: string) => Promise<void>;
+  loginWithGoogle: (nextPath?: string, role?: 'guest' | 'host') => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   toggleFavourite: (carId: string) => Promise<void>;
@@ -56,13 +56,14 @@ function formatJoinedDate(createdAt?: string | null) {
     : undefined;
 }
 
-function getAuthCallbackUrl(nextPath = '/') {
+function getAuthCallbackUrl(nextPath = '/', role: 'guest' | 'host' = 'guest') {
   if (typeof window === 'undefined') {
     return '/auth/callback';
   }
 
   const safeNext = nextPath.startsWith('/') ? nextPath : '/';
-  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+  const safeRole = role === 'host' ? 'host' : 'guest';
+  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}&role=${safeRole}`;
 }
 
 async function hasAuthenticatedSession() {
@@ -260,11 +261,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: false, error: 'Something went wrong. Please try again.' };
   };
 
-  const loginWithGoogle = async (nextPath = '/') => {
+  const loginWithGoogle = async (nextPath = '/', role: 'guest' | 'host' = 'guest') => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: getAuthCallbackUrl(nextPath),
+        redirectTo: getAuthCallbackUrl(nextPath, role),
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

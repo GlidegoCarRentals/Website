@@ -205,7 +205,7 @@ function LoginForm() {
         </div>
 
         {/* Google */}
-        <button onClick={() => loginWithGoogle(redirect)}
+        <button onClick={() => loginWithGoogle(redirect, mode === 'signup' ? role : 'guest')}
           style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1.5px solid rgba(255,255,255,0.1)', borderRadius:12, padding:'13px', color:'white', fontSize:14, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:10, fontFamily:"'Inter',sans-serif", transition:'all 0.2s', marginBottom:24 }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.09)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}>

@@ -9,7 +9,9 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
   const requestedNext = searchParams.get('next') ?? '/'
+  const requestedRole = searchParams.get('role')
   const next = requestedNext.startsWith('/') ? requestedNext : '/'
+  const selectedRole = requestedRole === 'host' ? 'host' : 'guest'
 
   if (error) {
     const message = errorDescription || error || 'Authentication failed'
@@ -41,9 +43,12 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const user = data.user
       if (user) {
-        const role = user.user_metadata?.role === 'admin' || user.user_metadata?.role === 'host'
-          ? user.user_metadata.role
-          : 'guest'
+        const metadataRole =
+          user.user_metadata?.role === 'admin' || user.user_metadata?.role === 'host'
+            ? user.user_metadata.role
+            : 'guest'
+
+        const role = metadataRole === 'admin' ? 'admin' : selectedRole === 'host' ? 'host' : metadataRole
 
         await supabase.from('users').upsert(
           {
