@@ -24,7 +24,7 @@ function LoginForm() {
     ? ({
         auth_callback_failed: 'Google sign-in complete nahi hua. Please dobara try karo.',
         access_denied: 'Aapko is section ko access karne ki permission nahi hai.',
-      } as Record<string, string>)[errorCode] || 'Authentication complete nahi hua. Please dobara try karo.'
+      } as Record<string, string>)[errorCode] || errorCode
     : '';
 
   // Handle implicit OAuth flow — token in URL hash
@@ -53,7 +53,7 @@ function LoginForm() {
       } else {
         const { ok, error: err } = await signup(name, email, password, role);
         if (ok) {
-          setSuccess('Account created! Check your email to verify, then sign in.');
+          setSuccess('Account created! Verification email bhej di gayi hai. Email confirm karke phir sign in karo.');
           setMode('login');
         } else {
           setError(err || 'Signup failed');
