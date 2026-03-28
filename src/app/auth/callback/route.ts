@@ -6,8 +6,15 @@ import type { NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const error = searchParams.get('error')
+  const errorDescription = searchParams.get('error_description')
   const requestedNext = searchParams.get('next') ?? '/'
   const next = requestedNext.startsWith('/') ? requestedNext : '/'
+
+  if (error) {
+    const message = errorDescription || error || 'Authentication failed'
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(message)}`)
+  }
 
   if (code) {
     const cookieStore = await cookies()
@@ -42,7 +49,12 @@ export async function GET(request: NextRequest) {
           {
             id: user.id,
             email: user.email || '',
-            full_name: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : '',
+            full_name:
+              typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim().length > 0
+                ? user.user_metadata.full_name.trim()
+                : typeof user.user_metadata?.name === 'string' && user.user_metadata.name.trim().length > 0
+                  ? user.user_metadata.name.trim()
+                  : user.email?.split('@')[0] || 'User',
             role,
             promo_credits: 20,
           },
@@ -54,5 +66,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+  const fallbackMessage = errorDescription || 'Authentication could not be completed. Please try again.'
+  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(fallbackMessage)}`)
 }

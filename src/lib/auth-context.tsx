@@ -56,16 +56,33 @@ function formatJoinedDate(createdAt?: string | null) {
     : undefined;
 }
 
+async function hasAuthenticatedSession() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return Boolean(session?.access_token);
+}
+
 async function ensureUserProfile(authUser: {
   id: string;
   email?: string | null;
   user_metadata?: Record<string, unknown>;
 }) {
+  if (!(await hasAuthenticatedSession())) {
+    return false;
+  }
+
   const metadata = authUser.user_metadata || {};
-  const fullName = typeof metadata.full_name === 'string' ? metadata.full_name : '';
+  const fullName =
+    typeof metadata.full_name === 'string' && metadata.full_name.trim().length > 0
+      ? metadata.full_name.trim()
+      : typeof metadata.name === 'string' && metadata.name.trim().length > 0
+        ? metadata.name.trim()
+        : authUser.email?.split('@')[0] || 'User';
   const role = normalizeRole(metadata.role);
 
-  await supabase.from('users').upsert(
+  const { error } = await supabase.from('users').upsert(
     {
       id: authUser.id,
       email: authUser.email || '',
@@ -75,6 +92,13 @@ async function ensureUserProfile(authUser: {
     },
     { onConflict: 'id' }
   );
+
+  if (error) {
+    console.error('ensureUserProfile error:', error.message);
+    return false;
+  }
+
+  return true;
 }
 
 async function fetchProfile(userId: string): Promise<User | null> {
@@ -194,10 +218,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!name.trim()) return { ok: false, error: 'Please enter your full name.' };
     if (password.length < 6) return { ok: false, error: 'Password must be at least 6 characters.' };
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       options: {
-        data: { full_name: name, role },
+        data: { full_name: name.trim(), role },
       },
     });
     if (error) {
@@ -205,16 +229,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: false, error: error.message };
     }
     if (data.user) {
-      await ensureUserProfile({
-        id: data.user.id,
-        email: data.user.email,
-        user_metadata: { ...data.user.user_metadata, full_name: name, role },
-      });
-      const profile = await loadProfile({
+      const authUser = {
         ...data.user,
-        user_metadata: { ...data.user.user_metadata, full_name: name, role },
-      });
-      setUser(profile);
+        user_metadata: { ...data.user.user_metadata, full_name: name.trim(), role },
+      };
+
+      if (data.session) {
+        const profile = await loadProfile(authUser);
+        setUser(profile);
+      }
+
       return { ok: true };
     }
     return { ok: false, error: 'Something went wrong. Please try again.' };
