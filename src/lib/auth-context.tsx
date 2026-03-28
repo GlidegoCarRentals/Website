@@ -56,6 +56,15 @@ function formatJoinedDate(createdAt?: string | null) {
     : undefined;
 }
 
+function getAuthCallbackUrl(nextPath = '/') {
+  if (typeof window === 'undefined') {
+    return '/auth/callback';
+  }
+
+  const safeNext = nextPath.startsWith('/') ? nextPath : '/';
+  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+}
+
 async function hasAuthenticatedSession() {
   const {
     data: { session },
@@ -221,6 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: email.trim().toLowerCase(),
       password,
       options: {
+        emailRedirectTo: getAuthCallbackUrl('/'),
         data: { full_name: name.trim(), role },
       },
     });
@@ -245,11 +255,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async (nextPath = '/') => {
-    const safeNext = nextPath.startsWith('/') ? nextPath : '/';
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
+        redirectTo: getAuthCallbackUrl(nextPath),
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
