@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/account'
@@ -21,7 +21,6 @@ export default function LoginPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Check if user is already logged in
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) router.push(redirectTo)
     })
@@ -41,12 +40,6 @@ export default function LoginPage() {
       setError(getFriendlyError(error.message))
       setLoading(false)
       return
-    }
-
-    // Set session duration based on Remember Me
-    if (!rememberMe) {
-      // Short session — 1 day (Supabase default is 1 week, so we handle this via cookie expiry)
-      // For now just redirect — Supabase handles session automatically
     }
 
     router.push(redirectTo)
@@ -96,7 +89,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="text-3xl font-bold text-blue-600">
             GlideGo
@@ -109,7 +101,6 @@ export default function LoginPage() {
             Sign In
           </h1>
 
-          {/* Error / Success Messages */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
@@ -121,18 +112,11 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Google OAuth */}
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 px-4 text-gray-700 dark:text-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mb-6 font-medium disabled:opacity-50"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-              <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.01c-.72.48-1.63.76-2.7.76-2.07 0-3.83-1.4-4.46-3.28H1.85v2.07A8 8 0 0 0 8.98 17z"/>
-              <path fill="#FBBC05" d="M4.52 10.53c-.16-.48-.25-.99-.25-1.53s.09-1.05.25-1.53V5.4H1.85A8 8 0 0 0 .98 9c0 1.29.31 2.51.87 3.6l2.67-2.07z"/>
-              <path fill="#EA4335" d="M8.98 3.72c1.16 0 2.2.4 3.02 1.19l2.26-2.26A8 8 0 0 0 8.98 1 8 8 0 0 0 1.85 5.4l2.67 2.13c.63-1.88 2.39-3.28 4.46-3.28-.01-.01 0 0 0 0z"/>
-            </svg>
             Continue with Google
           </button>
 
@@ -145,67 +129,37 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Email/Password Form */}
           <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="you@example.com"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="Email"
+              className="w-full px-4 py-3 border rounded-xl"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded"
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">Remember me (30 days)</span>
-              </label>
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Forgot password?
-              </button>
-            </div>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Password"
+              className="w-full px-4 py-3 border rounded-xl"
+            />
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3 rounded-xl"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm mt-6">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-blue-600 font-medium hover:underline">
+            <Link href="/signup" className="text-blue-600">
               Sign up
             </Link>
           </p>
@@ -215,14 +169,16 @@ export default function LoginPage() {
   )
 }
 
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
 function getFriendlyError(message: string): string {
   if (message.includes('Invalid login credentials'))
-    return 'Email ya password galat hai. Dobara try karo.'
-  if (message.includes('Email not confirmed'))
-    return 'Pehle email verify karo. Inbox check karo.'
-  if (message.includes('Too many requests'))
-    return 'Bahut zyada attempts. Thodi der baad try karo.'
-  if (message.includes('User not found'))
-    return 'Yeh email registered nahi hai. Sign up karo.'
+    return 'Email ya password galat hai.'
   return message
 }
