@@ -1,76 +1,69 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+// src/app/auth/callback/route.ts
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/account'
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
-  const requestedNext = searchParams.get('next') ?? '/'
-  const requestedRole = searchParams.get('role')
-  const next = requestedNext.startsWith('/') ? requestedNext : '/'
-  const selectedRole = requestedRole === 'host' ? 'host' : 'guest'
 
+  // Handle OAuth errors
   if (error) {
-    const message = errorDescription || error || 'Authentication failed'
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(message)}`)
+    console.error('Auth callback error:', error, errorDescription)
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(errorDescription ?? error)}`
+    )
   }
 
   if (code) {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {}
-          },
-        },
-      }
-    )
+    const supabase = await createClient()
+    const { data, error: exchangeError } =
+      await supabase.auth.exchangeCodeForSession(code)
 
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      const user = data.user
-      if (user) {
-        const metadataRole =
-          user.user_metadata?.role === 'admin' || user.user_metadata?.role === 'host'
-            ? user.user_metadata.role
-            : 'guest'
-
-        const role = metadataRole === 'admin' ? 'admin' : selectedRole === 'host' ? 'host' : metadataRole
-
-        await supabase.from('users').upsert(
-          {
-            id: user.id,
-            email: user.email || '',
-            full_name:
-              typeof user.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim().length > 0
-                ? user.user_metadata.full_name.trim()
-                : typeof user.user_metadata?.name === 'string' && user.user_metadata.name.trim().length > 0
-                  ? user.user_metadata.name.trim()
-                  : user.email?.split('@')[0] || 'User',
-            role,
-            promo_credits: 20,
-          },
-          { onConflict: 'id' }
-        )
-      }
-
-      return NextResponse.redirect(`${origin}${next}`)
+    if (exchangeError) {
+      console.error('Code exchange error:', exchangeError)
+      return NextResponse.redirect(
+        `${origin}/login?error=${encodeURIComponent(exchangeError.message)}`
+      )
     }
+
+    if (data.user) {
+      // Upsert user profile in our users table
+      const { error: upsertError } = await supabase.from('users').upsert(
+        {
+          id: data.user.id,
+          email: data.user.email,
+          full_name:
+            data.user.user_metadata?.full_name ||
+            data.user.user_metadata?.name ||
+            '',
+          avatar_url:
+            data.user.user_metadata?.avatar_url ||
+            data.user.user_metadata?.picture ||
+            null,
+          role: 'guest', // Default role
+          email_verified: data.user.email_confirmed_at ? true : false,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'id',
+          ignoreDuplicates: false,
+        }
+      )
+
+      if (upsertError) {
+        console.error('Profile upsert error:', upsertError)
+        // Don't fail auth just because profile upsert failed
+      }
+    }
+
+    // Redirect to the requested page or account
+    const redirectTo = next.startsWith('/') ? next : '/account'
+    return NextResponse.redirect(`${origin}${redirectTo}`)
   }
 
-  const fallbackMessage = errorDescription || 'Authentication could not be completed. Please try again.'
-  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(fallbackMessage)}`)
+  // No code — redirect to login
+  return NextResponse.redirect(`${origin}/login`)
 }
