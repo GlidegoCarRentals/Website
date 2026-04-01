@@ -286,7 +286,7 @@ export default function AccountPage() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Total Trips</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{profile.total_trips || 0}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{(profile as any).total_trips || 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Trust Score</span>
