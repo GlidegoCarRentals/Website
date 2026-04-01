@@ -150,7 +150,7 @@ export default function SignupPage() {
           <Link href="/" className="text-3xl font-bold text-blue-600">
             GlideGo
           </Link>
-          <p className="text-gray-500 mt-2 text-sm">Melbourne's best car rental platform</p>
+          <p className="text-gray-500 mt-2 text-sm">Melbourne&apos;s best car rental platform</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
