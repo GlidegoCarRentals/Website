@@ -485,7 +485,7 @@ export default function AccountPage() {
                     { key: 'messages', label: 'New Messages', desc: 'When host or guest sends a message' },
                     { key: 'promotions', label: 'Promotions', desc: 'Special offers and discount codes' },
                   ].map((pref) => {
-                    const prefs = (profile.email_prefs as any) || {}
+                    const prefs = ((profile as any).email_prefs) || {}
                     const isEnabled = prefs[pref.key] ?? true
 
                     return (
