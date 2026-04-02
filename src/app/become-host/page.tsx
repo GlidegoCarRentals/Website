@@ -20,7 +20,7 @@ export default function BecomeHostPage() {
       if (!user) router.push('/login?redirectTo=/become-host')
       if (profile?.role === 'host' || profile?.role === 'admin') router.push('/host/dashboard')
     }
-  }, [user, profile, loading])
+  }, [loading, user, profile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBecomeHost = async () => {
     if (!agreed) { setError('Please agree to the Host Terms to continue.'); return }
@@ -60,7 +60,7 @@ export default function BecomeHostPage() {
             Earn money with your car
           </h1>
           <p className="text-zinc-400 text-lg max-w-xl mx-auto">
-            Join Melbourne's fastest-growing car sharing platform. List your car and start earning today.
+            Join Melbourne&apos;s fastest-growing car sharing platform. List your car and start earning today.
           </p>
         </div>
 
@@ -138,7 +138,11 @@ export default function BecomeHostPage() {
                 agreed ? 'bg-blue-600 border-blue-600' : 'border-zinc-600 hover:border-zinc-400'
               }`}
             >
-              {agreed && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              {agreed && (
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
             </div>
             <span className="text-zinc-400 text-sm leading-relaxed group-hover:text-zinc-300 transition-colors">
               I agree to the{' '}

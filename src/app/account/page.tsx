@@ -20,19 +20,25 @@ export default function AccountPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
+
+  // ✅ FIX: Initialize directly from profile (no useEffect needed)
+  const [fullName, setFullName] = useState(profile?.full_name || '')
+  const [phone, setPhone] = useState(profile?.phone || '')
+
+  // ✅ FIX: Sync when profile loads (using ref to avoid cascading renders)
+  const profileLoadedRef = useRef(false)
+  if (profile && !profileLoadedRef.current) {
+    profileLoadedRef.current = true
+    // Only set if still empty (first load)
+    if (!fullName && profile.full_name) setFullName(profile.full_name)
+    if (!phone && profile.phone) setPhone(profile.phone)
+  }
 
   useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name || '')
-      setPhone(profile.phone || '')
+    if (!loading && !user) {
+      router.push('/login')
     }
-  }, [profile])
-
-  useEffect(() => {
-    if (!loading && !user) router.push('/login')
-  }, [user, loading])
+  }, [loading, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -180,6 +186,7 @@ export default function AccountPage() {
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
               <div className="relative inline-block mb-4">
                 {profile.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={profile.avatar_url} alt={profile.full_name} className="w-20 h-20 rounded-2xl object-cover" />
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/20">
@@ -191,7 +198,10 @@ export default function AccountPage() {
                   disabled={uploadingAvatar}
                   className="absolute -bottom-1 -right-1 w-7 h-7 bg-zinc-700 hover:bg-zinc-600 border border-zinc-600 rounded-lg flex items-center justify-center transition-all disabled:opacity-50"
                 >
-                  {uploadingAvatar ? <span className="w-3 h-3 border border-zinc-400 border-t-white rounded-full animate-spin" /> : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-zinc-300"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>}
+                  {uploadingAvatar
+                    ? <span className="w-3 h-3 border border-zinc-400 border-t-white rounded-full animate-spin" />
+                    : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-zinc-300"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  }
                 </button>
               </div>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
@@ -240,7 +250,6 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Sign out */}
             <button onClick={handleSignOut} className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white py-3 rounded-xl text-sm font-medium transition-all">
               Sign Out
             </button>
@@ -308,7 +317,12 @@ export default function AccountPage() {
                         className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all"
                       />
                     ) : (
-                      <p className="text-sm py-1">{profile.phone ? <span className="text-white">{profile.phone}</span> : <span className="text-zinc-600">Not added</span>}</p>
+                      <p className="text-sm py-1">
+                        {profile.phone
+                          ? <span className="text-white">{profile.phone}</span>
+                          : <span className="text-zinc-600">Not added</span>
+                        }
+                      </p>
                     )}
                   </div>
 
@@ -317,14 +331,20 @@ export default function AccountPage() {
                       <button onClick={handleSaveProfile} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40">
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>
-                      <button onClick={() => { setEditing(false); setFullName(profile.full_name || ''); setPhone(profile.phone || '') }} className="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-3 rounded-xl text-sm font-medium transition-all">
+                      <button
+                        onClick={() => {
+                          setEditing(false)
+                          setFullName(profile.full_name || '')
+                          setPhone(profile.phone || '')
+                        }}
+                        className="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-3 rounded-xl text-sm font-medium transition-all"
+                      >
                         Cancel
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* Danger Zone */}
                 <div className="mt-8 pt-6 border-t border-zinc-800">
                   <p className="text-xs font-medium text-zinc-600 uppercase tracking-wider mb-3">Danger Zone</p>
                   <button onClick={handleDeleteAccount} className="text-sm text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 px-4 py-2 rounded-xl transition-all">

@@ -26,7 +26,7 @@ export default function LoginPage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) router.replace(redirectTo)
     })
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,7 +85,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 py-12 relative overflow-hidden">
-      {/* Background glow effects */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none" />
 
@@ -98,14 +97,13 @@ export default function LoginPage() {
             </div>
             <span className="text-2xl font-bold text-white tracking-tight">GlideGo</span>
           </Link>
-          <p className="text-zinc-500 mt-3 text-sm">Melbourne's premium car rental platform</p>
+          <p className="text-zinc-500 mt-3 text-sm">Melbourne&apos;s premium car rental platform</p>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
           <h1 className="text-xl font-semibold text-white mb-1">Welcome back</h1>
           <p className="text-zinc-500 text-sm mb-7">Sign in to your GlideGo account</p>
 
-          {/* Alerts */}
           {error && (
             <div className="mb-5 flex items-start gap-3 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl">
               <span className="text-red-400 mt-0.5 text-sm">⚠</span>
@@ -138,7 +136,6 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
-          {/* Divider */}
           <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-zinc-800" />
@@ -148,7 +145,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
@@ -193,7 +189,11 @@ export default function LoginPage() {
                     rememberMe ? 'bg-blue-600 border-blue-600' : 'border-zinc-600 hover:border-zinc-400'
                   }`}
                 >
-                  {rememberMe && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {rememberMe && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
                 </div>
                 <span className="text-zinc-400 text-sm group-hover:text-zinc-300 transition-colors">Remember me</span>
               </label>
@@ -222,7 +222,7 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-sm text-zinc-600 mt-6">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
               Create account
             </Link>

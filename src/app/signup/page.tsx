@@ -58,7 +58,6 @@ export default function SignupPage() {
     }
 
     if (data.user) {
-      // Create user profile — trigger handles this but we upsert as backup
       await supabase.from('users').upsert({
         id: data.user.id,
         email: data.user.email,
@@ -100,11 +99,11 @@ export default function SignupPage() {
             </div>
             <h2 className="text-xl font-semibold text-white mb-2">Verify your email</h2>
             <p className="text-zinc-400 text-sm leading-relaxed mb-1">
-              We've sent a verification link to
+              We&apos;ve sent a verification link to
             </p>
             <p className="text-white font-medium text-sm mb-5">{email}</p>
             <p className="text-zinc-500 text-xs mb-7">
-              Click the link in your email to activate your account. Check your spam folder if you don't see it within a few minutes.
+              Click the link in your email to activate your account. Check your spam folder if you don&apos;t see it within a few minutes.
             </p>
             <button
               onClick={async () => {
@@ -134,7 +133,6 @@ export default function SignupPage() {
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
-        {/* Logo */}
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center gap-2">
             <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-600/30">G</div>
@@ -154,7 +152,6 @@ export default function SignupPage() {
             </div>
           )}
 
-          {/* Google */}
           <button
             onClick={handleGoogleSignup}
             disabled={googleLoading || loading}
@@ -173,7 +170,6 @@ export default function SignupPage() {
             Continue with Google
           </button>
 
-          {/* Divider */}
           <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-zinc-800" />
@@ -256,7 +252,7 @@ export default function SignupPage() {
                 }`}
               />
               {confirmPassword && confirmPassword !== password && (
-                <p className="text-xs text-red-400 mt-1.5">Passwords don't match</p>
+                <p className="text-xs text-red-400 mt-1.5">Passwords don&apos;t match</p>
               )}
             </div>
 
