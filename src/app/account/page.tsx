@@ -20,25 +20,25 @@ export default function AccountPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [formInitialized, setFormInitialized] = useState(false)
 
-  // ✅ FIX: Initialize directly from profile (no useEffect needed)
-  const [fullName, setFullName] = useState(profile?.full_name || '')
-  const [phone, setPhone] = useState(profile?.phone || '')
+  // ✅ CORRECT: useEffect with state setters — only runs when profile first loads
+  useEffect(() => {
+    if (profile && !formInitialized) {
+      setFullName(profile.full_name || '')
+      setPhone(profile.phone || '')
+      setFormInitialized(true)
+    }
+  }, [profile, formInitialized])
 
-  // ✅ FIX: Sync when profile loads (using ref to avoid cascading renders)
-  const profileLoadedRef = useRef(false)
-  if (profile && !profileLoadedRef.current) {
-    profileLoadedRef.current = true
-    // Only set if still empty (first load)
-    if (!fullName && profile.full_name) setFullName(profile.full_name)
-    if (!phone && profile.phone) setPhone(profile.phone)
-  }
-
+  // ✅ CORRECT: separate effect for auth redirect
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login')
     }
-  }, [loading, user]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loading, user, router])
 
   if (loading) {
     return (
@@ -55,11 +55,14 @@ export default function AccountPage() {
 
   const handleSaveProfile = async () => {
     setSaving(true)
-    const { error } = await supabase.from('users').update({
-      full_name: fullName.trim(),
-      phone: phone.trim() || null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', user.id)
+    const { error } = await supabase
+      .from('users')
+      .update({
+        full_name: fullName.trim(),
+        phone: phone.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
 
     setSaving(false)
     if (error) { showErr('Failed to save: ' + error.message); return }
@@ -77,11 +80,17 @@ export default function AccountPage() {
     const ext = file.name.split('.').pop()
     const path = `${user.id}/avatar.${ext}`
 
-    const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    const { error: uploadErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true })
+
     if (uploadErr) { showErr('Upload failed: ' + uploadErr.message); setUploadingAvatar(false); return }
 
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    await supabase.from('users').update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq('id', user.id)
+    await supabase
+      .from('users')
+      .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+      .eq('id', user.id)
     await refreshProfile()
     showMsg('Profile photo updated.')
     setUploadingAvatar(false)
@@ -107,13 +116,10 @@ export default function AccountPage() {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return
     if (!confirm('Final confirmation: all your data, bookings, and history will be permanently removed.')) return
 
-    await supabase.from('users').update({
-      full_name: 'Deleted User',
-      phone: null,
-      avatar_url: null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', user.id)
-
+    await supabase
+      .from('users')
+      .update({ full_name: 'Deleted User', phone: null, avatar_url: null, updated_at: new Date().toISOString() })
+      .eq('id', user.id)
     await supabase.auth.signOut()
     router.push('/')
   }
@@ -140,12 +146,18 @@ export default function AccountPage() {
             <p className="text-zinc-500 text-sm mt-0.5">Manage your profile and preferences</p>
           </div>
           <div className="flex gap-3">
-            {profile.role === 'host' || profile.role === 'admin' ? (
-              <Link href="/host/dashboard" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all">
+            {(profile.role === 'host' || profile.role === 'admin') ? (
+              <Link
+                href="/host/dashboard"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all"
+              >
                 Host Dashboard →
               </Link>
             ) : (
-              <Link href="/become-host" className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white px-4 py-2 rounded-xl text-sm font-medium transition-all">
+              <Link
+                href="/become-host"
+                className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white px-4 py-2 rounded-xl text-sm font-medium transition-all"
+              >
                 Become a Host
               </Link>
             )}
@@ -155,7 +167,9 @@ export default function AccountPage() {
         {/* Alerts */}
         {message && (
           <div className="mb-5 flex items-center gap-3 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
             <p className="text-emerald-400 text-sm">{message}</p>
           </div>
         )}
@@ -173,7 +187,10 @@ export default function AccountPage() {
               <p className="font-medium text-amber-400 text-sm">Verify your email address</p>
               <p className="text-amber-500/70 text-xs mt-0.5">Required before making your first booking</p>
             </div>
-            <button onClick={handleResendVerification} className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-4 py-2 rounded-lg text-xs font-medium transition-all flex-shrink-0">
+            <button
+              onClick={handleResendVerification}
+              className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-4 py-2 rounded-lg text-xs font-medium transition-all flex-shrink-0"
+            >
               Resend Email
             </button>
           </div>
@@ -182,12 +199,15 @@ export default function AccountPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="space-y-4">
-            {/* Avatar card */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
               <div className="relative inline-block mb-4">
                 {profile.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.avatar_url} alt={profile.full_name} className="w-20 h-20 rounded-2xl object-cover" />
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.full_name}
+                    className="w-20 h-20 rounded-2xl object-cover"
+                  />
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/20">
                     {initials}
@@ -200,7 +220,12 @@ export default function AccountPage() {
                 >
                   {uploadingAvatar
                     ? <span className="w-3 h-3 border border-zinc-400 border-t-white rounded-full animate-spin" />
-                    : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-zinc-300"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    : (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-zinc-300">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    )
                   }
                 </button>
               </div>
@@ -227,12 +252,11 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Stats */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
               <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4">Overview</h3>
               <div className="space-y-3">
                 {[
-                  { label: 'Total trips', value: profile.total_trips || 0 },
+                  { label: 'Total trips', value: String(profile.total_trips || 0) },
                   { label: 'Trust score', value: `${profile.trust_score || 50}/100` },
                   { label: 'Promo credits', value: `AUD $${profile.promo_credits || '0.00'}` },
                 ].map(item => (
@@ -244,20 +268,24 @@ export default function AccountPage() {
                 {profile.referral_code && (
                   <div className="flex items-center justify-between">
                     <span className="text-zinc-500 text-sm">Referral code</span>
-                    <span className="font-mono text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 px-2 py-1 rounded-lg">{profile.referral_code}</span>
+                    <span className="font-mono text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 px-2 py-1 rounded-lg">
+                      {profile.referral_code}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
 
-            <button onClick={handleSignOut} className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white py-3 rounded-xl text-sm font-medium transition-all">
+            <button
+              onClick={handleSignOut}
+              className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white py-3 rounded-xl text-sm font-medium transition-all"
+            >
               Sign Out
             </button>
           </div>
 
           {/* Right Column */}
           <div className="lg:col-span-2">
-            {/* Tab bar */}
             <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 mb-5">
               {tabs.map(tab => (
                 <button
@@ -280,7 +308,10 @@ export default function AccountPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="font-semibold text-white">Personal Information</h2>
                   {!editing && (
-                    <button onClick={() => setEditing(true)} className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+                    <button
+                      onClick={() => setEditing(true)}
+                      className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+                    >
                       Edit
                     </button>
                   )}
@@ -288,7 +319,9 @@ export default function AccountPage() {
 
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Full Name</label>
+                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+                      Full Name
+                    </label>
                     {editing ? (
                       <input
                         type="text"
@@ -297,17 +330,26 @@ export default function AccountPage() {
                         className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white text-sm outline-none transition-all"
                       />
                     ) : (
-                      <p className="text-white text-sm py-1">{profile.full_name || <span className="text-zinc-600">Not set</span>}</p>
+                      <p className="text-sm py-1">
+                        {profile.full_name
+                          ? <span className="text-white">{profile.full_name}</span>
+                          : <span className="text-zinc-600">Not set</span>
+                        }
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Email Address</label>
+                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+                      Email Address
+                    </label>
                     <p className="text-white text-sm py-1">{profile.email}</p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Phone Number</label>
+                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+                      Phone Number
+                    </label>
                     {editing ? (
                       <input
                         type="tel"
@@ -328,7 +370,11 @@ export default function AccountPage() {
 
                   {editing && (
                     <div className="flex gap-3 pt-1">
-                      <button onClick={handleSaveProfile} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40">
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={saving}
+                        className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
+                      >
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>
                       <button
@@ -347,7 +393,10 @@ export default function AccountPage() {
 
                 <div className="mt-8 pt-6 border-t border-zinc-800">
                   <p className="text-xs font-medium text-zinc-600 uppercase tracking-wider mb-3">Danger Zone</p>
-                  <button onClick={handleDeleteAccount} className="text-sm text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 px-4 py-2 rounded-xl transition-all">
+                  <button
+                    onClick={handleDeleteAccount}
+                    className="text-sm text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 px-4 py-2 rounded-xl transition-all"
+                  >
                     Delete Account
                   </button>
                 </div>
@@ -392,7 +441,10 @@ export default function AccountPage() {
                   </div>
 
                   {!profile.email_verified && (
-                    <button onClick={handleResendVerification} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-600/20">
+                    <button
+                      onClick={handleResendVerification}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-600/20"
+                    >
                       Send Verification Email
                     </button>
                   )}
@@ -410,7 +462,7 @@ export default function AccountPage() {
                     { key: 'messages', label: 'New messages', desc: 'When a host or guest sends you a message' },
                     { key: 'promotions', label: 'Promotions & offers', desc: 'Special deals and discount codes' },
                   ].map(pref => {
-                    const prefs = (profile.email_prefs as any) || {}
+                    const prefs = (profile.email_prefs as Record<string, boolean>) || {}
                     const enabled = prefs[pref.key] ?? true
 
                     return (
@@ -422,12 +474,19 @@ export default function AccountPage() {
                         <button
                           onClick={async () => {
                             const updated = { ...prefs, [pref.key]: !enabled }
-                            await supabase.from('users').update({ email_prefs: updated, updated_at: new Date().toISOString() }).eq('id', user.id)
+                            await supabase
+                              .from('users')
+                              .update({ email_prefs: updated, updated_at: new Date().toISOString() })
+                              .eq('id', user.id)
                             await refreshProfile()
                           }}
-                          className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ${enabled ? 'bg-blue-600' : 'bg-zinc-700'}`}
+                          className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ${
+                            enabled ? 'bg-blue-600' : 'bg-zinc-700'
+                          }`}
                         >
-                          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+                            enabled ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
                         </button>
                       </div>
                     )
