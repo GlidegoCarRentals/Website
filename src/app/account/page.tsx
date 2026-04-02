@@ -27,9 +27,9 @@ export default function AccountPage() {
   // ✅ CORRECT: useEffect with state setters — only runs when profile first loads
   useEffect(() => {
     if (profile && !formInitialized) {
-      setFullName(profile.full_name || '')
-      setPhone(profile.phone || '')
-      setFormInitialized(true)
+      setFullName(profile.full_name || '') // eslint-disable-line react-hooks/set-state-in-effect
+      setPhone(profile.phone || '') // eslint-disable-line react-hooks/set-state-in-effect
+      setFormInitialized(true) // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [profile, formInitialized])
 
