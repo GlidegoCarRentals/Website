@@ -1,12 +1,12 @@
 'use client'
 
-// src/app/account/page.tsx
-
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
+
+type Tab = 'profile' | 'security' | 'notifications'
 
 export default function AccountPage() {
   const router = useRouter()
@@ -14,103 +14,70 @@ export default function AccountPage() {
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications'>('profile')
+  const [activeTab, setActiveTab] = useState<Tab>('profile')
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
 
-  const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    phone: profile?.phone || '',
-  })
-
-  // Update formData when profile loads
-  useState(() => {
+  useEffect(() => {
     if (profile) {
-      setFormData({
-        full_name: profile.full_name || '',
-        phone: profile.phone || '',
-      })
+      setFullName(profile.full_name || '')
+      setPhone(profile.phone || '')
     }
-  })
+  }, [profile])
+
+  useEffect(() => {
+    if (!loading && !user) router.push('/login')
+  }, [user, loading])
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <span className="w-6 h-6 border-2 border-zinc-700 border-t-blue-500 rounded-full animate-spin" />
       </div>
     )
   }
 
-  if (!user || !profile) {
-    router.push('/login')
-    return null
-  }
+  if (!user || !profile) return null
+
+  const showMsg = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 4000) }
+  const showErr = (err: string) => { setError(err); setTimeout(() => setError(''), 5000) }
 
   const handleSaveProfile = async () => {
     setSaving(true)
-    setError('')
-
-    const { error } = await supabase
-      .from('users')
-      .update({
-        full_name: formData.full_name,
-        phone: formData.phone,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id)
-
-    if (error) {
-      setError('Save nahi hua: ' + error.message)
-    } else {
-      setMessage('Profile update ho gaya! ✅')
-      setEditing(false)
-      await refreshProfile()
-      setTimeout(() => setMessage(''), 3000)
-    }
+    const { error } = await supabase.from('users').update({
+      full_name: fullName.trim(),
+      phone: phone.trim() || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', user.id)
 
     setSaving(false)
+    if (error) { showErr('Failed to save: ' + error.message); return }
+    setEditing(false)
+    await refreshProfile()
+    showMsg('Profile updated successfully.')
   }
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image 5MB se chhoti honi chahiye')
-      return
-    }
+    if (file.size > 5 * 1024 * 1024) { showErr('Image must be under 5MB.'); return }
 
     setUploadingAvatar(true)
-    setError('')
+    const ext = file.name.split('.').pop()
+    const path = `${user.id}/avatar.${ext}`
 
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${user.id}/avatar.${fileExt}`
+    const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    if (uploadErr) { showErr('Upload failed: ' + uploadErr.message); setUploadingAvatar(false); return }
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file, { upsert: true })
-
-    if (uploadError) {
-      setError('Upload failed: ' + uploadError.message)
-      setUploadingAvatar(false)
-      return
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName)
-
-    await supabase
-      .from('users')
-      .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
-      .eq('id', user.id)
-
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+    await supabase.from('users').update({ avatar_url: publicUrl, updated_at: new Date().toISOString() }).eq('id', user.id)
     await refreshProfile()
-    setMessage('Photo update ho gayi! ✅')
-    setTimeout(() => setMessage(''), 3000)
+    showMsg('Profile photo updated.')
     setUploadingAvatar(false)
   }
 
@@ -120,13 +87,8 @@ export default function AccountPage() {
       email: user.email!,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
-
-    if (error) {
-      setError('Email nahi bheja: ' + error.message)
-    } else {
-      setMessage('Verification email bhej diya! Inbox check karo.')
-      setTimeout(() => setMessage(''), 5000)
-    }
+    if (error) showErr(error.message)
+    else showMsg('Verification email sent. Check your inbox.')
   }
 
   const handleSignOut = async () => {
@@ -136,274 +98,226 @@ export default function AccountPage() {
   }
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      'Account delete karna chahte ho? Yeh action undo nahi ho sakta. Saara data remove ho jayega.'
-    )
-    if (!confirmed) return
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return
+    if (!confirm('Final confirmation: all your data, bookings, and history will be permanently removed.')) return
 
-    const doubleConfirm = window.confirm(
-      'Last chance! Pakka delete karna hai? Saari bookings aur data permanently remove ho jayegi.'
-    )
-    if (!doubleConfirm) return
-
-    // Soft delete — anonymise data
-    await supabase
-      .from('users')
-      .update({
-        full_name: 'Deleted User',
-        phone: null,
-        avatar_url: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id)
+    await supabase.from('users').update({
+      full_name: 'Deleted User',
+      phone: null,
+      avatar_url: null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', user.id)
 
     await supabase.auth.signOut()
-    router.push('/?deleted=true')
+    router.push('/')
   }
 
   const initials = profile.full_name
-    ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : profile.email[0].toUpperCase()
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'profile', label: 'Profile' },
+    { id: 'security', label: 'Security' },
+    { id: 'notifications', label: 'Notifications' },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/4 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-5xl mx-auto px-4 py-10 relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Account</h1>
-          {profile.role === 'host' && (
-            <Link
-              href="/host/dashboard"
-              className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              Host Dashboard →
-            </Link>
-          )}
-          {profile.role === 'guest' && (
-            <Link
-              href="/become-host"
-              className="border border-blue-600 text-blue-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-50 transition-colors"
-            >
-              Become a Host
-            </Link>
-          )}
+          <div>
+            <h1 className="text-2xl font-bold text-white">Account</h1>
+            <p className="text-zinc-500 text-sm mt-0.5">Manage your profile and preferences</p>
+          </div>
+          <div className="flex gap-3">
+            {profile.role === 'host' || profile.role === 'admin' ? (
+              <Link href="/host/dashboard" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all">
+                Host Dashboard →
+              </Link>
+            ) : (
+              <Link href="/become-host" className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white px-4 py-2 rounded-xl text-sm font-medium transition-all">
+                Become a Host
+              </Link>
+            )}
+          </div>
         </div>
 
-        {/* Messages */}
+        {/* Alerts */}
         {message && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-            {message}
+          <div className="mb-5 flex items-center gap-3 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <p className="text-emerald-400 text-sm">{message}</p>
           </div>
         )}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
+          <div className="mb-5 flex items-center gap-3 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl">
+            <span className="text-red-400 text-sm">⚠</span>
+            <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
 
-        {/* Email Verification Banner */}
+        {/* Email verification banner */}
         {!profile.email_verified && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-yellow-800">📧 Email verify karo</p>
-                <p className="text-sm text-yellow-600 mt-1">
-                  Booking karne ke liye email verification zaroori hai
-                </p>
-              </div>
-              <button
-                onClick={handleResendVerification}
-                className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 transition-colors flex-shrink-0"
-              >
-                Resend Email
-              </button>
+          <div className="mb-6 flex items-center justify-between p-4 bg-amber-500/8 border border-amber-500/20 rounded-xl">
+            <div>
+              <p className="font-medium text-amber-400 text-sm">Verify your email address</p>
+              <p className="text-amber-500/70 text-xs mt-0.5">Required before making your first booking</p>
             </div>
+            <button onClick={handleResendVerification} className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-4 py-2 rounded-lg text-xs font-medium transition-all flex-shrink-0">
+              Resend Email
+            </button>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Left: Avatar + Quick Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column */}
           <div className="space-y-4">
-            {/* Avatar */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm text-center">
+            {/* Avatar card */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
               <div className="relative inline-block mb-4">
                 {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.full_name}
-                    className="w-24 h-24 rounded-full object-cover"
-                  />
+                  <img src={profile.avatar_url} alt={profile.full_name} className="w-20 h-20 rounded-2xl object-cover" />
                 ) : (
-                  <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/20">
                     {initials}
                   </div>
                 )}
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="absolute bottom-0 right-0 w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white text-xs hover:bg-gray-700 transition-colors"
+                  className="absolute -bottom-1 -right-1 w-7 h-7 bg-zinc-700 hover:bg-zinc-600 border border-zinc-600 rounded-lg flex items-center justify-center transition-all disabled:opacity-50"
                 >
-                  {uploadingAvatar ? '...' : '✏️'}
+                  {uploadingAvatar ? <span className="w-3 h-3 border border-zinc-400 border-t-white rounded-full animate-spin" /> : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-zinc-300"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>}
                 </button>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
-              <h2 className="font-bold text-gray-900 dark:text-white">{profile.full_name || 'Name set nahi'}</h2>
-              <p className="text-sm text-gray-500">{profile.email}</p>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
 
-              {/* Role Badge */}
-              <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${
-                profile.role === 'admin' ? 'bg-red-100 text-red-700' :
-                profile.role === 'host' ? 'bg-green-100 text-green-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {profile.role === 'admin' ? '🔑 Admin' :
-                 profile.role === 'host' ? '🏠 Host' : '👤 Guest'}
-              </span>
+              <h2 className="font-semibold text-white">{profile.full_name || 'No name set'}</h2>
+              <p className="text-zinc-500 text-xs mt-0.5 truncate">{profile.email}</p>
 
-              {/* Email Verified Badge */}
-              <div className="mt-2">
-                {profile.email_verified ? (
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                    ✅ Email Verified
-                  </span>
-                ) : (
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                    ⚠️ Email Not Verified
-                  </span>
-                )}
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+                  profile.role === 'admin' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                  profile.role === 'host' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                  'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                }`}>
+                  {profile.role === 'admin' ? 'Admin' : profile.role === 'host' ? 'Host' : 'Guest'}
+                </span>
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+                  profile.email_verified
+                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                }`}>
+                  {profile.email_verified ? '✓ Verified' : '✗ Unverified'}
+                </span>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Stats</h3>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4">Overview</h3>
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Total Trips</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{(profile as any).total_trips || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Trust Score</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{profile.trust_score}/100</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Promo Credits</span>
-                  <span className="font-medium text-green-600">AUD ${profile.promo_credits || 0}</span>
-                </div>
+                {[
+                  { label: 'Total trips', value: profile.total_trips || 0 },
+                  { label: 'Trust score', value: `${profile.trust_score || 50}/100` },
+                  { label: 'Promo credits', value: `AUD $${profile.promo_credits || '0.00'}` },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center justify-between">
+                    <span className="text-zinc-500 text-sm">{item.label}</span>
+                    <span className="text-white text-sm font-medium">{item.value}</span>
+                  </div>
+                ))}
                 {profile.referral_code && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Referral Code</span>
-                    <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                      {profile.referral_code}
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500 text-sm">Referral code</span>
+                    <span className="font-mono text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 px-2 py-1 rounded-lg">{profile.referral_code}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Sign Out */}
-            <button
-              onClick={handleSignOut}
-              className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-            >
+            {/* Sign out */}
+            <button onClick={handleSignOut} className="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white py-3 rounded-xl text-sm font-medium transition-all">
               Sign Out
             </button>
           </div>
 
-          {/* Right: Tabs */}
-          <div className="md:col-span-2">
-            {/* Tab Bar */}
-            <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
-              {(['profile', 'security', 'notifications'] as const).map((tab) => (
+          {/* Right Column */}
+          <div className="lg:col-span-2">
+            {/* Tab bar */}
+            <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 mb-5">
+              {tabs.map(tab => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors capitalize ${
-                    activeTab === tab
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    activeTab === tab.id
+                      ? 'bg-zinc-800 text-white shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  {tab}
+                  {tab.label}
                 </button>
               ))}
             </div>
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-bold text-gray-900 dark:text-white">Personal Information</h2>
+                  <h2 className="font-semibold text-white">Personal Information</h2>
                   {!editing && (
-                    <button
-                      onClick={() => {
-                        setEditing(true)
-                        setFormData({
-                          full_name: profile.full_name || '',
-                          phone: profile.phone || '',
-                        })
-                      }}
-                      className="text-blue-600 text-sm font-medium hover:underline"
-                    >
+                    <button onClick={() => setEditing(true)} className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
                       Edit
                     </button>
                   )}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
+                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Full Name</label>
                     {editing ? (
                       <input
                         type="text"
-                        value={formData.full_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={fullName}
+                        onChange={e => setFullName(e.target.value)}
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white text-sm outline-none transition-all"
                       />
                     ) : (
-                      <p className="text-gray-900 dark:text-white py-2">{profile.full_name || '—'}</p>
+                      <p className="text-white text-sm py-1">{profile.full_name || <span className="text-zinc-600">Not set</span>}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
-                    <p className="text-gray-900 dark:text-white py-2">{profile.email}</p>
+                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Email Address</label>
+                    <p className="text-white text-sm py-1">{profile.email}</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Phone Number</label>
                     {editing ? (
                       <input
                         type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
                         placeholder="+61 4XX XXX XXX"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all"
                       />
                     ) : (
-                      <p className="text-gray-900 dark:text-white py-2">{profile.phone || '— Not added'}</p>
+                      <p className="text-sm py-1">{profile.phone ? <span className="text-white">{profile.phone}</span> : <span className="text-zinc-600">Not added</span>}</p>
                     )}
                   </div>
 
                   {editing && (
-                    <div className="flex gap-3 pt-2">
-                      <button
-                        onClick={handleSaveProfile}
-                        disabled={saving}
-                        className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                      >
+                    <div className="flex gap-3 pt-1">
+                      <button onClick={handleSaveProfile} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40">
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>
-                      <button
-                        onClick={() => setEditing(false)}
-                        className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
+                      <button onClick={() => { setEditing(false); setFullName(profile.full_name || ''); setPhone(profile.phone || '') }} className="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-3 rounded-xl text-sm font-medium transition-all">
                         Cancel
                       </button>
                     </div>
@@ -411,12 +325,9 @@ export default function AccountPage() {
                 </div>
 
                 {/* Danger Zone */}
-                <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="font-medium text-red-600 mb-3">Danger Zone</h3>
-                  <button
-                    onClick={handleDeleteAccount}
-                    className="text-sm text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
-                  >
+                <div className="mt-8 pt-6 border-t border-zinc-800">
+                  <p className="text-xs font-medium text-zinc-600 uppercase tracking-wider mb-3">Danger Zone</p>
+                  <button onClick={handleDeleteAccount} className="text-sm text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 px-4 py-2 rounded-xl transition-all">
                     Delete Account
                   </button>
                 </div>
@@ -425,49 +336,44 @@ export default function AccountPage() {
 
             {/* Security Tab */}
             {activeTab === 'security' && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                <h2 className="font-bold text-gray-900 dark:text-white mb-6">Security</h2>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h2 className="font-semibold text-white mb-6">Security Settings</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">Password</p>
-                      <p className="text-sm text-gray-500">Last changed: unknown</p>
+                      <p className="font-medium text-white text-sm">Password</p>
+                      <p className="text-zinc-500 text-xs mt-0.5">Change your account password</p>
                     </div>
                     <button
                       onClick={async () => {
                         await supabase.auth.resetPasswordForEmail(user.email!, {
                           redirectTo: `${window.location.origin}/reset-password`,
                         })
-                        setMessage('Password reset link bhej diya!')
-                        setTimeout(() => setMessage(''), 3000)
+                        showMsg('Password reset link sent to your email.')
                       }}
-                      className="text-blue-600 text-sm font-medium hover:underline"
+                      className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
                     >
                       Change
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">Email Verification</p>
-                      <p className="text-sm text-gray-500">{profile.email}</p>
+                      <p className="font-medium text-white text-sm">Email Verification</p>
+                      <p className="text-zinc-500 text-xs mt-0.5">{profile.email}</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
                       profile.email_verified
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
                     }`}>
-                      {profile.email_verified ? '✅ Verified' : '⚠️ Not Verified'}
+                      {profile.email_verified ? '✓ Verified' : '✗ Not Verified'}
                     </span>
                   </div>
 
                   {!profile.email_verified && (
-                    <button
-                      onClick={handleResendVerification}
-                      className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
-                    >
-                      Resend Verification Email
+                    <button onClick={handleResendVerification} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-600/20">
+                      Send Verification Email
                     </button>
                   )}
                 </div>
@@ -476,43 +382,32 @@ export default function AccountPage() {
 
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
-                <h2 className="font-bold text-gray-900 dark:text-white mb-6">Notification Preferences</h2>
-
-                <div className="space-y-4">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h2 className="font-semibold text-white mb-6">Email Notifications</h2>
+                <div className="space-y-3">
                   {[
-                    { key: 'booking_updates', label: 'Booking Updates', desc: 'Confirmation, status changes, reminders' },
-                    { key: 'messages', label: 'New Messages', desc: 'When host or guest sends a message' },
-                    { key: 'promotions', label: 'Promotions', desc: 'Special offers and discount codes' },
-                  ].map((pref) => {
-                    const prefs = ((profile as any).email_prefs) || {}
-                    const isEnabled = prefs[pref.key] ?? true
+                    { key: 'booking_updates', label: 'Booking updates', desc: 'Confirmations, status changes, and reminders' },
+                    { key: 'messages', label: 'New messages', desc: 'When a host or guest sends you a message' },
+                    { key: 'promotions', label: 'Promotions & offers', desc: 'Special deals and discount codes' },
+                  ].map(pref => {
+                    const prefs = (profile.email_prefs as any) || {}
+                    const enabled = prefs[pref.key] ?? true
 
                     return (
-                      <div
-                        key={pref.key}
-                        className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl"
-                      >
+                      <div key={pref.key} className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-white">{pref.label}</p>
-                          <p className="text-sm text-gray-500">{pref.desc}</p>
+                          <p className="font-medium text-white text-sm">{pref.label}</p>
+                          <p className="text-zinc-500 text-xs mt-0.5">{pref.desc}</p>
                         </div>
                         <button
                           onClick={async () => {
-                            const newPrefs = { ...prefs, [pref.key]: !isEnabled }
-                            await supabase
-                              .from('users')
-                              .update({ email_prefs: newPrefs, updated_at: new Date().toISOString() })
-                              .eq('id', user.id)
+                            const updated = { ...prefs, [pref.key]: !enabled }
+                            await supabase.from('users').update({ email_prefs: updated, updated_at: new Date().toISOString() }).eq('id', user.id)
                             await refreshProfile()
                           }}
-                          className={`relative w-12 h-6 rounded-full transition-colors ${
-                            isEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
+                          className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ${enabled ? 'bg-blue-600' : 'bg-zinc-700'}`}
                         >
-                          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                            isEnabled ? 'translate-x-7' : 'translate-x-1'
-                          }`} />
+                          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
                       </div>
                     )

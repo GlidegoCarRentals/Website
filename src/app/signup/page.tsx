@@ -13,36 +13,32 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
-  const validatePassword = (pwd: string) => {
-    if (pwd.length < 8) return 'Password kam se kam 8 characters ka hona chahiye'
-    if (!/[A-Z]/.test(pwd)) return 'Ek capital letter zaroori hai'
-    if (!/[0-9]/.test(pwd)) return 'Ek number zaroori hai'
-    return null
+  const passwordStrength = (pwd: string) => {
+    let score = 0
+    if (pwd.length >= 8) score++
+    if (/[A-Z]/.test(pwd)) score++
+    if (/[0-9]/.test(pwd)) score++
+    if (/[^A-Za-z0-9]/.test(pwd)) score++
+    return score
   }
+
+  const strength = passwordStrength(password)
+  const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength]
+  const strengthColor = ['', 'bg-red-500', 'bg-amber-500', 'bg-yellow-400', 'bg-emerald-500'][strength]
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!fullName.trim()) {
-      setError('Apna naam daalo')
-      return
-    }
-
-    const passwordError = validatePassword(password)
-    if (passwordError) {
-      setError(passwordError)
-      return
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords match nahi kar rahe')
-      return
-    }
+    if (!fullName.trim()) { setError('Please enter your full name.'); return }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
+    if (password !== confirmPassword) { setError('Passwords do not match.'); return }
 
     setLoading(true)
 
@@ -50,9 +46,7 @@ export default function SignupPage() {
       email: email.trim().toLowerCase(),
       password,
       options: {
-        data: {
-          full_name: fullName.trim(),
-        },
+        data: { full_name: fullName.trim() },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
@@ -64,8 +58,8 @@ export default function SignupPage() {
     }
 
     if (data.user) {
-      // Create user profile in our users table
-      const { error: profileError } = await supabase.from('users').insert({
+      // Create user profile — trigger handles this but we upsert as backup
+      await supabase.from('users').upsert({
         id: data.user.id,
         email: data.user.email,
         full_name: fullName.trim(),
@@ -73,12 +67,7 @@ export default function SignupPage() {
         email_verified: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      })
-
-      if (profileError && profileError.code !== '23505') {
-        // 23505 = duplicate key — user already exists, ignore
-        console.error('Profile creation error:', profileError)
-      }
+      }, { onConflict: 'id', ignoreDuplicates: true })
     }
 
     setSuccess(true)
@@ -86,56 +75,52 @@ export default function SignupPage() {
   }
 
   const handleGoogleSignup = async () => {
-    setLoading(true)
+    setGoogleLoading(true)
+    setError('')
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
+        queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    }
+    if (error) { setError(error.message); setGoogleLoading(false) }
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-        <div className="w-full max-w-md text-center">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
-            <div className="text-5xl mb-4">📧</div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-              Email check karo!
-            </h2>
-            <p className="text-gray-500 mb-4">
-              <strong>{email}</strong> pe verification link bhej diya hai. Link click karo aur account activate ho jayega.
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-600/8 rounded-full blur-[120px] pointer-events-none" />
+        <div className="w-full max-w-md relative z-10 text-center">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 shadow-2xl">
+            <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">Verify your email</h2>
+            <p className="text-zinc-400 text-sm leading-relaxed mb-1">
+              We've sent a verification link to
             </p>
-            <p className="text-sm text-gray-400">
-              Email nahi aaya?{' '}
-              <button
-                onClick={async () => {
-                  await supabase.auth.resend({
-                    type: 'signup',
-                    email,
-                    options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-                  })
-                  alert('Email dobara bhej diya!')
-                }}
-                className="text-blue-600 hover:underline"
-              >
-                Resend karo
-              </button>
+            <p className="text-white font-medium text-sm mb-5">{email}</p>
+            <p className="text-zinc-500 text-xs mb-7">
+              Click the link in your email to activate your account. Check your spam folder if you don't see it within a few minutes.
             </p>
-            <Link
-              href="/login"
-              className="mt-6 inline-block text-blue-600 hover:underline text-sm"
+            <button
+              onClick={async () => {
+                await supabase.auth.resend({
+                  type: 'signup',
+                  email,
+                  options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+                })
+                alert('Verification email resent. Check your inbox.')
+              }}
+              className="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm py-3 rounded-xl font-medium transition-all mb-3"
             >
-              ← Login page pe jao
+              Resend verification email
+            </button>
+            <Link href="/login" className="block text-sm text-blue-400 hover:text-blue-300 transition-colors">
+              Back to Sign In
             </Link>
           </div>
         </div>
@@ -144,139 +129,174 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold text-blue-600">
-            GlideGo
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <Link href="/" className="inline-flex items-center gap-2">
+            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-600/30">G</div>
+            <span className="text-2xl font-bold text-white tracking-tight">GlideGo</span>
           </Link>
-          <p className="text-gray-500 mt-2 text-sm">Melbourne&apos;s best car rental platform</p>
+          <p className="text-zinc-500 mt-3 text-sm">Start your journey with GlideGo</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Create Account
-          </h1>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+          <h1 className="text-xl font-semibold text-white mb-1">Create your account</h1>
+          <p className="text-zinc-500 text-sm mb-7">Join thousands of drivers across Melbourne</p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
+            <div className="mb-5 flex items-start gap-3 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <span className="text-red-400 mt-0.5 text-sm">⚠</span>
+              <p className="text-red-400 text-sm leading-relaxed">{error}</p>
             </div>
           )}
 
+          {/* Google */}
           <button
             onClick={handleGoogleSignup}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 px-4 text-gray-700 dark:text-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors mb-6 font-medium disabled:opacity-50"
+            disabled={googleLoading || loading}
+            className="w-full flex items-center justify-center gap-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 text-white rounded-xl py-3 px-4 text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed mb-5"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-              <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.01c-.72.48-1.63.76-2.7.76-2.07 0-3.83-1.4-4.46-3.28H1.85v2.07A8 8 0 0 0 8.98 17z"/>
-              <path fill="#FBBC05" d="M4.52 10.53c-.16-.48-.25-.99-.25-1.53s.09-1.05.25-1.53V5.4H1.85A8 8 0 0 0 .98 9c0 1.29.31 2.51.87 3.6l2.67-2.07z"/>
-              <path fill="#EA4335" d="M8.98 3.72c1.16 0 2.2.4 3.02 1.19l2.26-2.26A8 8 0 0 0 8.98 1 8 8 0 0 0 1.85 5.4l2.67 2.13c.63-1.88 2.39-3.28 4.46-3.28-.01-.01 0 0 0 0z"/>
-            </svg>
+            {googleLoading ? (
+              <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+                <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.01c-.72.48-1.63.76-2.7.76-2.07 0-3.83-1.4-4.46-3.28H1.85v2.07A8 8 0 0 0 8.98 17z"/>
+                <path fill="#FBBC05" d="M4.52 10.53c-.16-.48-.25-.99-.25-1.53s.09-1.05.25-1.53V5.4H1.85A8 8 0 0 0 .98 9c0 1.29.31 2.51.87 3.6l2.67-2.07z"/>
+                <path fill="#EA4335" d="M8.98 3.72c1.16 0 2.2.4 3.02 1.19l2.26-2.26A8 8 0 0 0 8.98 1 8 8 0 0 0 1.85 5.4l2.67 2.13c.63-1.88 2.39-3.28 4.46-3.28z"/>
+              </svg>
+            )}
             Continue with Google
           </button>
 
-          <div className="relative mb-6">
+          {/* Divider */}
+          <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-gray-600" />
+              <div className="w-full border-t border-zinc-800" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white dark:bg-gray-800 text-gray-500">or</span>
+            <div className="relative flex justify-center">
+              <span className="px-3 bg-zinc-900 text-zinc-600 text-xs">or sign up with email</span>
             </div>
           </div>
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Full Name
-              </label>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Full name</label>
               <input
                 type="text"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={e => setFullName(e.target.value)}
                 required
-                placeholder="Rahul Sharma"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                autoComplete="name"
+                placeholder="Alex Johnson"
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
+                autoComplete="email"
                 placeholder="you@example.com"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Min 8 chars, 1 capital, 1 number"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              />
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  placeholder="Min. 8 characters"
+                  className="w-full px-4 py-3 pr-11 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all"
+                />
+                <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors text-xs">
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              {password && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-1">
+                    {[1,2,3,4].map(i => (
+                      <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= strength ? strengthColor : 'bg-zinc-700'}`} />
+                    ))}
+                  </div>
+                  <p className="text-xs text-zinc-500">{strengthLabel} password</p>
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Confirm Password
-              </label>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Confirm password</label>
               <input
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
                 required
-                placeholder="Same password dobara daalo"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                autoComplete="new-password"
+                placeholder="Repeat your password"
+                className={`w-full px-4 py-3 bg-zinc-800 border rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all ${
+                  confirmPassword && confirmPassword !== password
+                    ? 'border-red-500/50 focus:border-red-500'
+                    : confirmPassword && confirmPassword === password
+                    ? 'border-emerald-500/50 focus:border-emerald-500'
+                    : 'border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50'
+                }`}
               />
+              {confirmPassword && confirmPassword !== password && (
+                <p className="text-xs text-red-400 mt-1.5">Passwords don't match</p>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || googleLoading}
+              className="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed text-sm shadow-lg shadow-blue-600/20 mt-1"
             >
-              {loading ? 'Account bana rahe hain...' : 'Create Account'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating account...
+                </span>
+              ) : 'Create Account'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-zinc-600 mt-6">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 font-medium hover:underline">
-              Sign in
-            </Link>
-          </p>
-
-          <p className="text-center text-xs text-gray-400 mt-4">
-            By signing up, you agree to our{' '}
-            <Link href="/terms" className="hover:underline">Terms</Link> and{' '}
-            <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
+            <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">Sign in</Link>
           </p>
         </div>
+
+        <p className="text-center text-xs text-zinc-700 mt-6">
+          By creating an account, you agree to our{' '}
+          <Link href="/terms" className="hover:text-zinc-500 transition-colors">Terms of Service</Link>
+          {' '}and{' '}
+          <Link href="/privacy" className="hover:text-zinc-500 transition-colors">Privacy Policy</Link>
+        </p>
       </div>
     </div>
   )
 }
 
-function getFriendlyError(message: string): string {
-  if (message.includes('already registered') || message.includes('already been registered'))
-    return 'Yeh email pehle se registered hai. Login karo ya password reset karo.'
-  if (message.includes('Password should be at least'))
-    return 'Password kam se kam 6 characters ka hona chahiye'
-  if (message.includes('Unable to validate email'))
-    return 'Valid email address daalo'
-  return message
+function getFriendlyError(msg: string): string {
+  if (msg.includes('already registered') || msg.includes('already been registered'))
+    return 'An account with this email already exists. Sign in or reset your password.'
+  if (msg.includes('Password should be at least'))
+    return 'Password must be at least 6 characters.'
+  if (msg.includes('Unable to validate email'))
+    return 'Please enter a valid email address.'
+  return msg
 }
