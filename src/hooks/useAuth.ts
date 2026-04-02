@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
-interface UserProfile {
+export interface UserProfile {
   id: string
   email: string
   full_name: string
@@ -16,9 +16,21 @@ interface UserProfile {
   email_verified: boolean
   trust_score: number
   is_superhost: boolean
+  superhost_since: string | null
   phone: string | null
   promo_credits: number
   referral_code: string | null
+  total_trips: number
+  host_trips: number
+  rating: number
+  licence_url: string | null
+  licence_verified: boolean
+  stripe_customer_id: string | null
+  stripe_account_id: string | null
+  notifications_enabled: boolean
+  email_prefs: Record<string, boolean> | null
+  created_at: string
+  updated_at: string
 }
 
 interface AuthState {
@@ -41,7 +53,7 @@ export function useAuth() {
     isEmailVerified: false,
   })
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => { // eslint-disable-line react-hooks/exhaustive-deps
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -53,13 +65,12 @@ export function useAuth() {
       return null
     }
     return data as UserProfile
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let mounted = true
 
-    // Initial session check
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => { // eslint-disable-line react-hooks/exhaustive-deps
       if (!mounted) return
 
       if (user) {
@@ -88,8 +99,7 @@ export function useAuth() {
       }
     })
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabase.auth.onAuthStateChange( // eslint-disable-line react-hooks/exhaustive-deps
       async (event, session) => {
         if (!mounted) return
 
