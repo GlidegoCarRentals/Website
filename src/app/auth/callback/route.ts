@@ -1,6 +1,7 @@
 // src/app/auth/callback/route.ts
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { EmailOtpType } from '@supabase/supabase-js'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
   if (token_hash && type) {
     const { data, error: verifyError } = await supabase.auth.verifyOtp({
       token_hash,
-      type: type as 'email' | 'recovery' | 'invite' | 'magiclink' | 'sms' | 'phone_change' | 'email_change',
+      type: type as EmailOtpType,
     })
 
     if (verifyError) {
