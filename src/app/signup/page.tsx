@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter()
   const supabase = createClient()
 
@@ -42,7 +42,7 @@ export default function SignupPage() {
 
     setLoading(true)
 
-    const { data, error: signupError } = await supabase.auth.signUp({
+    const { error: signupError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
@@ -57,17 +57,8 @@ export default function SignupPage() {
       return
     }
 
-    if (data.user) {
-      await supabase.from('users').upsert({
-        id: data.user.id,
-        email: data.user.email,
-        full_name: fullName.trim(),
-        role: 'guest',
-        email_verified: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id', ignoreDuplicates: true })
-    }
+    // ✅ DO NOT manually upsert — the DB trigger handles profile creation automatically
+    // Manual upsert was causing the hang due to RLS blocking the insert
 
     setSuccess(true)
     setLoading(false)
@@ -97,7 +88,7 @@ export default function SignupPage() {
                 <path d="M20 6L9 17l-5-5"/>
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Verify your email</h2>
+            <h2 className="text-xl font-semibold text-white mb-2">Check your email</h2>
             <p className="text-zinc-400 text-sm leading-relaxed mb-1">
               We&apos;ve sent a verification link to
             </p>
@@ -295,4 +286,16 @@ function getFriendlyError(msg: string): string {
   if (msg.includes('Unable to validate email'))
     return 'Please enter a valid email address.'
   return msg
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <span className="w-6 h-6 border-2 border-zinc-700 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    }>
+      <SignupContent />
+    </Suspense>
+  )
 }
