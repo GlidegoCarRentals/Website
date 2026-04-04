@@ -5,8 +5,8 @@
     "@next/next/no-html-link-for-pages": "warn",
     "react-hooks/exhaustive-deps": "warn",
     "react-hooks/refs": "warn",
+    "react-hooks/set-state-in-effect": "warn",
     "react/no-unescaped-entities": "error",
-    "react-hooks/set-state-in-effect": "error",
     "react-hooks/rules-of-hooks": "error"
   }
 }

@@ -1,7 +1,5 @@
 'use client'
-
 // src/hooks/useAuth.ts
-// Central auth hook — use this EVERYWHERE instead of calling supabase directly
 
 import { useState, useEffect, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
@@ -53,7 +51,7 @@ export function useAuth() {
     isEmailVerified: false,
   })
 
-  const fetchProfile = useCallback(async (userId: string) => { // eslint-disable-line react-hooks/exhaustive-deps
+  const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -67,111 +65,54 @@ export function useAuth() {
     return data as UserProfile
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const setStateFromUser = useCallback(async (user: User | null) => {
+    if (!user) {
+      setState({ user: null, profile: null, loading: false, isHost: false, isAdmin: false, isEmailVerified: false })
+      return
+    }
+    const profile = await fetchProfile(user.id)
+    setState({
+      user,
+      profile,
+      loading: false,
+      isHost: profile?.role === 'host' || profile?.role === 'admin',
+      isAdmin: profile?.role === 'admin',
+      isEmailVerified: profile?.email_verified ?? false,
+    })
+  }, [fetchProfile])
+
   useEffect(() => {
     let mounted = true
 
-    supabase.auth.getUser().then(async ({ data: { user } }) => { // eslint-disable-line react-hooks/exhaustive-deps
-      if (!mounted) return
-
-      if (user) {
-        const profile = await fetchProfile(user.id)
-        if (mounted) {
-          setState({
-            user,
-            profile,
-            loading: false,
-            isHost: profile?.role === 'host' || profile?.role === 'admin',
-            isAdmin: profile?.role === 'admin',
-            isEmailVerified: profile?.email_verified ?? false,
-          })
-        }
-      } else {
-        if (mounted) {
-          setState({
-            user: null,
-            profile: null,
-            loading: false,
-            isHost: false,
-            isAdmin: false,
-            isEmailVerified: false,
-          })
-        }
-      }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (mounted) setStateFromUser(user)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange( // eslint-disable-line react-hooks/exhaustive-deps
-      async (event, session) => {
-        if (!mounted) return
-
-        if (session?.user) {
-          const profile = await fetchProfile(session.user.id)
-          if (mounted) {
-            setState({
-              user: session.user,
-              profile,
-              loading: false,
-              isHost: profile?.role === 'host' || profile?.role === 'admin',
-              isAdmin: profile?.role === 'admin',
-              isEmailVerified: profile?.email_verified ?? false,
-            })
-          }
-        } else {
-          if (mounted) {
-            setState({
-              user: null,
-              profile: null,
-              loading: false,
-              isHost: false,
-              isAdmin: false,
-              isEmailVerified: false,
-            })
-          }
-        }
-      }
-    )
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { // eslint-disable-line react-hooks/exhaustive-deps
+      if (mounted) setStateFromUser(session?.user ?? null)
+    })
 
     return () => {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchProfile])
+  }, [setStateFromUser])
 
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
   const refreshProfile = async () => {
-    if (state.user) {
-      const profile = await fetchProfile(state.user.id)
-      setState(prev => ({
-        ...prev,
-        profile,
-        isHost: profile?.role === 'host' || profile?.role === 'admin',
-        isAdmin: profile?.role === 'admin',
-        isEmailVerified: profile?.email_verified ?? false,
-      }))
-    }
+    if (!state.user) return
+    const profile = await fetchProfile(state.user.id)
+    setState(prev => ({
+      ...prev,
+      profile,
+      isHost: profile?.role === 'host' || profile?.role === 'admin',
+      isAdmin: profile?.role === 'admin',
+      isEmailVerified: profile?.email_verified ?? false,
+    }))
   }
 
-  const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!state.user) return { error: 'Not authenticated' }
-
-    const { error } = await supabase
-      .from('users')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', state.user.id)
-
-    if (!error) {
-      await refreshProfile()
-    }
-
-    return { error }
-  }
-
-  return {
-    ...state,
-    signOut,
-    refreshProfile,
-    updateProfile,
-  }
+  return { ...state, signOut, refreshProfile }
 }
