@@ -2,11 +2,13 @@
 // src/app/signup/page.tsx
 
 import { useState, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 function SignupContent() {
   const supabase = createClient()
+  const router = useRouter()
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -54,8 +56,17 @@ function SignupContent() {
       return
     }
 
-    // ✅ Profile created automatically by DB trigger — no manual insert needed
-    setSuccess(true)
+    // signup ke baad seedha login karo
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
+    if (!signInError) {
+      router.push('/account')
+    } else {
+      // ✅ Profile created automatically by DB trigger — no manual insert needed
+      setSuccess(true)
+    }
   }
 
   const handleGoogle = async () => {
