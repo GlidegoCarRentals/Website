@@ -1,71 +1,70 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+// src/middleware.ts
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-const PROTECTED_ROUTES = ['/host', '/account', '/booking'];
-const ADMIN_ROUTES = ['/admin'];
-
-function isProtectedPath(pathname: string) {
-  return PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
-}
-
-function isAdminPath(pathname: string) {
-  return ADMIN_ROUTES.some((route) => pathname.startsWith(route));
-}
-
-function buildSafeRedirectTarget(request: NextRequest) {
-  const target = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-  return target.startsWith('/') ? target : '/';
-}
+const PROTECTED = ['/account', '/booking', '/payment-success', '/favourites']
+const HOST_ONLY = ['/host/dashboard', '/host/add-vehicle', '/host/edit-vehicle', '/host/bookings', '/host/earnings', '/host/messages', '/host/settings', '/host/vehicles']
+const ADMIN_ONLY = ['/admin']
+const AUTH_PAGES = ['/login', '/signup', '/forgot-password']
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  let response = NextResponse.next({ request });
+  let response = NextResponse.next({ request: { headers: request.headers } })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
         },
       },
     }
-  );
+  )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser()
+  const { pathname } = request.nextUrl
 
-  const requiresAuth = isProtectedPath(pathname) || isAdminPath(pathname);
-  if (requiresAuth && !user) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', buildSafeRedirectTarget(request));
-    return NextResponse.redirect(loginUrl);
+  // Logged-in users away from auth pages
+  if (AUTH_PAGES.some(p => pathname.startsWith(p))) {
+    if (user) return NextResponse.redirect(new URL('/account', request.url))
+    return response
   }
 
-  if (isAdminPath(pathname) && user) {
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle();
+  const isProtected = PROTECTED.some(p => pathname.startsWith(p))
+  const isHostRoute = HOST_ONLY.some(p => pathname.startsWith(p))
+  const isAdminRoute = ADMIN_ONLY.some(p => pathname.startsWith(p))
 
-    if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/', request.url));
+  // Not logged in → login
+  if ((isProtected || isHostRoute || isAdminRoute) && !user) {
+    const url = new URL('/login', request.url)
+    url.searchParams.set('redirectTo', pathname)
+    return NextResponse.redirect(url)
+  }
+
+  // Host routes → check role
+  if (isHostRoute && user) {
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'host' && profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/become-host', request.url))
     }
   }
 
-  return response;
+  // Admin routes → check role
+  if (isAdminRoute && user) {
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
+
+  return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
-};
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2)$).*)'],
+}
