@@ -1,553 +1,469 @@
-'use client';
-import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import RegoLookup from '@/components/RegoLookup';
-import { useAuth } from '@/lib/auth-context';
-import { useToast } from '@/components/Toast';
+'use client'
 
-const STEPS = ['Basic Info', 'Features', 'Photos', 'Pricing', 'Availability'];
-const CATEGORIES = ['Economy','Compact','SUV','Luxury','Sports','Van','Electric','Ute'];
-const FUELS = ['Petrol','Diesel','Electric','Hybrid','Plug-in Hybrid'];
-const TRANSMISSIONS = ['Automatic','Manual'];
+import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+
+const STEPS = [
+  { id: 0, label: 'Vehicle Details' },
+  { id: 1, label: 'Photos' },
+  { id: 2, label: 'Features' },
+  { id: 3, label: 'Pricing' },
+  { id: 4, label: 'Review & Submit' },
+]
+
 const FEATURES_LIST = [
-  'Apple CarPlay','Android Auto','Bluetooth','Backup Camera','360° Camera',
-  'GPS Navigation','Wireless Charging','Heated Seats','Ventilated Seats',
-  'Sunroof / Moonroof','Panoramic Roof','Adaptive Cruise Control',
-  'Lane Keep Assist','Blind Spot Warning','Parking Sensors','Auto Parking',
-  'All-Wheel Drive','4WD / Off-Road','Tow Package','Child Seat Anchor',
-  'Premium Audio','USB Ports','Ambient Lighting','Heads-Up Display',
-  'Keyless Entry','Push Start','Fast Charging (EV)','Autopilot / Driver Assist',
-];
-const LOCATIONS = ['Melbourne Airport (MEL)','Melbourne CBD','Tullamarine','Southbank','St Kilda','Richmond','Docklands','Dandenong','Frankston','Geelong'];
+  'Apple CarPlay', 'Android Auto', 'Bluetooth', 'USB Charging', 'Wireless Charging',
+  'Sunroof / Moonroof', 'Heated Seats', 'Cooled Seats', 'Leather Seats', 'Massage Seats',
+  'AWD / 4WD', 'Cruise Control', 'Adaptive Cruise Control', 'Lane Assist', 'Auto Emergency Braking',
+  'Reversing Camera', '360° Camera', 'Parking Sensors', 'Blind Spot Monitor', 'Cross Traffic Alert',
+  'Navigation / GPS', 'Heads Up Display', 'Keyless Entry', 'Push Button Start', 'Remote Start',
+  'Automatic Headlights', 'Rain Sensing Wipers', 'Ambient Lighting', 'Premium Audio',
+  'Tow Bar', 'Roof Rack', 'Child Seat Anchor', 'Pet Friendly', 'Toll Pass Included',
+  'EV Charging Cable', 'Spare Tyre', 'First Aid Kit',
+]
+
+const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Ute / Pickup', 'Wagon', 'Coupe', 'Convertible', 'Van', 'People Mover', 'Sports Car', 'Luxury', 'Electric']
+
+interface Form {
+  rego: string; rego_state: string
+  make: string; model: string; year: number; colour: string
+  body_type: string; engine: string; transmission: string; fuel_type: string; seats: number
+  photos: string[]
+  features: string[]; description: string
+  price_daily: number; price_weekly: number; price_monthly: number
+  deposit_amount: number; min_days: number; min_age_years: number
+  instant_book: boolean; delivery_available: boolean; delivery_fee: number
+  location: string; latitude: number; longitude: number
+}
 
 export default function AddVehiclePage() {
-  const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
-  const toast = useToast();
+  const router = useRouter()
+  const { user, profile, loading } = useAuth()
+  const supabase = createClient()
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
-  const [step, setStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState(0)
+  const [regoLoading, setRegoLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [photoUrl, setPhotoUrl] = useState('');
-
-  const [form, setForm] = useState({
-    make:'', model:'', year:'2024', category:'SUV', fuel:'Petrol', transmission:'Automatic',
-    seats:'5', color:'', rego:'', regoState:'VIC', engine:'', title:'',
-    description:'',
-    features:[] as string[],
-    photos:[] as string[],
-    pricePerDay:'', weeklyDiscount:'10', monthlyDiscount:'20',
-    location:'Melbourne Airport (MEL)', minDays:'1', minAge:'21', maxDistance:'',
-    instantBook:true, deliveryAvailable:false, deliveryFee:'0',
-    bondAmount:'500',
-  });
-
-  const isHostUser = user?.role === 'host' || user?.role === 'admin';
-  const ready = !authLoading && isHostUser;
+  const [form, setForm] = useState<Form>({
+    rego: '', rego_state: 'VIC',
+    make: '', model: '', year: new Date().getFullYear(), colour: '',
+    body_type: 'Sedan', engine: '', transmission: 'Automatic', fuel_type: 'Petrol', seats: 5,
+    photos: [],
+    features: [], description: '',
+    price_daily: 80, price_weekly: 450, price_monthly: 1500,
+    deposit_amount: 500, min_days: 1, min_age_years: 21,
+    instant_book: false, delivery_available: false, delivery_fee: 0,
+    location: 'Melbourne, VIC', latitude: -37.8136, longitude: 144.9631,
+  })
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!isHostUser) {
-      router.replace(`/login?redirect=/host/add-vehicle`);
+    if (!loading) {
+      if (!user) router.push('/login?redirectTo=/host/add-vehicle')
+      if (profile && profile.role !== 'host' && profile.role !== 'admin') router.push('/become-host')
     }
-  }, [authLoading, isHostUser, router]);
+  }, [user, profile, loading])
 
-  const update = (k: string, v: any) => setForm(f => ({...f,[k]:v}));
-  const toggleFeature = (f: string) => update('features', form.features.includes(f) ? form.features.filter(x=>x!==f) : [...form.features,f]);
+  const set = (key: keyof Form, value: any) => setForm(p => ({ ...p, [key]: value }))
 
-  const stepValid = () => {
-    if (step===0) {
-      const descWords = form.description.split(' ').filter(Boolean).length;
-      return form.make && form.model && form.year && form.category && form.color && descWords >= 20;
-    }
-    if (step===1) return true;
-    if (step===2) return form.photos.length > 0;
-    if (step===3) return form.pricePerDay;
-    return true;
-  };
-
-  const handleSubmit = async () => {
-    if (!ready) return;
-    setSubmitError(null);
-    setSubmitting(true);
-    try {
-      if (!form.make || !form.model) throw new Error('Please complete basic vehicle info.');
-      if (!form.description.trim()) throw new Error('Please add a vehicle description.');
-      if (!form.pricePerDay) throw new Error('Please add your daily price.');
-      if (!form.photos.length) throw new Error('Please add at least one image URL in Step 2.');
-
-      const res = await fetch('/api/host/cars/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: form.title || `${form.make} ${form.model}`,
-          rego: form.rego,
-          regoState: form.regoState,
-
-          make: form.make,
-          model: form.model,
-          year: Number(form.year),
-          colour: form.color,
-          category: form.category,
-
-          fuel: form.fuel,
-          transmission: form.transmission,
-          seats: Number(form.seats),
-          engine: form.engine,
-
-          description: form.description,
-          features: form.features,
-          photos: form.photos,
-
-          pricePerDay: Number(form.pricePerDay),
-          weeklyDiscount: Number(form.weeklyDiscount),
-          monthlyDiscount: Number(form.monthlyDiscount),
-          bondAmount: Number(form.bondAmount),
-
-          location: form.location,
-          minDays: Number(form.minDays),
-          minAge: Number(form.minAge),
-
-          instantBook: form.instantBook,
-          deliveryAvailable: form.deliveryAvailable,
-          deliveryFee: Number(form.deliveryFee),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || 'Failed to publish listing');
-      }
-
-      toast.success('✅ Vehicle listed successfully! Redirecting to your fleet...');
-      setTimeout(() => router.push('/host/vehicles'), 650);
-    } catch (err: any) {
-      const msg = err?.message || 'Something went wrong';
-      setSubmitError(msg);
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const displayYearRange = useMemo(() => Array.from({ length: 15 }, (_, i) => 2024 - i), []);
-
-  const addPhotoUrl = () => {
-    const url = photoUrl.trim();
-    if (!url) return;
-    if (!/^https?:\/\//i.test(url)) {
-      setSubmitError('Please enter a valid URL starting with http:// or https://');
-      return;
-    }
-    if (form.photos.length >= 20) {
-      setSubmitError('Max 20 photos allowed.');
-      return;
-    }
-    setForm(f => ({ ...f, photos: Array.from(new Set([...f.photos, url])) }));
-    setPhotoUrl('');
-    setSubmitError(null);
-  };
-
-  const removePhotoUrl = (url: string) => {
-    setForm(f => ({ ...f, photos: f.photos.filter(p => p !== url) }));
-  };
-
-  if (authLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontWeight: 800 }}>
-        Loading...
-      </div>
-    );
+  const handleRegoLookup = async () => {
+    if (!form.rego) { setError('Enter your registration number first.'); return }
+    setRegoLoading(true)
+    setError('')
+    // Simulate API call — replace with real PPSR API route
+    await new Promise(r => setTimeout(r, 1200))
+    setError('REGO auto-fill API is being integrated. Please fill in the vehicle details manually for now.')
+    setRegoLoading(false)
   }
 
-  if (!ready) return null;
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    if (form.photos.length + files.length > 20) { setError('Maximum 20 photos allowed.'); return }
+
+    setUploading(true)
+    setError('')
+    const urls: string[] = []
+
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) { setError(`${file.name} exceeds 10MB limit.`); continue }
+      const ext = file.name.split('.').pop()
+      const path = `${user!.id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`
+
+      const { error: upErr } = await supabase.storage.from('car-photos').upload(path, file)
+      if (upErr) { setError('Upload failed: ' + upErr.message); continue }
+
+      const { data: { publicUrl } } = supabase.storage.from('car-photos').getPublicUrl(path)
+      urls.push(publicUrl)
+    }
+
+    set('photos', [...form.photos, ...urls])
+    setUploading(false)
+  }
+
+  const handleSubmit = async () => {
+    setError('')
+    if (!form.make || !form.model) { setError('Make and model are required.'); return }
+    if (form.photos.length < 5) { setError('A minimum of 5 photos is required.'); return }
+    if (form.price_daily < 1) { setError('Please set a daily price.'); return }
+
+    setSubmitting(true)
+    const { error: insertErr } = await supabase.from('cars').insert({
+      host_id: user!.id,
+      rego: form.rego || null,
+      rego_state: form.rego_state,
+      make: form.make, model: form.model, year: form.year,
+      colour: form.colour, body_type: form.body_type, engine: form.engine,
+      transmission: form.transmission, fuel_type: form.fuel_type, seats: form.seats,
+      photos: form.photos, features: form.features, description: form.description,
+      price_daily: form.price_daily, price_weekly: form.price_weekly || null, price_monthly: form.price_monthly || null,
+      deposit_amount: form.deposit_amount, min_days: form.min_days, min_age_years: form.min_age_years,
+      instant_book: form.instant_book, delivery_available: form.delivery_available, delivery_fee: form.delivery_fee,
+      location: form.location, latitude: form.latitude, longitude: form.longitude,
+      available: true, status: 'available',
+    })
+
+    setSubmitting(false)
+    if (insertErr) { setError('Failed to create listing: ' + insertErr.message); return }
+    router.push('/host/dashboard?success=car_added')
+  }
+
+  if (loading) {
+    return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><span className="w-6 h-6 border-2 border-zinc-700 border-t-blue-500 rounded-full animate-spin" /></div>
+  }
+
+  const nextStep = () => {
+    setError('')
+    if (step === 0 && (!form.make || !form.model)) { setError('Make and model are required to continue.'); return }
+    if (step === 1 && form.photos.length < 5) { setError('Please upload at least 5 photos to continue.'); return }
+    setStep(s => s + 1)
+  }
 
   return (
-    <div style={{fontFamily:"'Inter',-apple-system,sans-serif",minHeight:'100vh',background:'#f8fafc'}}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0;}
-        .playfair{font-family:'Playfair Display',serif;}
-        .inp{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 14px;font-size:14px;color:#0f172a;outline:none;background:white;transition:border-color 0.2s;appearance:none;}
-        .inp:focus{border-color:#1d4ed8;}
-        .feat-btn{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e2e8f0;background:white;color:#64748b;transition:all 0.2s;}
-        .feat-btn.on{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;}
-        .next-btn{background:linear-gradient(135deg,#1d4ed8,#059669);color:white;border:none;border-radius:12px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;}
-        .next-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(29,78,216,0.35);}
-        .next-btn:disabled{opacity:0.5;transform:none;cursor:not-allowed;}
-        .back-btn{background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 24px;font-size:15px;font-weight:600;cursor:pointer;}
-        .toggle{width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}
-        .toggle-dot{position:absolute;width:18px;height:18px;border-radius:50%;background:white;top:3px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
-        label{font-size:12px;font-weight:700;color:#64748b;letter-spacing:0.08em;display:block;margin-bottom:7px;}
-        .photo-upload{border:2px dashed #e2e8f0;border-radius:14px;padding:32px;text-align:center;cursor:pointer;transition:all 0.2s;background:white;}
-        .photo-upload:hover{border-color:#1d4ed8;background:#f8fafc;}
-        select option{background:white;}
-        .step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;transition:all 0.3s;flex-shrink:0;}
-      `}</style>
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/4 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Header */}
-      <div style={{background:'#0a0f1e',padding:'16px 32px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <Link href="/host/dashboard" style={{textDecoration:'none'}}>
-          <Image src="/logo.png" alt="GlideGo" width={100} height={23} style={{objectFit:'contain',filter:'brightness(1.2)'}} />
-        </Link>
-        <div style={{color:'white',fontSize:14,fontWeight:600}}>List Your Vehicle</div>
-        <Link href="/host/dashboard" style={{color:'rgba(255,255,255,0.5)',textDecoration:'none',fontSize:13}}>← Dashboard</Link>
-      </div>
+      <div className="max-w-2xl mx-auto px-4 py-10 relative z-10">
+        {/* Header */}
+        <div className="mb-8">
+          <p className="text-zinc-500 text-sm mb-1">Step {step + 1} of {STEPS.length}</p>
+          <h1 className="text-2xl font-bold text-white">{STEPS[step].label}</h1>
+        </div>
 
-      {/* Progress */}
-      <div style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'20px 32px'}}>
-        <div style={{maxWidth:800,margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          {STEPS.map((s,i)=>(
-            <div key={s} style={{display:'flex',alignItems:'center',gap:8,flex:i<STEPS.length-1?1:'auto'}}>
-              <div className="step-dot" style={{background:i===step?'linear-gradient(135deg,#1d4ed8,#059669)':i<step?'#059669':'#f1f5f9',color:i<=step?'white':'#94a3b8'}}>
-                {i<step?'✓':i+1}
-              </div>
-              <span style={{fontSize:12,fontWeight:600,color:i===step?'#0f172a':i<step?'#059669':'#94a3b8',whiteSpace:'nowrap'}}>{s}</span>
-              {i<STEPS.length-1 && <div style={{flex:1,height:2,background:i<step?'#059669':'#f1f5f9',margin:'0 8px',borderRadius:1}} />}
-            </div>
+        {/* Progress */}
+        <div className="flex gap-1.5 mb-8">
+          {STEPS.map((s, i) => (
+            <div key={s.id} className={`flex-1 h-1 rounded-full transition-all duration-300 ${i <= step ? 'bg-blue-600' : 'bg-zinc-800'}`} />
           ))}
         </div>
-      </div>
 
-      <div style={{maxWidth:800,margin:'0 auto',padding:'40px 24px'}}>
+        {error && (
+          <div className="mb-5 flex items-start gap-3 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl">
+            <span className="text-red-400 text-sm">⚠</span>
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
 
-        {/* ─── STEP 0: Basic Info ─── */}
-        {step===0 && (
-          <div>
-            <h2 className="playfair" style={{fontSize:28,fontWeight:800,color:'#0f172a',marginBottom:8}}>Basic Vehicle Info</h2>
-            <p style={{fontSize:14,color:'#64748b',marginBottom:28}}>Tell us about your vehicle</p>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>
-              {[{k:'make',l:'MAKE / BRAND',ph:'e.g. Toyota'},{k:'model',l:'MODEL',ph:'e.g. Camry'},{k:'color',l:'COLOR',ph:'e.g. White'}].map(f=>(
-                <div key={f.k}>
-                  <label>{f.l}</label>
-                  <input className="inp" value={(form as any)[f.k]} onChange={e=>update(f.k,e.target.value)} placeholder={f.ph} />
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-7 shadow-2xl">
+
+          {/* ── STEP 0: VEHICLE DETAILS ── */}
+          {step === 0 && (
+            <div className="space-y-5">
+              {/* REGO lookup */}
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Registration Number</label>
+                  <input
+                    type="text"
+                    value={form.rego}
+                    onChange={e => set('rego', e.target.value.toUpperCase())}
+                    placeholder="ABC123"
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all font-mono"
+                  />
                 </div>
-              ))}
-              <RegoLookup
-                rego={form.rego}
-                onRegChange={(next) => update('rego', next)}
-                onCarDetails={(d) => {
-                  update('make', d.make);
-                  update('model', d.model);
-                  update('year', d.year);
-                  update('color', d.color);
-                  if ((d as any).bodyType) update('category', (d as any).bodyType);
-                  if ((d as any).fuelType) update('fuel', (d as any).fuelType);
-                  if ((d as any).transmission) update('transmission', (d as any).transmission);
-                  if ((d as any).engine) update('engine', (d as any).engine);
-                }}
-              />
-              <div>
-                <label>REGO STATE</label>
-                <select className="inp" value={form.regoState} onChange={e=>update('regoState',e.target.value)}>
-                  {['VIC','NSW','QLD','SA','WA','TAS','ACT','NT'].map(s=><option key={s} value={s}>{s}</option>)}
-                </select>
+                <div className="w-24">
+                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">State</label>
+                  <select value={form.rego_state} onChange={e => set('rego_state', e.target.value)}
+                    className="w-full px-3 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
+                    {['VIC','NSW','QLD','SA','WA','TAS','ACT','NT'].map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label>YEAR</label>
-                <select className="inp" value={form.year} onChange={e=>update('year',e.target.value)}>
-                  {displayYearRange.map(y=><option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
-              <div>
-                <label>CATEGORY</label>
-                <select className="inp" value={form.category} onChange={e=>update('category',e.target.value)}>
-                  {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label>FUEL TYPE</label>
-                <select className="inp" value={form.fuel} onChange={e=>update('fuel',e.target.value)}>
-                  {FUELS.map(f=><option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label>TRANSMISSION</label>
-                <select className="inp" value={form.transmission} onChange={e=>update('transmission',e.target.value)}>
-                  {TRANSMISSIONS.map(t=><option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label>ENGINE (AUTO-FILL)</label>
-                <input className="inp" value={form.engine} onChange={e=>update('engine',e.target.value)} placeholder="e.g. 2.0L Turbo Petrol" />
-              </div>
-              <div>
-                <label>SEATS</label>
-                <select className="inp" value={form.seats} onChange={e=>update('seats',e.target.value)}>
-                  {[2,4,5,6,7,8,9].map(n=><option key={n} value={n}>{n} seats</option>)}
-                </select>
-              </div>
-              <div>
-                <label>PICKUP LOCATION</label>
-                <select className="inp" value={form.location} onChange={e=>update('location',e.target.value)}>
-                  {LOCATIONS.map(l=><option key={l} value={l}>{l}</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={{marginTop:18}}>
-              <label>VEHICLE DESCRIPTION</label>
-              <textarea className="inp" value={form.description} onChange={e=>update('description',e.target.value)}
-                placeholder="Tell guests what makes your car special — cleaning routine, unique features, local tips, etc. Min 100 words recommended."
-                rows={4} style={{resize:'vertical'}} />
-              <div style={{fontSize:11,color:'#94a3b8',marginTop:4}}>
-                {form.description.split(' ').filter(Boolean).length} words · Aim for 100+ for better search ranking
-              </div>
-            </div>
 
-            <div style={{marginTop:18}}>
-              <label>VEHICLE TITLE</label>
-              <input
-                className="inp"
-                value={form.title}
-                onChange={e=>update('title',e.target.value)}
-                placeholder={`${form.make || 'Toyota'} ${form.model || 'Camry'} • ${form.rego ? form.rego : 'REGO'}`}
-              />
-              <div style={{fontSize:11,color:'#94a3b8',marginTop:4}}>Used for listing display and search.</div>
-            </div>
-          </div>
-        )}
+              <button onClick={handleRegoLookup} disabled={regoLoading}
+                className="w-full flex items-center justify-center gap-2 border border-blue-500/30 hover:border-blue-500/60 bg-blue-600/5 hover:bg-blue-600/10 text-blue-400 py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40">
+                {regoLoading ? <span className="w-3.5 h-3.5 border border-blue-400/30 border-t-blue-400 rounded-full animate-spin" /> : '🔍'}
+                {regoLoading ? 'Looking up registration...' : 'Auto-fill from registration'}
+              </button>
 
-        {/* ─── STEP 1: Features ─── */}
-        {step===1 && (
-          <div>
-            <h2 className="playfair" style={{fontSize:28,fontWeight:800,color:'#0f172a',marginBottom:8}}>Features & Amenities</h2>
-            <p style={{fontSize:14,color:'#64748b',marginBottom:24}}>Select all features your vehicle has. Guests filter by these — more features = more bookings.</p>
-            <div style={{display:'flex',flexWrap:'wrap',gap:10}}>
-              {FEATURES_LIST.map(f=>(
-                <button key={f} onClick={()=>toggleFeature(f)} className={`feat-btn${form.features.includes(f)?' on':''}`}>
-                  {form.features.includes(f)?'✓ ':''}{f}
-                </button>
-              ))}
-            </div>
-            <div style={{marginTop:20,padding:'14px 18px',background:'#f0fdf4',borderRadius:12,border:'1px solid #bbf7d0',fontSize:13,color:'#166534'}}>
-              ✅ {form.features.length} features selected · Guests can filter by: Apple CarPlay, AWD, Heated Seats and more
-            </div>
-          </div>
-        )}
+              <div className="border-t border-zinc-800 pt-5">
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-4">Vehicle Details</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: 'Make', key: 'make', placeholder: 'Toyota' },
+                    { label: 'Model', key: 'model', placeholder: 'Camry' },
+                    { label: 'Colour', key: 'colour', placeholder: 'White' },
+                    { label: 'Engine', key: 'engine', placeholder: '2.5L 4-cyl' },
+                  ].map(({ label, key, placeholder }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium text-zinc-500 mb-1.5">{label}</label>
+                      <input type="text" value={form[key as keyof Form] as string}
+                        onChange={e => set(key as keyof Form, e.target.value)}
+                        placeholder={placeholder}
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
+                    </div>
+                  ))}
 
-        {/* ─── STEP 2: Photos ─── */}
-        {step===2 && (
-          <div>
-            <h2 className="playfair" style={{fontSize:28,fontWeight:800,color:'#0f172a',marginBottom:8}}>Upload Photos</h2>
-            <p style={{fontSize:14,color:'#64748b',marginBottom:24}}>Up to 20 photos. Listings with 10+ quality photos get 40% more bookings.</p>
-            <div className="photo-upload" onClick={()=>{}}>
-              <div style={{fontSize:48,marginBottom:16}}>📷</div>
-              <div style={{fontSize:16,fontWeight:700,color:'#0f172a',marginBottom:8}}>Drop photos here or click to upload</div>
-              <div style={{fontSize:13,color:'#64748b',marginBottom:16}}>JPG, PNG up to 10MB each · Recommended: exterior front, back, sides, interior, dashboard</div>
-              <div style={{display:'inline-block',background:'linear-gradient(135deg,#1d4ed8,#059669)',color:'white',padding:'10px 24px',borderRadius:10,fontSize:14,fontWeight:600}}>Choose Photos</div>
-            </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Year</label>
+                    <input type="number" value={form.year} onChange={e => set('year', parseInt(e.target.value))}
+                      min={2000} max={new Date().getFullYear() + 1}
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white text-sm outline-none transition-all" />
+                  </div>
 
-            <div style={{marginTop:18}}>
-              <label>Add Photo URL</label>
-              <div style={{display:'flex',gap:10,alignItems:'center'}}>
-                <input className="inp" value={photoUrl} onChange={e=>setPhotoUrl(e.target.value)} placeholder="https://example.com/photo.jpg" />
-                <button type="button"
-                  onClick={addPhotoUrl}
-                  disabled={!photoUrl.trim()}
-                  className="next-btn"
-                  style={{padding:'12px 18px',fontSize:14}}>
-                  + Add
-                </button>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Seats</label>
+                    <select value={form.seats} onChange={e => set('seats', parseInt(e.target.value))}
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
+                      {[2,4,5,6,7,8,9,12].map(n => <option key={n} value={n}>{n} seats</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Body Type</label>
+                    <select value={form.body_type} onChange={e => set('body_type', e.target.value)}
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
+                      {BODY_TYPES.map(t => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Transmission</label>
+                    <select value={form.transmission} onChange={e => set('transmission', e.target.value)}
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
+                      {['Automatic','Manual','CVT','DCT'].map(t => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Fuel Type</label>
+                    <select value={form.fuel_type} onChange={e => set('fuel_type', e.target.value)}
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
+                      {['Petrol','Diesel','Hybrid','Electric','Plug-in Hybrid'].map(f => <option key={f}>{f}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-xs font-medium text-zinc-500 mb-1.5">Pickup Location</label>
+                  <input type="text" value={form.location} onChange={e => set('location', e.target.value)}
+                    placeholder="CBD Melbourne, VIC"
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
+                </div>
               </div>
-              <div style={{fontSize:11,color:'#94a3b8',marginTop:6}}>
-                For now we store image URLs (mock). Next we can plug Supabase Storage uploads.
+            </div>
+          )}
+
+          {/* ── STEP 1: PHOTOS ── */}
+          {step === 1 && (
+            <div className="space-y-5">
+              <div>
+                <p className="text-zinc-400 text-sm">Upload high-quality photos of your car. Minimum 5 required — include front, rear, interior, dashboard, and odometer.</p>
               </div>
+
+              <button onClick={() => photoInputRef.current?.click()} disabled={uploading || form.photos.length >= 20}
+                className="w-full border-2 border-dashed border-zinc-700 hover:border-zinc-500 rounded-xl p-10 text-center transition-all disabled:opacity-40 group">
+                <div className="text-3xl mb-2">📸</div>
+                <p className="font-medium text-zinc-300 group-hover:text-white transition-colors text-sm">
+                  {uploading ? 'Uploading...' : 'Click to upload photos'}
+                </p>
+                <p className="text-zinc-600 text-xs mt-1">{form.photos.length}/20 photos · JPG, PNG · Max 10MB each</p>
+              </button>
+              <input ref={photoInputRef} type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
 
               {form.photos.length > 0 && (
-                <div style={{marginTop:14,display:'flex',flexWrap:'wrap',gap:10}}>
-                  {form.photos.map((p) => (
-                    <div key={p} style={{width:108}}>
-                      <div style={{width:108,height:66,borderRadius:10,overflow:'hidden',border:'1px solid #e2e8f0',background:'white',marginBottom:6}}>
-                        <img
-                          src={p}
-                          alt="vehicle"
-                          style={{width:'100%',height:'100%',objectFit:'cover'}}
-                          onError={(e)=>{(e.currentTarget as HTMLImageElement).style.display='none'}}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={()=>removePhotoUrl(p)}
-                        style={{width:'100%',padding:'7px 0',border:'none',borderRadius:10,background:'#fef2f2',color:'#dc2626',fontWeight:800,cursor:'pointer'}}>
-                        Remove
+                <div className="grid grid-cols-3 gap-3">
+                  {form.photos.map((url, i) => (
+                    <div key={i} className="relative aspect-video rounded-xl overflow-hidden group">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
+                      <button onClick={() => set('photos', form.photos.filter((_, j) => j !== i))}
+                        className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-lg flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                        ✕
                       </button>
+                      {i === 0 && <span className="absolute bottom-2 left-2 bg-blue-600/90 text-white text-xs px-2 py-0.5 rounded-md font-medium">Cover</span>}
                     </div>
                   ))}
                 </div>
               )}
-            </div>
 
-            <div style={{marginTop:20}}>
-              <div style={{fontSize:13,fontWeight:700,color:'#0f172a',marginBottom:12}}>📋 Photo checklist for maximum bookings:</div>
-              {['Front exterior (daytime, clear background)','Rear exterior','Driver & passenger sides','Interior front seats','Interior rear seats','Dashboard & infotainment','Boot / cargo space','Any special features (sunroof, charging port, etc.)'].map(tip=>(
-                <div key={tip} style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'#64748b',padding:'5px 0'}}>
-                  <span style={{color:'#059669'}}>☐</span> {tip}
-                </div>
-              ))}
+              {form.photos.length > 0 && form.photos.length < 5 && (
+                <p className="text-amber-400 text-xs flex items-center gap-1.5">
+                  <span>⚠</span> {5 - form.photos.length} more photo{5 - form.photos.length !== 1 ? 's' : ''} required
+                </p>
+              )}
             </div>
-            <div style={{marginTop:20,padding:'14px 18px',background:'#fffbeb',borderRadius:12,border:'1px solid #fde68a',fontSize:13,color:'#92400e'}}>
-              💡 <strong>Pro tip:</strong> GlideGo offers FREE professional photography in Melbourne. Contact us after listing!
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* ─── STEP 3: Pricing ─── */}
-        {step===3 && (
-          <div>
-            <h2 className="playfair" style={{fontSize:28,fontWeight:800,color:'#0f172a',marginBottom:8}}>Set Your Pricing</h2>
-            <p style={{fontSize:14,color:'#64748b',marginBottom:28}}>Competitive pricing gets more bookings. You can change this anytime.</p>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18,marginBottom:24}}>
+          {/* ── STEP 2: FEATURES ── */}
+          {step === 2 && (
+            <div className="space-y-5">
               <div>
-                <label>DAILY PRICE (AUD)</label>
-                <div style={{position:'relative'}}>
-                  <span style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',color:'#0f172a',fontWeight:700}}>$</span>
-                  <input className="inp" style={{paddingLeft:28}} type="number" value={form.pricePerDay} onChange={e=>update('pricePerDay',e.target.value)} placeholder="89" min={20} />
-                </div>
-                <div style={{fontSize:11,color:'#94a3b8',marginTop:4}}>Suggested: $59–$229/day based on your category</div>
-              </div>
-              <div>
-                <label>BOND AMOUNT (AUD)</label>
-                <div style={{position:'relative'}}>
-                  <span style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',color:'#0f172a',fontWeight:700}}>$</span>
-                  <input className="inp" style={{paddingLeft:28}} type="number" value={form.bondAmount} onChange={e=>update('bondAmount',e.target.value)} placeholder="500" />
-                </div>
-                <div style={{fontSize:11,color:'#94a3b8',marginTop:4}}>Pre-authorised, released after successful return</div>
-              </div>
-              <div>
-                <label>WEEKLY DISCOUNT (%)</label>
-                <div style={{position:'relative'}}>
-                  <input className="inp" style={{paddingRight:28}} type="number" value={form.weeklyDiscount} onChange={e=>update('weeklyDiscount',e.target.value)} placeholder="10" min={0} max={50} />
-                  <span style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',color:'#64748b'}}>%</span>
+                <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Vehicle Features ({form.features.length} selected)</p>
+                <div className="flex flex-wrap gap-2">
+                  {FEATURES_LIST.map(feature => (
+                    <button key={feature}
+                      onClick={() => set('features', form.features.includes(feature) ? form.features.filter(f => f !== feature) : [...form.features, feature])}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
+                        form.features.includes(feature)
+                          ? 'bg-blue-600/10 border-blue-500/40 text-blue-400'
+                          : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-300'
+                      }`}>
+                      {feature}
+                    </button>
+                  ))}
                 </div>
               </div>
+
               <div>
-                <label>MONTHLY DISCOUNT (%)</label>
-                <div style={{position:'relative'}}>
-                  <input className="inp" style={{paddingRight:28}} type="number" value={form.monthlyDiscount} onChange={e=>update('monthlyDiscount',e.target.value)} placeholder="20" min={0} max={50} />
-                  <span style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',color:'#64748b'}}>%</span>
-                </div>
+                <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Description (optional)</label>
+                <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={4}
+                  placeholder="Describe your car — what makes it special, ideal use cases, any important notes for guests..."
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all resize-none" />
               </div>
             </div>
+          )}
 
-            {/* Price preview */}
-            {form.pricePerDay && (
-              <div style={{background:'linear-gradient(135deg,#eff6ff,#f0fdf4)',border:'1px solid #bfdbfe',borderRadius:14,padding:20,marginBottom:24}}>
-                <div style={{fontSize:14,fontWeight:700,color:'#0f172a',marginBottom:12}}>💰 Estimated earnings:</div>
-                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
-                  {[{label:'Per Day',earn:Number(form.pricePerDay)*0.8},{label:'Per Week',earn:Number(form.pricePerDay)*7*(1-Number(form.weeklyDiscount)/100)*0.8},{label:'Per Month',earn:Number(form.pricePerDay)*30*(1-Number(form.monthlyDiscount)/100)*0.8}].map(e=>(
-                    <div key={e.label} style={{textAlign:'center',background:'white',borderRadius:10,padding:'14px'}}>
-                      <div style={{fontSize:20,fontWeight:800,color:'#059669'}}>${Math.round(e.earn).toLocaleString()}</div>
-                      <div style={{fontSize:11,color:'#64748b',marginTop:2}}>{e.label} (after 20% fee)</div>
+          {/* ── STEP 3: PRICING ── */}
+          {step === 3 && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4">
+                {[
+                  { label: 'Daily Rate', key: 'price_daily', placeholder: '80', required: true },
+                  { label: 'Weekly Rate (optional)', key: 'price_weekly', placeholder: '450', required: false },
+                  { label: 'Monthly Rate (optional)', key: 'price_monthly', placeholder: '1500', required: false },
+                  { label: 'Security Bond', key: 'deposit_amount', placeholder: '500', required: true },
+                ].map(({ label, key, placeholder, required }) => (
+                  <div key={key}>
+                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">{label}</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-3.5 text-zinc-500 text-sm">AUD $</span>
+                      <input type="number" value={form[key as keyof Form] as number || ''}
+                        onChange={e => set(key as keyof Form, parseFloat(e.target.value) || 0)}
+                        required={required} placeholder={placeholder}
+                        className="w-full pl-16 pr-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
+                    </div>
+                  </div>
+                ))}
+
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: 'Minimum Days', key: 'min_days', options: [1,2,3,5,7].map(n => ({ value: n, label: `${n} day${n > 1 ? 's' : ''}` })) },
+                    { label: 'Minimum Age', key: 'min_age_years', options: [18,19,21,25].map(n => ({ value: n, label: `${n}+ years` })) },
+                  ].map(({ label, key, options }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">{label}</label>
+                      <select value={form[key as keyof Form] as number} onChange={e => set(key as keyof Form, parseInt(e.target.value))}
+                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
+                        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
                     </div>
                   ))}
                 </div>
               </div>
+
+              <div className="space-y-3 pt-1">
+                {[
+                  { label: 'Instant Book', desc: 'Guests can book without requiring your approval', key: 'instant_book' },
+                  { label: 'Delivery Available', desc: 'Offer delivery to airports, hotels, or custom locations', key: 'delivery_available' },
+                ].map(({ label, desc, key }) => (
+                  <label key={key} className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 hover:border-zinc-700 rounded-xl cursor-pointer transition-all">
+                    <div>
+                      <p className="font-medium text-white text-sm">{label}</p>
+                      <p className="text-zinc-500 text-xs mt-0.5">{desc}</p>
+                    </div>
+                    <div
+                      onClick={() => set(key as keyof Form, !(form[key as keyof Form] as boolean))}
+                      className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ml-4 cursor-pointer ${form[key as keyof Form] ? 'bg-blue-600' : 'bg-zinc-700'}`}
+                    >
+                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${form[key as keyof Form] ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 4: REVIEW ── */}
+          {step === 4 && (
+            <div className="space-y-5">
+              {form.photos[0] && (
+                <img src={form.photos[0]} alt="" className="w-full aspect-video object-cover rounded-xl" />
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  ['Vehicle', `${form.year} ${form.make} ${form.model}`],
+                  ['Location', form.location],
+                  ['Daily Rate', `AUD $${form.price_daily}`],
+                  ['Security Bond', `AUD $${form.deposit_amount}`],
+                  ['Transmission', form.transmission],
+                  ['Fuel Type', form.fuel_type],
+                  ['Seats', `${form.seats} seats`],
+                  ['Photos', `${form.photos.length} uploaded`],
+                  ['Features', `${form.features.length} selected`],
+                  ['Instant Book', form.instant_book ? 'Enabled' : 'Disabled'],
+                ].map(([label, value]) => (
+                  <div key={label} className="bg-zinc-800/50 border border-zinc-800 rounded-xl p-3.5">
+                    <p className="text-zinc-500 text-xs">{label}</p>
+                    <p className="font-medium text-white text-sm mt-0.5 truncate">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 bg-blue-600/5 border border-blue-500/20 rounded-xl">
+                <p className="text-blue-400 text-xs font-medium mb-2">Before you publish</p>
+                <ul className="space-y-1 text-zinc-500 text-xs">
+                  <li>• Your vehicle must have valid Australian registration</li>
+                  <li>• GlideGo takes a 20% platform fee per booking</li>
+                  <li>• You must respond to booking requests within 24 hours</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="flex gap-3 mt-8 pt-6 border-t border-zinc-800">
+            {step > 0 && (
+              <button onClick={() => { setStep(s => s - 1); setError('') }}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-3 rounded-xl text-sm font-medium transition-all">
+                ← Back
+              </button>
             )}
 
-            <div style={{background:'white',borderRadius:14,border:'1px solid #f1f5f9',padding:20}}>
-              <div style={{fontSize:14,fontWeight:700,color:'#0f172a',marginBottom:14}}>Trip Settings</div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
-                <div>
-                  <label>MINIMUM RENTAL DAYS</label>
-                  <select className="inp" value={form.minDays} onChange={e=>update('minDays',e.target.value)}>
-                    {[1,2,3,5,7].map(d=><option key={d} value={d}>{d} day{d>1?'s':''}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label>MINIMUM DRIVER AGE</label>
-                  <select className="inp" value={form.minAge} onChange={e=>update('minAge',e.target.value)}>
-                    {[18,21,23,25].map(a=><option key={a} value={a}>{a} years</option>)}
-                  </select>
-                </div>
-              </div>
-              {[
-                {k:'instantBook',label:'Instant Book',desc:'Guests can book without waiting for your approval (recommended)'},
-                {k:'deliveryAvailable',label:'Offer Delivery',desc:'You deliver the car to guests — adds to search ranking'},
-              ].map(t=>(
-                <div key={t.k} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 0',borderTop:'1px solid #f8fafc'}}>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:600,color:'#0f172a'}}>{t.label}</div>
-                    <div style={{fontSize:12,color:'#64748b',marginTop:2}}>{t.desc}</div>
-                  </div>
-                  <button className="toggle" onClick={()=>update(t.k,!(form as any)[t.k])} style={{background:(form as any)[t.k]?'linear-gradient(135deg,#1d4ed8,#059669)':'#e2e8f0'}}>
-                    <div className="toggle-dot" style={{left:(form as any)[t.k]?'23px':'3px'}} />
-                  </button>
-                </div>
-              ))}
-            </div>
+            {step < STEPS.length - 1 ? (
+              <button onClick={nextStep} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-600/20">
+                Continue →
+              </button>
+            ) : (
+              <button onClick={handleSubmit} disabled={submitting}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-40">
+                {submitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Publishing listing...
+                  </span>
+                ) : '🚀 Publish Listing'}
+              </button>
+            )}
           </div>
-        )}
-
-        {/* ─── STEP 4: Availability ─── */}
-        {step===4 && (
-          <div>
-            <h2 className="playfair" style={{fontSize:28,fontWeight:800,color:'#0f172a',marginBottom:8}}>Availability Calendar</h2>
-            <p style={{fontSize:14,color:'#64748b',marginBottom:24}}>Block dates when your car isn&apos;t available. You can update this anytime from your dashboard.</p>
-            <div style={{background:'white',borderRadius:16,border:'1px solid #f1f5f9',padding:24,marginBottom:24}}>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4,marginBottom:16}}>
-                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>(
-                  <div key={d} style={{textAlign:'center',fontSize:11,fontWeight:700,color:'#94a3b8',padding:'8px 0'}}>{d}</div>
-                ))}
-                {Array.from({length:35},(_,i)=>{
-                  const day = i-2;
-                  const isBlocked = [5,6,12,13,19,20].includes(i);
-                  const isToday = i===10;
-                  return (
-                    <div key={i} style={{textAlign:'center',padding:'8px 4px',borderRadius:8,fontSize:13,fontWeight:500,cursor:day>0&&day<=31?'pointer':'default',background:isBlocked?'#fef2f2':isToday?'linear-gradient(135deg,#1d4ed8,#059669)':'transparent',color:isBlocked?'#dc2626':isToday?'white':day>0&&day<=31?'#0f172a':'#e2e8f0',border:isToday?'none':'1px solid transparent'}}>
-                      {day>0&&day<=31?day:''}
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{display:'flex',gap:16,fontSize:12,color:'#64748b'}}>
-                <div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:14,height:14,borderRadius:4,background:'#fef2f2',border:'1px solid #fecaca'}} /> Blocked</div>
-                <div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:14,height:14,borderRadius:4,background:'linear-gradient(135deg,#1d4ed8,#059669)'}} /> Today</div>
-                <div style={{display:'flex',alignItems:'center',gap:6}}><div style={{width:14,height:14,borderRadius:4,background:'white',border:'1px solid #e2e8f0'}} /> Available</div>
-              </div>
-            </div>
-
-            <div style={{background:'#f0fdf4',borderRadius:14,border:'1px solid #bbf7d0',padding:20}}>
-              <div style={{fontSize:15,fontWeight:700,color:'#0f172a',marginBottom:12}}>🎉 You&apos;re all set!</div>
-              <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                {[
-                  `${form.make} ${form.model} ${form.year}`,
-                  `Located at: ${form.location}`,
-                  `$${form.pricePerDay}/day · ${form.features.length} features listed`,
-                  form.instantBook?'✅ Instant Book enabled':'⏳ Manual approval',
-                ].map((item,i)=>(
-                  <div key={i} style={{fontSize:13,color:'#166534',display:'flex',alignItems:'center',gap:8}}>
-                    <span style={{color:'#059669'}}>●</span> {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation buttons */}
-        {submitError && (
-          <div style={{maxWidth:800, margin:'14px auto 0', padding:'12px 16px', background:'#fef2f2', border:'1px solid #fecaca', borderRadius:12, color:'#b91c1c', fontWeight:800, fontSize:13}}>
-            ⚠️ {submitError}
-          </div>
-        )}
-        <div style={{display:'flex',justifyContent:'space-between',marginTop:36}}>
-          <button onClick={()=>setStep(s=>Math.max(0,s-1))} className="back-btn" style={{display:step===0?'none':'block'}}>
-            ← Back
-          </button>
-          {step<STEPS.length-1 ? (
-            <button onClick={()=>setStep(s=>s+1)} className="next-btn" disabled={!stepValid()} style={{marginLeft:'auto'}}>
-              Continue →
-            </button>
-          ) : (
-            <button onClick={handleSubmit} className="next-btn" disabled={submitting} style={{marginLeft:'auto'}}>
-              {submitting?'Publishing...':'🚀 Publish Listing'}
-            </button>
-          )}
         </div>
       </div>
     </div>
-  );
+  )
 }

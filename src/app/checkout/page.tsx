@@ -5,10 +5,12 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useSearchParams } from 'next/navigation';
 import CheckoutForm from '@/components/CheckoutForm';
+import { useAuth } from '@/lib/auth-context';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 function CheckoutContent() {
+  const { user, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
   const carId = searchParams.get('carId');
@@ -22,7 +24,7 @@ function CheckoutContent() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!referenceId || !totalAmount) return;
+    if (!referenceId || !totalAmount || authLoading) return;
 
     fetch('/api/payments/create-payment-intent', {
       method: 'POST',
@@ -30,9 +32,9 @@ function CheckoutContent() {
       body: JSON.stringify({
         bookingId: referenceId,
         totalAmount,
-        customerEmail: 'customer@glidego.com.au',
-        customerName: 'Customer',
-        skipDatabase: true,
+        customerEmail: user?.email || '',
+        customerName: user?.name || 'Customer',
+        skipDatabase: !bookingId,
       }),
     })
       .then((res) => res.json())
@@ -42,7 +44,7 @@ function CheckoutContent() {
       })
       .catch(() => setError('Failed to initialise payment. Please try again.'))
       .finally(() => setIsLoading(false));
-  }, [referenceId, totalAmount]);
+  }, [authLoading, bookingId, referenceId, totalAmount, user?.email, user?.name]);
 
   const handlePaymentSuccess = () => {
     window.location.href = `/payment-success?bookingId=${referenceId}`;

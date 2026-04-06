@@ -82,6 +82,7 @@ export function dbCarToUiCar(car: DbCar) {
     deposit: car.deposit_amount,
     minAge: car.min_age_years,
     minDays: 1,
+    status: car.status,
     glidego_verified: car.glidego_verified,
     specs: getSpecsForCar(car.make, car.model, car.fuel_type),
     included: ['Insurance Included', 'Unlimited KM in VIC', 'Free Cancellation', '24/7 Roadside Assist'],
@@ -178,7 +179,7 @@ export async function fetchCarsByHostId(hostId: string): Promise<ReturnType<type
       .from('cars')
       .select(CARS_SELECT)
       .eq('host_id', hostId)
-      .eq('status', 'active')
+      .neq('status', 'deleted')
       .order('total_trips', { ascending: false });
 
     if (error) throw error;
@@ -189,6 +190,34 @@ export async function fetchCarsByHostId(hostId: string): Promise<ReturnType<type
     console.warn('Host DB fetch failed, using empty list:', err);
     return [];
   }
+}
+
+// Update car price
+export async function updateCarPrice(carId: string, newPrice: number): Promise<boolean> {
+  const { error } = await supabase
+    .from('cars')
+    .update({ price_daily: newPrice, updated_at: new Date().toISOString() })
+    .eq('id', carId);
+  return !error;
+}
+
+// Update car status (available/inactive/maintenance)
+export async function updateCarStatus(carId: string, status: string): Promise<boolean> {
+  const available = status === 'available';
+  const { error } = await supabase
+    .from('cars')
+    .update({ status, available, updated_at: new Date().toISOString() })
+    .eq('id', carId);
+  return !error;
+}
+
+// Soft-delete car (set status to deleted)
+export async function deleteCarById(carId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('cars')
+    .update({ status: 'deleted', available: false, updated_at: new Date().toISOString() })
+    .eq('id', carId);
+  return !error;
 }
 
 // Fetch single car by slug or id
@@ -209,5 +238,33 @@ export async function fetchCarBySlugOrId(slugOrId: string): Promise<ReturnType<t
     const numId = parseInt(slugOrId);
     const staticCar = CARS.find(c => c.id === numId) as any;
     return staticCar || null;
+  }
+}
+
+export async function fetchHostCars(hostId: string): Promise<Array<ReturnType<typeof dbCarToUiCar> & { status?: string; host_id?: string }>> {
+  try {
+    const { data, error } = await supabase
+      .from('cars')
+      .select(CARS_SELECT)
+      .eq('host_id', hostId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!data || data.length === 0) return [];
+
+    return data.map(flattenCarWithHost).map((car) => ({
+      ...dbCarToUiCar(car),
+      status: car.status === 'active' ? (car.available ? 'available' : 'booked') : car.status,
+      host_id: car.host_id,
+    }));
+  } catch (err) {
+    console.warn('Host cars fetch failed, using static fallback:', err);
+    return (CARS.slice(0, 3) as any[]).map((car, index) => ({
+      ...car,
+      status: car.available ? 'available' : 'booked',
+      trips30d: ((index + 1) * 7) % 15 + 2,
+      earnings30d: ((index + 1) * 1234) % 2000 + 400,
+      host_id: hostId,
+    }));
   }
 }

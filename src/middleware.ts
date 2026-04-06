@@ -1,39 +1,70 @@
-import { NextRequest, NextResponse } from 'next/server';
+// src/middleware.ts
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-const PROTECTED_ROUTES = ['/host', '/account', '/booking'];
-const ADMIN_ROUTES = ['/admin'];
+const PROTECTED = ['/account', '/booking', '/payment-success', '/favourites']
+const HOST_ONLY = ['/host/dashboard', '/host/add-vehicle', '/host/edit-vehicle', '/host/bookings', '/host/earnings', '/host/messages', '/host/settings', '/host/vehicles']
+const ADMIN_ONLY = ['/admin']
+const AUTH_PAGES = ['/login', '/signup', '/forgot-password']
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  let response = NextResponse.next({ request: { headers: request.headers } })
 
-  const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r));
-  const isAdmin = ADMIN_ROUTES.some(r => pathname.startsWith(r));
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+        },
+      },
+    }
+  )
 
-  if (!isProtected && !isAdmin) return NextResponse.next();
+  const { data: { user } } = await supabase.auth.getUser()
+  const { pathname } = request.nextUrl
 
-  // Check ALL cookies for any Supabase auth token
-  const cookies = request.cookies.getAll();
-  const hasAuthToken = cookies.some(c =>
-    c.name.includes('auth-token') ||
-    c.name.includes('access-token') ||
-    c.name.startsWith('sb-') ||
-    c.name.includes('supabase')
-  );
-
-  if (!hasAuthToken) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+  // Logged-in users away from auth pages
+  if (AUTH_PAGES.some(p => pathname.startsWith(p))) {
+    if (user) return NextResponse.redirect(new URL('/account', request.url))
+    return response
   }
 
-  return NextResponse.next();
+  const isProtected = PROTECTED.some(p => pathname.startsWith(p))
+  const isHostRoute = HOST_ONLY.some(p => pathname.startsWith(p))
+  const isAdminRoute = ADMIN_ONLY.some(p => pathname.startsWith(p))
+
+  // Not logged in → login
+  if ((isProtected || isHostRoute || isAdminRoute) && !user) {
+    const url = new URL('/login', request.url)
+    url.searchParams.set('redirectTo', pathname)
+    return NextResponse.redirect(url)
+  }
+
+  // Host routes → check role
+  if (isHostRoute && user) {
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'host' && profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/become-host', request.url))
+    }
+  }
+
+  // Admin routes → check role
+  if (isAdminRoute && user) {
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
+
+  return response
 }
 
 export const config = {
-  matcher: [
-    '/host/:path*',
-    '/account/:path*',
-    '/booking/:path*',
-    '/admin/:path*',
-  ],
-};
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2)$).*)'],
+}

@@ -108,8 +108,8 @@ function ProfileDropdown({ darkMode, user, onClose, onLogout }: {
       </div>
 
       <Link href="/account/profile" className="drop-item" onClick={onClose}>👤 My Account</Link>
-      <Link href="/account/profile" className="drop-item" onClick={onClose}>📅 My Bookings</Link>
-      <Link href="/account/profile" className="drop-item" onClick={onClose}>❤️ Favourites</Link>
+      <Link href="/account/profile#bookings" className="drop-item" onClick={onClose}>📅 My Bookings</Link>
+      <Link href="/account/profile#favourites" className="drop-item" onClick={onClose}>❤️ Favourites</Link>
 
       {user.role === 'host' && (
         <>

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
+import { fetchHostMessages } from '@/lib/db-bookings';
 
 const CONVERSATIONS = [
   {
@@ -119,9 +120,10 @@ function ChatMessages({ selected, messagesEndRef }: { selected: any; messagesEnd
 // Main Page
 // ─────────────────────────────────────────────
 export default function HostMessagesPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [selected, setSelected] = useState(CONVERSATIONS[0]);
   const [conversations, setConversations] = useState(CONVERSATIONS);
+  const [loadError, setLoadError] = useState('');
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -130,6 +132,18 @@ export default function HostMessagesPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selected]);
+
+  useEffect(() => {
+    if (isLoading || !user) return;
+
+    fetchHostMessages(user.id)
+      .then((data) => {
+        if (!data.length) return;
+        setConversations(data as any);
+        setSelected(data[0] as any);
+      })
+      .catch(() => setLoadError('Messages could not be loaded.'));
+  }, [isLoading, user]);
 
   const sendMessage = (msg?: string) => {
     const content = msg || text.trim();
@@ -197,6 +211,7 @@ export default function HostMessagesPage() {
         {/* Sidebar */}
         <div style={{ width: 300, borderRight: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', background: 'white', flexShrink: 0 }}>
           <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
+            {loadError && <div style={{ marginBottom: 10, fontSize: 12, color: '#b91c1c' }}>{loadError}</div>}
             <input
               style={{ width: '100%', border: '1.5px solid #f1f5f9', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', background: '#f8fafc', color: '#0f172a' }}
               placeholder="🔍 Search conversations..."
