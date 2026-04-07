@@ -227,7 +227,7 @@ export async function fetchCars(): Promise<ReturnType<typeof dbCarToUiCar>[]> {
   const { data, error } = await supabase
     .from('cars')
     .select(CARS_SELECT)
-    .eq('active', true)
+    .eq('available', true)
     .eq('status', 'active')
     .order('total_trips', { ascending: false });
 
