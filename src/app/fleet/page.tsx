@@ -2,7 +2,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { CARS } from '@/lib/cars';
 import { fetchCars } from '@/lib/db-cars';
 
 const CATEGORIES = ['All', 'Economy', 'Compact', 'SUV', 'Luxury', 'Van'];
@@ -179,11 +178,13 @@ export default function FleetPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [searchQ, setSearchQ] = useState('');
-  const [allCars, setAllCars] = useState(CARS as any[]);
+  const [allCars, setAllCars] = useState<any[]>([]);
+  const [carsLoading, setCarsLoading] = useState(true);
 
   useEffect(() => {
     fetchCars().then(dbCars => {
-      if (dbCars && dbCars.length > 0) setAllCars(dbCars);
+      setAllCars(dbCars);
+      setCarsLoading(false);
     });
   }, []);
 
@@ -309,11 +310,33 @@ export default function FleetPage() {
             </select>
           </div>
 
-          {filtered.length === 0 ? (
+          {carsLoading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} style={{ background: surface, border: `1px solid ${border}`, borderRadius: 18, overflow: 'hidden' }}>
+                  <div className="animate-pulse" style={{ height: 180, background: dm ? '#1e293b' : '#e2e8f0' }} />
+                  <div style={{ padding: 16 }}>
+                    <div className="animate-pulse" style={{ height: 16, width: '70%', background: dm ? '#1e293b' : '#e2e8f0', borderRadius: 8, marginBottom: 8 }} />
+                    <div className="animate-pulse" style={{ height: 12, width: '50%', background: dm ? '#1e293b' : '#e2e8f0', borderRadius: 6, marginBottom: 16 }} />
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                      {[1,2,3].map(j => <div key={j} className="animate-pulse" style={{ flex: 1, height: 36, background: dm ? '#1e293b' : '#e2e8f0', borderRadius: 8 }} />)}
+                    </div>
+                    <div className="animate-pulse" style={{ height: 36, background: dm ? '#1e293b' : '#e2e8f0', borderRadius: 10 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : allCars.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 80 }}>
+              <div style={{ fontSize: 56, marginBottom: 16 }}>🚗</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: text, marginBottom: 8 }}>No cars available yet</div>
+              <div style={{ fontSize: 13, color: muted }}>Check back soon — new vehicles are being added to the fleet.</div>
+            </div>
+          ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 60 }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No cars found</div>
-              <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Try adjusting your filters</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars match your filters</div>
+              <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Try adjusting your search criteria</div>
               <button onClick={clearFilters} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Clear All Filters</button>
             </div>
           ) : view === 'grid' ? (

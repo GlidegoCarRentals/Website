@@ -1,53 +1,111 @@
 // ============================================================
 // GlideGo — DB Cars Library
-// Fetches cars from Supabase, falls back to static data
+// Fetches cars from Supabase cars table
+// Actual schema columns verified 2025-04-07
 // ============================================================
 
-import { supabase } from './auth-context';
-import { CARS } from './cars';
+import { createClient } from '@/lib/supabase/client';
 
+const supabase = createClient();
+
+// ─────────────────────────────────────────────
+// DB type — matches actual Supabase cars table
+// ─────────────────────────────────────────────
 export type DbCar = {
   id: string;
+  host_id: string;
   make: string;
   model: string;
   year: number;
-  fuel_type: string;
+  colour: string;
+  body_type: string;
+  rego: string | null;
+  rego_state: string | null;
+  rego_verified: boolean | null;
+  engine: string | null;
   transmission: string;
+  fuel_type: string;
   seats: number;
+  doors: number | null;
   price_daily: number;
-  price_weekly: number;
+  price_weekly: number | null;
+  price_monthly: number | null;
+  deposit_amount: number;
+  min_days: number;
+  min_age_years: number;
+  max_days: number | null;
+  instant_book: boolean;
+  delivery_available: boolean;
+  delivery_fee: number;
+  delivery_radius_km: number | null;
   location_name: string;
-  description: string;
-  features: string[];
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   photos: string[];
+  features: string[];
+  title: string | null;
+  description: string;
+  house_rules: string | null;
   avg_rating: number;
+  total_reviews: number;
   total_trips: number;
+  total_views: number | null;
   available: boolean;
   status: string;
-  slug: string;
-  colour: string;
-  min_age_years: number;
-  deposit_amount: number;
-  glidego_verified: boolean;
-  host_id: string;
-  // Joined from users table (NO host_email for security)
+  glidego_verified: boolean | null;
+  featured: boolean | null;
+  slug: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined from users table
   host_name?: string;
   host_avatar?: string;
-  is_superhost?: boolean;
-  host_trust_score?: number;
 };
 
-// Convert DB car to the format the UI expects (matching CARS structure)
-export function dbCarToUiCar(car: DbCar) {
-  const fuelColorMap: Record<string, string> = {
-    'Hybrid': '#16a34a',
-    'Electric': '#2563eb',
-    'Petrol': '#6b7280',
-    'Diesel': '#6b7280',
-    'PHEV': '#16a34a',
-  };
+// ─────────────────────────────────────────────
+// Fuel colour map
+// ─────────────────────────────────────────────
+const FUEL_COLORS: Record<string, string> = {
+  'Hybrid':                '#16a34a',
+  'Electric':              '#2563eb',
+  'Plug-in Hybrid (PHEV)': '#16a34a',
+  'Petrol':                '#6b7280',
+  'Diesel':                '#6b7280',
+};
 
-  const name = `${car.make} ${car.model}`;
+// ─────────────────────────────────────────────
+// Category detection from make/model
+// ─────────────────────────────────────────────
+function getCategory(make: string, model: string): string {
+  const key = `${make} ${model}`.toLowerCase();
+  if (key.includes('x5') || key.includes('rav4') || key.includes('gle') ||
+      key.includes('ev6') || key.includes('x-trail') || key.includes('suv')) return 'SUV';
+  if (key.includes('ranger') || key.includes('hilux') || key.includes('triton')) return 'Van';
+  if (key.includes('tesla') || key.includes('mercedes') || key.includes('bmw') || key.includes('audi')) return 'Luxury';
+  if (key.includes('i30') || key.includes('yaris') || key.includes('swift') || key.includes('polo')) return 'Economy';
+  if (key.includes('corolla') || key.includes('camry') || key.includes('mazda3')) return 'Compact';
+  return 'Compact';
+}
+
+// ─────────────────────────────────────────────
+// Specs from fuel type
+// ─────────────────────────────────────────────
+function getSpecs(fuel: string, engine: string | null) {
+  if (fuel === 'Electric')
+    return { engine: engine || 'Electric Motor', power: '300+ HP', torque: '450+ Nm', acceleration: '5.0s', topSpeed: '200 km/h', fuel: '18kWh/100km' };
+  if (fuel === 'Hybrid' || fuel === 'Plug-in Hybrid (PHEV)')
+    return { engine: engine || 'Hybrid', power: '200+ HP', torque: '200+ Nm', acceleration: '8.0s', topSpeed: '180 km/h', fuel: '5.0L/100km' };
+  if (fuel === 'Diesel')
+    return { engine: engine || 'Diesel', power: '200+ HP', torque: '450+ Nm', acceleration: '9.5s', topSpeed: '175 km/h', fuel: '8.5L/100km' };
+  return { engine: engine || 'Petrol', power: '150+ HP', torque: '200+ Nm', acceleration: '9.0s', topSpeed: '200 km/h', fuel: '7.0L/100km' };
+}
+
+// ─────────────────────────────────────────────
+// Convert DB row → UI car shape
+// ─────────────────────────────────────────────
+export function dbCarToUiCar(car: DbCar) {
+  const name  = car.title || `${car.make} ${car.model}`;
   const photo = Array.isArray(car.photos) && car.photos.length > 0
     ? car.photos[0]
     : 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&q=80';
@@ -57,142 +115,199 @@ export function dbCarToUiCar(car: DbCar) {
     : 'GG';
 
   return {
-    id: car.id,
+    // Identity
+    id:           car.id,
     name,
-    category: getCategoryForCar(car.make, car.model),
-    fuel: car.fuel_type,
-    year: car.year,
-    seats: car.seats,
+    category:     getCategory(car.make, car.model),
+    // Specs
+    fuel:         car.fuel_type,
+    fuel_type:    car.fuel_type,
+    year:         car.year,
+    seats:        car.seats,
+    doors:        car.doors,
     transmission: car.transmission,
-    price: car.price_daily,
-    weeklyPrice: car.price_weekly || Math.round(car.price_daily * 6.5),
-    rating: car.avg_rating || 4.5,
-    trips: car.total_trips || 0,
-    available: car.available,
-    badge: getCategoryForCar(car.make, car.model),
-    fuelBadge: car.fuel_type,
-    fuelColor: fuelColorMap[car.fuel_type] || '#6b7280',
-    image: photo,
-    features: Array.isArray(car.features) ? car.features.slice(0, 3) : [],
-    allFeatures: Array.isArray(car.features) ? car.features : [],
-    description: car.description || '',
-    location: car.location_name,
-    slug: car.slug,
-    colour: car.colour,
-    deposit: car.deposit_amount,
-    minAge: car.min_age_years,
-    minDays: 1,
-    status: car.status,
-    glidego_verified: car.glidego_verified,
-    specs: getSpecsForCar(car.make, car.model, car.fuel_type),
+    colour:       car.colour,
+    engine:       car.engine,
+    // Pricing
+    price:        Number(car.price_daily),
+    weeklyPrice:  car.price_weekly ? Number(car.price_weekly) : Math.round(Number(car.price_daily) * 6.5),
+    monthlyPrice: car.price_monthly ? Number(car.price_monthly) : null,
+    deposit:      Number(car.deposit_amount),
+    minAge:       car.min_age_years,
+    minDays:      car.min_days,
+    maxDays:      car.max_days,
+    // Status
+    available:    car.available,
+    status:       car.status,
+    featured:     car.featured ?? false,
+    glidego_verified: car.glidego_verified ?? false,
+    // Display
+    badge:        getCategory(car.make, car.model),
+    fuelBadge:    car.fuel_type,
+    fuelColor:    FUEL_COLORS[car.fuel_type] ?? '#6b7280',
+    image:        photo,
+    photos:       Array.isArray(car.photos) ? car.photos : [photo],
+    // Features
+    features:     Array.isArray(car.features) ? car.features.slice(0, 3) : [],
+    allFeatures:  Array.isArray(car.features) ? car.features : [],
+    description:  car.description ?? '',
+    houseRules:   car.house_rules ?? '',
+    // Location
+    location:     car.location_name,
+    address:      car.address,
+    latitude:     car.latitude,
+    longitude:    car.longitude,
+    // Stats
+    rating:        Number(car.avg_rating) || 4.5,
+    trips:         car.total_trips ?? 0,
+    reviews_count: car.total_reviews ?? 0,
+    views:         car.total_views ?? 0,
+    // Options
+    instant_book:       car.instant_book,
+    delivery_available: car.delivery_available,
+    delivery_fee:       Number(car.delivery_fee),
+    delivery_radius_km: car.delivery_radius_km,
+    // Specs object
+    specs: getSpecs(car.fuel_type, car.engine),
     included: ['Insurance Included', 'Unlimited KM in VIC', 'Free Cancellation', '24/7 Roadside Assist'],
+    // Host
     host: {
-      name: car.host_name || 'GlideGo Host',
-      avatar: hostInitials,
-      rating: 4.9,
-      trips: car.total_trips || 0,
+      name:         car.host_name ?? 'GlideGo Host',
+      avatar:       car.host_avatar ?? hostInitials,
+      initials:     hostInitials,
+      rating:       4.9,
+      trips:        car.total_trips ?? 0,
       responseTime: '< 1 hour',
-      joined: '2024',
+      joined:       '2024',
     },
     reviews: [],
+    // Raw host_id for booking insert
+    host_id: car.host_id,
+    // Slug
+    slug: car.slug,
   };
 }
 
-function getCategoryForCar(make: string, model: string): string {
-  const key = `${make} ${model}`.toLowerCase();
-  if (key.includes('x5') || key.includes('rav4') || key.includes('gle')) return 'SUV';
-  if (key.includes('ranger')) return 'Van';
-  if (key.includes('tesla') || key.includes('mercedes') || key.includes('bmw')) return 'Luxury';
-  if (key.includes('i30') || key.includes('hyundai')) return 'Economy';
-  return 'Compact';
-}
-
-function getSpecsForCar(make: string, model: string, fuel: string) {
-  if (fuel === 'Electric') return { engine: 'Electric Motor', power: '300+ HP', torque: '450+ Nm', acceleration: '5.0s', topSpeed: '200 km/h', fuel: '18kWh/100km' };
-  if (fuel === 'Hybrid') return { engine: 'Hybrid', power: '200+ HP', torque: '200+ Nm', acceleration: '8.0s', topSpeed: '180 km/h', fuel: '5.0L/100km' };
-  if (fuel === 'Diesel') return { engine: 'Diesel', power: '200+ HP', torque: '450+ Nm', acceleration: '9.5s', topSpeed: '175 km/h', fuel: '8.5L/100km' };
-  return { engine: 'Petrol', power: '150+ HP', torque: '200+ Nm', acceleration: '9.0s', topSpeed: '200 km/h', fuel: '7.0L/100km' };
-}
-
-// ============================================================
-// Cars select query — direct tables, NO view
-// host_email intentionally excluded for security
-// ============================================================
+// ─────────────────────────────────────────────
+// SELECT columns — only real schema columns
+// ─────────────────────────────────────────────
 const CARS_SELECT = `
   id, host_id, make, model, year, colour, body_type, engine,
-  transmission, fuel_type, seats, doors, price_daily, price_weekly,
-  price_monthly, weekend_multiplier, surge_enabled, min_days, max_days,
-  min_age_years, deposit_amount, advance_notice_hrs, instant_book,
-  protection_basic, protection_standard, protection_premium,
+  rego, rego_state, rego_verified,
+  transmission, fuel_type, seats, doors,
+  price_daily, price_weekly, price_monthly, deposit_amount,
+  min_days, min_age_years, max_days,
+  instant_book, delivery_available, delivery_fee, delivery_radius_km,
   location_name, address, latitude, longitude,
-  delivery_available, delivery_fee, delivery_radius_km,
-  photos, tour_video_url, features, title, description, house_rules,
+  photos, features, title, description, house_rules,
   avg_rating, total_reviews, total_trips, total_views,
-  status, available, glidego_verified, featured, slug,
+  available, status, glidego_verified, featured, slug,
   created_at, updated_at,
   users!host_id (
     full_name,
-    avatar_url,
-    is_superhost,
-    trust_score
+    avatar_url
   )
 `.trim();
 
-// Helper — flatten joined users data into car object
-function flattenCarWithHost(car: any): DbCar {
-  const host = car.users || {};
+// Flatten the joined users row into the car object
+function flattenHost(car: any): DbCar {
+  const host = car.users ?? {};
   return {
     ...car,
-    host_name: host.full_name || null,
-    host_avatar: host.avatar_url || null,
-    is_superhost: host.is_superhost || false,
-    host_trust_score: host.trust_score || null,
-    users: undefined,
+    host_name:   host.full_name  ?? null,
+    host_avatar: host.avatar_url ?? null,
+    users:       undefined,
   };
 }
 
-// ============================================================
-// Main fetch function — DB first, fallback to static
-// ============================================================
+// ─────────────────────────────────────────────
+// fetchCars — all available cars
+// ─────────────────────────────────────────────
 export async function fetchCars(): Promise<ReturnType<typeof dbCarToUiCar>[]> {
-  try {
-    const { data, error } = await supabase
-      .from('cars')
-      .select(CARS_SELECT)
-      .eq('status', 'active')
-      .order('total_trips', { ascending: false });
+  const { data, error } = await supabase
+    .from('cars')
+    .select(CARS_SELECT)
+    .eq('active', true)
+    .eq('status', 'active')
+    .order('total_trips', { ascending: false });
 
-    if (error) throw error;
-    if (!data || data.length === 0) throw new Error('No cars in DB');
-
-    return data.map(flattenCarWithHost).map(dbCarToUiCar);
-  } catch (err) {
-    console.warn('DB fetch failed, using static data:', err);
-    return CARS as any;
-  }
-}
-
-// Host-scoped fetch used by `/host/vehicles`
-export async function fetchCarsByHostId(hostId: string): Promise<ReturnType<typeof dbCarToUiCar>[]> {
-  try {
-    const { data, error } = await supabase
-      .from('cars')
-      .select(CARS_SELECT)
-      .eq('host_id', hostId)
-      .neq('status', 'deleted')
-      .order('total_trips', { ascending: false });
-
-    if (error) throw error;
-    if (!data || data.length === 0) return [];
-
-    return data.map(flattenCarWithHost).map(dbCarToUiCar);
-  } catch (err) {
-    console.warn('Host DB fetch failed, using empty list:', err);
+  if (error) {
+    console.error('[fetchCars] Supabase error:', error.message);
     return [];
   }
+
+  return (data ?? []).map(flattenHost).map(dbCarToUiCar);
 }
 
-// Update car price
+// ─────────────────────────────────────────────
+// fetchCarById — single car by UUID
+// ─────────────────────────────────────────────
+export async function fetchCarById(id: string): Promise<ReturnType<typeof dbCarToUiCar> | null> {
+  const { data, error } = await supabase
+    .from('cars')
+    .select(CARS_SELECT)
+    .eq('id', id)
+    .single();
+
+  if (error || !data) return null;
+  return dbCarToUiCar(flattenHost(data));
+}
+
+// ─────────────────────────────────────────────
+// fetchCarBySlugOrId — for /cars/[id] route
+// ─────────────────────────────────────────────
+export async function fetchCarBySlugOrId(idOrSlug: string): Promise<ReturnType<typeof dbCarToUiCar> | null> {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+  if (isUuid) return fetchCarById(idOrSlug);
+
+  // Try slug lookup
+  const { data, error } = await supabase
+    .from('cars')
+    .select(CARS_SELECT)
+    .eq('slug', idOrSlug)
+    .single();
+
+  if (error || !data) return null;
+  return dbCarToUiCar(flattenHost(data));
+}
+
+// ─────────────────────────────────────────────
+// fetchCarsByHostId — host's own cars
+// ─────────────────────────────────────────────
+export async function fetchCarsByHostId(hostId: string): Promise<ReturnType<typeof dbCarToUiCar>[]> {
+  const { data, error } = await supabase
+    .from('cars')
+    .select(CARS_SELECT)
+    .eq('host_id', hostId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('[fetchCarsByHostId] Supabase error:', error.message);
+    return [];
+  }
+
+  return (data ?? []).map(flattenHost).map(dbCarToUiCar);
+}
+
+// ─────────────────────────────────────────────
+// fetchHostCars — alias, used by host dashboard
+// ─────────────────────────────────────────────
+export async function fetchHostCars(hostId: string) {
+  const cars = await fetchCarsByHostId(hostId);
+  return cars.map(c => ({
+    ...c,
+    displayStatus: c.status === 'active' && c.available
+      ? 'active'
+      : c.status === 'maintenance'
+      ? 'maintenance'
+      : 'inactive',
+    host_id: hostId,
+  }));
+}
+
+// ─────────────────────────────────────────────
+// updateCarPrice
+// ─────────────────────────────────────────────
 export async function updateCarPrice(carId: string, newPrice: number): Promise<boolean> {
   const { error } = await supabase
     .from('cars')
@@ -201,70 +316,28 @@ export async function updateCarPrice(carId: string, newPrice: number): Promise<b
   return !error;
 }
 
-// Update car status (available/inactive/maintenance)
+// ─────────────────────────────────────────────
+// updateCarStatus
+// ─────────────────────────────────────────────
 export async function updateCarStatus(carId: string, status: string): Promise<boolean> {
-  const available = status === 'available';
   const { error } = await supabase
     .from('cars')
-    .update({ status, available, updated_at: new Date().toISOString() })
+    .update({
+      status,
+      available: status === 'active',
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', carId);
   return !error;
 }
 
-// Soft-delete car (set status to deleted)
+// ─────────────────────────────────────────────
+// deleteCarById — soft delete via status
+// ─────────────────────────────────────────────
 export async function deleteCarById(carId: string): Promise<boolean> {
   const { error } = await supabase
     .from('cars')
-    .update({ status: 'deleted', available: false, updated_at: new Date().toISOString() })
+    .update({ status: 'inactive', available: false, updated_at: new Date().toISOString() })
     .eq('id', carId);
   return !error;
-}
-
-// Fetch single car by slug or id
-export async function fetchCarBySlugOrId(slugOrId: string): Promise<ReturnType<typeof dbCarToUiCar> | null> {
-  try {
-    const isUuid = /^[0-9a-f-]{36}$/.test(slugOrId);
-
-    const query = supabase.from('cars').select(CARS_SELECT).eq('status', 'active');
-    const { data, error } = isUuid
-      ? await query.eq('id', slugOrId).single()
-      : await query.eq('slug', slugOrId).single();
-
-    if (error) throw error;
-    if (!data) throw new Error('Car not found');
-
-    return dbCarToUiCar(flattenCarWithHost(data));
-  } catch {
-    const numId = parseInt(slugOrId);
-    const staticCar = CARS.find(c => c.id === numId) as any;
-    return staticCar || null;
-  }
-}
-
-export async function fetchHostCars(hostId: string): Promise<Array<ReturnType<typeof dbCarToUiCar> & { status?: string; host_id?: string }>> {
-  try {
-    const { data, error } = await supabase
-      .from('cars')
-      .select(CARS_SELECT)
-      .eq('host_id', hostId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    if (!data || data.length === 0) return [];
-
-    return data.map(flattenCarWithHost).map((car) => ({
-      ...dbCarToUiCar(car),
-      status: car.status === 'active' ? (car.available ? 'available' : 'booked') : car.status,
-      host_id: car.host_id,
-    }));
-  } catch (err) {
-    console.warn('Host cars fetch failed, using static fallback:', err);
-    return (CARS.slice(0, 3) as any[]).map((car, index) => ({
-      ...car,
-      status: car.available ? 'available' : 'booked',
-      trips30d: ((index + 1) * 7) % 15 + 2,
-      earnings30d: ((index + 1) * 1234) % 2000 + 400,
-      host_id: hostId,
-    }));
-  }
 }

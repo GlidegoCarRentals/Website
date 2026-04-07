@@ -35,7 +35,7 @@ interface Form {
   price_daily: number; price_weekly: number; price_monthly: number
   deposit_amount: number; min_days: number; min_age_years: number
   instant_book: boolean; delivery_available: boolean; delivery_fee: number
-  location: string; latitude: number; longitude: number
+  location_name: string; latitude: number; longitude: number
 }
 
 export default function AddVehiclePage() {
@@ -59,7 +59,7 @@ export default function AddVehiclePage() {
     price_daily: 80, price_weekly: 450, price_monthly: 1500,
     deposit_amount: 500, min_days: 1, min_age_years: 21,
     instant_book: false, delivery_available: false, delivery_fee: 0,
-    location: 'Melbourne, VIC', latitude: -37.8136, longitude: 144.9631,
+    location_name: 'Melbourne, VIC', latitude: -37.8136, longitude: 144.9631,
   })
 
   useEffect(() => {
@@ -124,8 +124,8 @@ export default function AddVehiclePage() {
       price_daily: form.price_daily, price_weekly: form.price_weekly || null, price_monthly: form.price_monthly || null,
       deposit_amount: form.deposit_amount, min_days: form.min_days, min_age_years: form.min_age_years,
       instant_book: form.instant_book, delivery_available: form.delivery_available, delivery_fee: form.delivery_fee,
-      location: form.location, latitude: form.latitude, longitude: form.longitude,
-      available: true, status: 'available',
+      location_name: form.location_name, latitude: form.latitude, longitude: form.longitude,
+      available: true, status: 'active',
     })
 
     setSubmitting(false)
@@ -261,7 +261,7 @@ export default function AddVehiclePage() {
 
                 <div className="mt-4">
                   <label className="block text-xs font-medium text-zinc-500 mb-1.5">Pickup Location</label>
-                  <input type="text" value={form.location} onChange={e => set('location', e.target.value)}
+                  <input type="text" value={form.location_name} onChange={e => set('location_name', e.target.value)}
                     placeholder="CBD Melbourne, VIC"
                     className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
                 </div>
@@ -409,7 +409,7 @@ export default function AddVehiclePage() {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   ['Vehicle', `${form.year} ${form.make} ${form.model}`],
-                  ['Location', form.location],
+                  ['Location', form.location_name],
                   ['Daily Rate', `AUD $${form.price_daily}`],
                   ['Security Bond', `AUD $${form.deposit_amount}`],
                   ['Transmission', form.transmission],

@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CARS } from '@/lib/cars';
 import { fetchCarBySlugOrId } from '@/lib/db-cars';
 import { supabase } from '@/lib/auth-context';
 
@@ -14,28 +13,37 @@ const CAR_FALLBACK: Record<string, string> = {
 export default function CarDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [car, setCar] = useState<any>(CARS.find(c => c.id === Number(params.id)) || null);
+  const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-const [pickupDate, setPickupDate] = useState('');
-const [returnDate, setReturnDate] = useState('');
-const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
-const [imgError, setImgError] = useState(false);
+  const [pickupDate, setPickupDate] = useState('');
+  const [returnDate, setReturnDate] = useState('');
+  const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
+  const [imgError, setImgError] = useState(false);
   useEffect(() => {
     const id = params.id as string;
     fetchCarBySlugOrId(id).then(dbCar => {
-      if (dbCar) setCar(dbCar);
-      else {
-        // fallback to static
-        const staticCar = CARS.find(c => c.id === Number(id));
-        if (staticCar) setCar(staticCar);
-      }
+      setCar(dbCar ?? null);
       setLoading(false);
     });
   }, [params.id]);
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-      <div style={{ fontSize: 40 }}>🚗</div>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter,sans-serif' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
+        {/* Image skeleton */}
+        <div className="animate-pulse" style={{ height: 420, background: '#e2e8f0', borderRadius: 20, marginBottom: 32 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32 }}>
+          <div>
+            <div className="animate-pulse" style={{ height: 32, background: '#e2e8f0', borderRadius: 8, marginBottom: 12, width: '60%' }} />
+            <div className="animate-pulse" style={{ height: 18, background: '#f1f5f9', borderRadius: 8, marginBottom: 24, width: '40%' }} />
+            <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+              {[1,2,3,4].map(i => <div key={i} className="animate-pulse" style={{ height: 56, background: '#f1f5f9', borderRadius: 12, flex: 1 }} />)}
+            </div>
+            <div className="animate-pulse" style={{ height: 120, background: '#f1f5f9', borderRadius: 12 }} />
+          </div>
+          <div className="animate-pulse" style={{ height: 420, background: '#e2e8f0', borderRadius: 18 }} />
+        </div>
+      </div>
     </div>
   );
 
@@ -394,24 +402,14 @@ const [imgError, setImgError] = useState(false);
               </div>
             </div>
 
-            {/* Similar Cars */}
-            <div style={{ marginTop: 20, background: 'white', borderRadius: 16, padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-              <h3 className="playfair" style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>Similar Cars</h3>
-              {CARS
-                .filter(c => c.id !== car.id)
-                .slice(0, 3)
-                .map((c: any) => (
-                  <Link key={c.id} href={`/cars/${c.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
-                    <div style={{ width: 50, height: 50, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#f1f5f9' }}>
-                      <img src={c.image} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>★ {c.rating} · {c.trips} trips</div>
-                    </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', flexShrink: 0 }}>${c.price}/day</div>
-                  </Link>
-                ))}
+            {/* Browse More */}
+            <div style={{ marginTop: 20, background: 'white', borderRadius: 16, padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', textAlign: 'center' }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>🚗</div>
+              <h3 className="playfair" style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Explore More Cars</h3>
+              <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.6 }}>Browse our full fleet of premium vehicles available across Melbourne.</p>
+              <Link href="/fleet" style={{ display: 'inline-block', background: '#1d4ed8', color: 'white', textDecoration: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600 }}>
+                View All Cars →
+              </Link>
             </div>
           </div>
         </div>

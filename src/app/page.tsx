@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CARS } from '@/lib/cars';
 import { fetchCars } from '@/lib/db-cars';
 import { CarCardSkeleton } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth-context';
@@ -27,12 +26,12 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const [cars, setCars] = useState(CARS as any[]);
+  const [cars, setCars] = useState<any[]>([]);
   const [carsLoading, setCarsLoading] = useState(true);
 
   useEffect(() => {
     fetchCars().then(dbCars => {
-      if (dbCars && dbCars.length > 0) setCars(dbCars);
+      setCars(dbCars ?? []);
       setCarsLoading(false);
     });
   }, []);
@@ -444,7 +443,34 @@ export default function HomePage() {
 
           {/* Car Grid */}
           <div className="fleet-grid" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:22}}>
-            {filtered.map(car=>(
+            {carsLoading ? (
+              Array.from({length:8}).map((_,i)=>(
+                <div key={i} style={{background:'white',borderRadius:18,overflow:'hidden',border:'1px solid #f0f0f0'}}>
+                  <div className="animate-pulse" style={{height:180,background:'#e2e8f0'}} />
+                  <div style={{padding:'16px 18px'}}>
+                    <div className="animate-pulse" style={{height:16,background:'#e2e8f0',borderRadius:6,marginBottom:8,width:'70%'}} />
+                    <div className="animate-pulse" style={{height:12,background:'#f1f5f9',borderRadius:6,marginBottom:16,width:'40%'}} />
+                    <div style={{display:'flex',gap:14,marginBottom:12}}>
+                      {[1,2,3].map(j=><div key={j} className="animate-pulse" style={{height:36,background:'#f1f5f9',borderRadius:8,flex:1}} />)}
+                    </div>
+                    <div className="animate-pulse" style={{height:40,background:'#f1f5f9',borderRadius:8}} />
+                  </div>
+                </div>
+              ))
+            ) : filtered.length === 0 && cars.length === 0 ? (
+              <div style={{gridColumn:'1/-1',textAlign:'center',padding:'80px 24px'}}>
+                <div style={{fontSize:56,marginBottom:16}}>🚗</div>
+                <div style={{fontSize:20,fontWeight:700,color:'#0f172a',marginBottom:8}}>No cars available yet</div>
+                <div style={{fontSize:13,color:'#94a3b8'}}>Check back soon — new vehicles are being added to the fleet.</div>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div style={{gridColumn:'1/-1',textAlign:'center',padding:'80px 24px'}}>
+                <div style={{fontSize:40,marginBottom:12}}>🔍</div>
+                <div style={{fontSize:18,fontWeight:700,color:'#0f172a',marginBottom:8}}>No cars match your filters</div>
+                <button onClick={()=>{setCategory('All');setTransmission('Any');setMaxPrice(400);}} style={{marginTop:8,background:'#1d4ed8',color:'white',border:'none',borderRadius:10,padding:'10px 24px',fontWeight:600,cursor:'pointer',fontSize:14}}>Clear Filters</button>
+              </div>
+            ) : null}
+            {!carsLoading && filtered.map(car=>(
               <Link key={car.id} href={`/cars/${car.id}`} style={{textDecoration:'none',color:'inherit'}}>
                 <div className="car-card" style={{opacity:car.available?1:0.7}}>
                   <div className="car-img-wrap">
