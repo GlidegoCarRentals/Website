@@ -84,6 +84,13 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
     return 'Building';
   }, [data.user.trustScore]);
 
+  const driverLicenceStatus = data.user.driverLicenceStatus || 'not_started';
+  const favouriteCars = data.favourites.filter((entry) => entry?.car?.id);
+  const reviewItems = data.reviews || [];
+  const paymentMethods = data.paymentMethods || [];
+  const paymentHistory = data.paymentHistory || [];
+  const trustEvents = data.trustEvents || [];
+
   const mutate = async (url: string, options: RequestInit, successMessage: string) => {
     setMessage('');
     const response = await fetch(url, {
@@ -151,7 +158,7 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
               {[
                 { label: 'Email', value: data.user.emailVerified ? 'Verified' : 'Pending', status: data.user.emailVerified ? 'approved' : 'pending' },
                 { label: 'Phone', value: data.user.phoneVerified ? 'Verified' : 'Pending', status: data.user.phoneVerified ? 'approved' : 'pending' },
-                { label: 'Driver licence', value: data.user.driverLicenceStatus.replace('_', ' '), status: data.user.driverLicenceStatus },
+                { label: 'Driver licence', value: driverLicenceStatus.replace(/_/g, ' '), status: driverLicenceStatus },
               ].map((item) => {
                 const tone = statusTone(item.status);
                 return (
@@ -224,7 +231,7 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Saved cars</div>
                 <div style={{ display: 'grid', gap: 12 }}>
-                  {data.favourites.slice(0, 4).map((entry) => (
+                  {favouriteCars.slice(0, 4).map((entry) => (
                     <div key={entry.car.id} className="card-flat" style={{ padding: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                         <div>
@@ -243,13 +250,13 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
                       </div>
                     </div>
                   ))}
-                  {data.favourites.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>No favourites saved yet.</div> : null}
+                  {favouriteCars.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>No favourites saved yet.</div> : null}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Reviews you’ve written</div>
                 <div style={{ display: 'grid', gap: 12 }}>
-                  {data.reviews.slice(0, 4).map((review) => (
+                  {reviewItems.slice(0, 4).map((review) => (
                     <div key={review.id} className="card-flat" style={{ padding: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
                         <div style={{ fontWeight: 800 }}>{review.title || `${review.target_type} review`}</div>
@@ -259,7 +266,7 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
                       <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>{shortDate(review.created_at)}</div>
                     </div>
                   ))}
-                  {data.reviews.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>Completed trips will unlock review prompts here.</div> : null}
+                  {reviewItems.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>Completed trips will unlock review prompts here.</div> : null}
                 </div>
               </div>
             </div>
@@ -320,7 +327,7 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
             <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Payment and billing</h2>
             <div style={{ fontSize: 13, color: 'var(--color-text-3)', marginBottom: 16 }}>Stripe-backed payment methods and booking charges.</div>
             <div style={{ display: 'grid', gap: 12 }}>
-              {data.paymentMethods.map((method) => (
+              {paymentMethods.map((method) => (
                 <div key={method.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 800 }}>{method.brand || 'Card'} ending {method.last4}</div>
@@ -329,8 +336,8 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
                   {method.is_default ? <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary-dark)' }}>Default</span> : null}
                 </div>
               ))}
-              {data.paymentMethods.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>No saved cards on file yet.</div> : null}
-              {data.paymentHistory.slice(0, 4).map((payment) => (
+              {paymentMethods.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>No saved cards on file yet.</div> : null}
+              {paymentHistory.slice(0, 4).map((payment) => (
                 <div key={payment.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--color-text-3)' }}>
                   <span>{payment.bookings?.booking_reference || payment.type}</span>
                   <span>{money(payment.amount)} · {payment.status}</span>
@@ -374,7 +381,7 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
           <section className="card">
             <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>Trust activity</h2>
             <div style={{ display: 'grid', gap: 10 }}>
-              {data.trustEvents.map((event) => (
+              {trustEvents.map((event) => (
                 <div key={event.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{event.reason}</div>
@@ -385,7 +392,7 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
                   </div>
                 </div>
               ))}
-              {data.trustEvents.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>Trust events will appear here as GlideGo validates identity, payments, and trip behavior.</div> : null}
+              {trustEvents.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>Trust events will appear here as GlideGo validates identity, payments, and trip behavior.</div> : null}
             </div>
           </section>
         </div>
