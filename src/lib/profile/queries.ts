@@ -19,7 +19,7 @@ function formatBookingRow(row: any) {
           id: row.cars.id,
           make: row.cars.make,
           model: row.cars.model,
-          photos: row.cars.photos || [],
+          photos: Array.isArray(row.cars.photos) ? row.cars.photos : [],
           locationName: row.cars.location_name,
           priceDaily: row.cars.price_daily,
           status: row.cars.status,
@@ -212,21 +212,21 @@ export async function getGuestDashboardData(userId: string): Promise<GuestDashbo
   return {
     user: {
       id: user.id,
-      fullName: user.full_name,
-      email: user.email,
-      phone: user.phone,
-      avatarUrl: user.avatar_url,
-      role: user.role,
-      city: user.city,
-      countryCode: user.country_code,
+      fullName: user.full_name || 'Guest',
+      email: user.email || '',
+      phone: user.phone || null,
+      avatarUrl: user.avatar_url || null,
+      role: user.role || 'guest',
+      city: user.city || null,
+      countryCode: user.country_code || null,
       emailVerified: Boolean(user.email_verified),
       phoneVerified: Boolean(user.phone_verified),
-      identityStatus: user.identity_status,
-      driverLicenceStatus: user.driver_licence_status,
+      identityStatus: user.identity_status || 'not_started',
+      driverLicenceStatus: user.driver_licence_status || 'not_started',
       trustScore: Number(user.trust_score || 0),
       averageRating: user.average_rating ? Number(user.average_rating) : null,
       totalTrips: Number(user.total_trips || 0),
-      createdAt: user.created_at,
+      createdAt: user.created_at || new Date().toISOString(),
     },
     guestProfile: guestProfileResult.data
       ? {
@@ -267,10 +267,15 @@ export async function getGuestDashboardData(userId: string): Promise<GuestDashbo
     activeTrips: bookings.filter((booking) => booking.status === 'active'),
     pastTrips: bookings.filter((booking) => booking.status === 'completed'),
     cancelledTrips: bookings.filter((booking) => ['cancelled', 'declined', 'expired', 'no_show'].includes(booking.status)),
-    favourites: (favouritesResult.data || []).map((row) => ({
-      savedAt: row.created_at,
-      car: row.cars,
-    })),
+    favourites: (favouritesResult.data || [])
+      .map((row) => {
+        const car = Array.isArray(row.cars) ? row.cars[0] : row.cars;
+        return {
+          savedAt: row.created_at,
+          car,
+        };
+      })
+      .filter((row) => row?.car?.id),
     reviews: reviewsResult.data || [],
     paymentMethods: paymentMethodsResult.data || [],
     paymentHistory: paymentsResult.data || [],
@@ -435,21 +440,21 @@ export async function getHostDashboardData(userId: string): Promise<HostDashboar
   return {
     user: {
       id: user.id,
-      fullName: user.full_name,
-      email: user.email,
-      phone: user.phone,
-      avatarUrl: user.avatar_url,
-      role: user.role,
-      city: user.city,
-      countryCode: user.country_code,
+      fullName: user.full_name || 'Host',
+      email: user.email || '',
+      phone: user.phone || null,
+      avatarUrl: user.avatar_url || null,
+      role: user.role || 'host',
+      city: user.city || null,
+      countryCode: user.country_code || null,
       emailVerified: Boolean(user.email_verified),
       phoneVerified: Boolean(user.phone_verified),
-      identityStatus: user.identity_status,
-      driverLicenceStatus: user.driver_licence_status,
+      identityStatus: user.identity_status || 'not_started',
+      driverLicenceStatus: user.driver_licence_status || 'not_started',
       trustScore: Number(user.trust_score || 0),
       averageRating: user.average_rating ? Number(user.average_rating) : null,
       totalTrips: Number(user.host_trips || 0),
-      createdAt: user.created_at,
+      createdAt: user.created_at || new Date().toISOString(),
     },
     hostProfile: hostProfileResult.data
       ? {
