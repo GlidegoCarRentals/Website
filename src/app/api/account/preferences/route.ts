@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthenticatedUser } from '@/lib/supabase/server';
+import { isMissingSchemaError } from '@/lib/supabase/errors';
 
 export async function PATCH(request: NextRequest) {
   const { supabase, user } = await requireAuthenticatedUser();
@@ -41,7 +42,7 @@ export async function PATCH(request: NextRequest) {
       .from('user_notification_preferences')
       .upsert({ user_id: user.id, ...notificationUpdates }, { onConflict: 'user_id' });
 
-    if (error) {
+    if (error && !isMissingSchemaError(error)) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
   }
@@ -51,7 +52,7 @@ export async function PATCH(request: NextRequest) {
       .from('user_security_settings')
       .upsert({ user_id: user.id, ...securityUpdates }, { onConflict: 'user_id' });
 
-    if (error) {
+    if (error && !isMissingSchemaError(error)) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
   }

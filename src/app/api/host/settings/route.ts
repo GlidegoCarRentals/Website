@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthenticatedUser } from '@/lib/supabase/server';
+import { isMissingSchemaError } from '@/lib/supabase/errors';
 
 export async function PATCH(request: NextRequest) {
   const { supabase, user } = await requireAuthenticatedUser();
@@ -30,7 +31,7 @@ export async function PATCH(request: NextRequest) {
     .from('host_profiles')
     .upsert({ user_id: user.id, ...updates }, { onConflict: 'user_id' });
 
-  if (error) {
+  if (error && !isMissingSchemaError(error)) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 

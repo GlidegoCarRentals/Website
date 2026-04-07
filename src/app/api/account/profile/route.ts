@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthenticatedUser } from '@/lib/supabase/server';
+import { isMissingSchemaError } from '@/lib/supabase/errors';
 
 export async function PATCH(request: NextRequest) {
   const { supabase, user } = await requireAuthenticatedUser();
@@ -15,7 +16,6 @@ export async function PATCH(request: NextRequest) {
 
   if (typeof body.fullName === 'string') userUpdates.full_name = body.fullName.trim();
   if (typeof body.phone === 'string') userUpdates.phone = body.phone.trim();
-  if (typeof body.city === 'string') userUpdates.city = body.city.trim();
   if (typeof body.bio === 'string') userUpdates.bio = body.bio.trim();
   if (typeof body.avatarUrl === 'string') userUpdates.avatar_url = body.avatarUrl.trim();
   if (typeof body.emergencyContactName === 'string') {
@@ -40,7 +40,7 @@ export async function PATCH(request: NextRequest) {
       .from('guest_profiles')
       .upsert({ user_id: user.id, ...guestProfileUpdates }, { onConflict: 'user_id' });
 
-    if (error) {
+    if (error && !isMissingSchemaError(error)) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
   }
