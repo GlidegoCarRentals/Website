@@ -4,7 +4,6 @@
 // ============================================================
 
 import { supabase } from './auth-context';
-import { CARS } from './cars';
 
 export type DbCar = {
   id: string;
@@ -163,12 +162,12 @@ export async function fetchCars(): Promise<ReturnType<typeof dbCarToUiCar>[]> {
       .order('total_trips', { ascending: false });
 
     if (error) throw error;
-    if (!data || data.length === 0) throw new Error('No cars in DB');
+    if (!data || data.length === 0) return [];
 
     return data.map(flattenCarWithHost).map(dbCarToUiCar);
   } catch (err) {
-    console.warn('DB fetch failed, using static data:', err);
-    return CARS as any;
+    console.error('DB fetch failed:', err);
+    return [];
   }
 }
 
@@ -235,9 +234,7 @@ export async function fetchCarBySlugOrId(slugOrId: string): Promise<ReturnType<t
 
     return dbCarToUiCar(flattenCarWithHost(data));
   } catch {
-    const numId = parseInt(slugOrId);
-    const staticCar = CARS.find(c => c.id === numId) as any;
-    return staticCar || null;
+    return null;
   }
 }
 
@@ -258,13 +255,7 @@ export async function fetchHostCars(hostId: string): Promise<Array<ReturnType<ty
       host_id: car.host_id,
     }));
   } catch (err) {
-    console.warn('Host cars fetch failed, using static fallback:', err);
-    return (CARS.slice(0, 3) as any[]).map((car, index) => ({
-      ...car,
-      status: car.available ? 'available' : 'booked',
-      trips30d: ((index + 1) * 7) % 15 + 2,
-      earnings30d: ((index + 1) * 1234) % 2000 + 400,
-      host_id: hostId,
-    }));
+    console.error('Host cars fetch failed:', err);
+    return [];
   }
 }

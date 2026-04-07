@@ -2,8 +2,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { CARS } from '@/lib/cars';
 import { fetchCars } from '@/lib/db-cars';
+import { FleetSkeleton } from '@/components/Skeleton';
 
 const CATEGORIES = ['All', 'Economy', 'Compact', 'SUV', 'Luxury', 'Van'];
 const FUEL_TYPES = ['All', 'Petrol', 'Hybrid', 'Electric', 'Diesel'];
@@ -179,11 +179,13 @@ export default function FleetPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [searchQ, setSearchQ] = useState('');
-  const [allCars, setAllCars] = useState(CARS as any[]);
+  const [allCars, setAllCars] = useState<any[]>([]);
+  const [carsLoading, setCarsLoading] = useState(true);
 
   useEffect(() => {
     fetchCars().then(dbCars => {
-      if (dbCars && dbCars.length > 0) setAllCars(dbCars);
+      setAllCars(dbCars);
+      setCarsLoading(false);
     });
   }, []);
 
@@ -309,10 +311,18 @@ export default function FleetPage() {
             </select>
           </div>
 
-          {filtered.length === 0 ? (
+          {carsLoading ? (
+            <FleetSkeleton />
+          ) : allCars.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 60 }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🚗</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars available</div>
+              <div style={{ fontSize: 13, color: muted }}>Check back soon — new vehicles are being added to the fleet.</div>
+            </div>
+          ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 60 }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No cars found</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars match your filters</div>
               <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Try adjusting your filters</div>
               <button onClick={clearFilters} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Clear All Filters</button>
             </div>

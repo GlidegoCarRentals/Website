@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CARS } from '@/lib/cars';
 import { fetchCars } from '@/lib/db-cars';
 import { CarCardSkeleton } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth-context';
@@ -27,12 +26,12 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const [cars, setCars] = useState(CARS as any[]);
+  const [cars, setCars] = useState<any[]>([]);
   const [carsLoading, setCarsLoading] = useState(true);
 
   useEffect(() => {
     fetchCars().then(dbCars => {
-      if (dbCars && dbCars.length > 0) setCars(dbCars);
+      setCars(dbCars);
       setCarsLoading(false);
     });
   }, []);
@@ -443,6 +442,17 @@ export default function HomePage() {
           </div>
 
           {/* Car Grid */}
+          {carsLoading ? (
+            <div className="fleet-grid" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:22}}>
+              {Array.from({length:8}).map((_,i)=><CarCardSkeleton key={i}/>)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{textAlign:'center',padding:'60px 0'}}>
+              <div style={{fontSize:56,marginBottom:16}}>🚗</div>
+              <h3 style={{fontSize:20,fontWeight:700,color:'#0f172a',marginBottom:8}}>No cars available</h3>
+              <p style={{color:'#64748b',fontSize:14}}>Check back soon — new vehicles are being added to the fleet.</p>
+            </div>
+          ) : (
           <div className="fleet-grid" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:22}}>
             {filtered.map(car=>(
               <Link key={car.id} href={`/cars/${car.id}`} style={{textDecoration:'none',color:'inherit'}}>
@@ -518,6 +528,7 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
+          )}
         </div>
       </section>
 

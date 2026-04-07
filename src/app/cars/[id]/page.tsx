@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CARS } from '@/lib/cars';
 import { fetchCarBySlugOrId } from '@/lib/db-cars';
 import { supabase } from '@/lib/auth-context';
 
@@ -14,7 +13,7 @@ const CAR_FALLBACK: Record<string, string> = {
 export default function CarDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [car, setCar] = useState<any>(CARS.find(c => c.id === Number(params.id)) || null);
+  const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 const [pickupDate, setPickupDate] = useState('');
 const [returnDate, setReturnDate] = useState('');
@@ -24,11 +23,6 @@ const [imgError, setImgError] = useState(false);
     const id = params.id as string;
     fetchCarBySlugOrId(id).then(dbCar => {
       if (dbCar) setCar(dbCar);
-      else {
-        // fallback to static
-        const staticCar = CARS.find(c => c.id === Number(id));
-        if (staticCar) setCar(staticCar);
-      }
       setLoading(false);
     });
   }, [params.id]);
@@ -394,24 +388,12 @@ const [imgError, setImgError] = useState(false);
               </div>
             </div>
 
-            {/* Similar Cars */}
-            <div style={{ marginTop: 20, background: 'white', borderRadius: 16, padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-              <h3 className="playfair" style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>Similar Cars</h3>
-              {CARS
-                .filter(c => c.id !== car.id)
-                .slice(0, 3)
-                .map((c: any) => (
-                  <Link key={c.id} href={`/cars/${c.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
-                    <div style={{ width: 50, height: 50, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#f1f5f9' }}>
-                      <img src={c.image} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>★ {c.rating} · {c.trips} trips</div>
-                    </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', flexShrink: 0 }}>${c.price}/day</div>
-                  </Link>
-                ))}
+            {/* Browse Fleet */}
+            <div style={{ marginTop: 20, background: 'white', borderRadius: 16, padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>🚗</div>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 6 }}>Looking for something else?</h3>
+              <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 14 }}>Browse our full fleet of premium vehicles.</p>
+              <Link href="/fleet" style={{ display: 'inline-block', padding: '9px 20px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>View All Cars</Link>
             </div>
           </div>
         </div>
