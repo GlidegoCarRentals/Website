@@ -35,7 +35,7 @@ function statusTone(status: string) {
   return { bg: 'rgba(239,68,68,0.12)', color: '#dc2626' };
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+function StatCard({ label, value, sub }: Readonly<{ label: string; value: string; sub: string }>) {
   return (
     <div className="card-flat" style={{ padding: 20 }}>
       <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>{label}</div>
@@ -45,7 +45,7 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub: st
   );
 }
 
-function SectionTitle({ eyebrow, title, description }: { eyebrow?: string; title: string; description: string }) {
+function SectionTitle({ eyebrow, title, description }: Readonly<{ eyebrow?: string; title: string; description: string }>) {
   return (
     <div style={{ marginBottom: 18 }}>
       {eyebrow ? <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{eyebrow}</div> : null}
@@ -60,12 +60,12 @@ function ToggleRow({
   description,
   checked,
   onChange,
-}: {
+}: Readonly<{
   label: string;
   description: string;
   checked: boolean;
   onChange: (value: boolean) => void;
-}) {
+}>) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', padding: '14px 0', borderTop: '1px solid var(--color-border)' }}>
       <div>
@@ -80,10 +80,10 @@ function ToggleRow({
 function ViewSwitch({
   value,
   onChange,
-}: {
+}: Readonly<{
   value: GuestView;
   onChange: (next: GuestView) => void;
-}) {
+}>) {
   const views: Array<{ id: GuestView; label: string; description: string }> = [
     { id: 'overview', label: 'Overview', description: 'Readiness, trust, next actions' },
     { id: 'trips', label: 'Trips', description: 'Upcoming, active, history' },
@@ -114,7 +114,7 @@ function ViewSwitch({
   );
 }
 
-function BookingCard({ booking, emphasis }: { booking: any; emphasis?: 'primary' | 'muted' }) {
+function BookingCard({ booking, emphasis }: Readonly<{ booking: any; emphasis?: 'primary' | 'muted' }>) {
   const tone = statusTone(booking.status);
 
   return (
@@ -163,351 +163,7 @@ function BookingCard({ booking, emphasis }: { booking: any; emphasis?: 'primary'
   );
 }
 
-/* ── Extracted view sub-components to reduce cognitive complexity ── */
-
-interface GuestViewProps {
-  data: GuestDashboardData;
-  isPending: boolean;
-  mutate: (url: string, options: RequestInit, successMessage: string) => Promise<void>;
-}
-
-function OverviewView({
-  data,
-  isPending,
-  mutate,
-  commandCenter,
-  trustLabel,
-  driverLicenceStatus,
-  favouriteCars,
-  reviewItems,
-}: GuestViewProps & {
-  commandCenter: Array<{ title: string; description: string; tone: string }>;
-  trustLabel: string;
-  driverLicenceStatus: string;
-  favouriteCars: Array<any>;
-  reviewItems: Array<any>;
-}) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20, alignItems: 'start' }}>
-      <div style={{ display: 'grid', gap: 20 }}>
-        <section className="card">
-          <SectionTitle eyebrow="Command center" title="Trip readiness" description="A world-class renter dashboard should surface what matters before something breaks." />
-          <div style={{ display: 'grid', gap: 12 }}>
-            {commandCenter.map((item) => (
-              <div key={item.title} className="card-flat" style={{ padding: 16, borderLeft: `4px solid ${item.tone}` }}>
-                <div style={{ fontWeight: 800, marginBottom: 4 }}>{item.title}</div>
-                <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{item.description}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="card">
-          <SectionTitle eyebrow="Trust layer" title="Verification and trust" description="Identity, licence, contactability, and behavior signals shape eligibility and risk." />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12 }}>
-            {[
-              { label: 'Email', value: data.user.emailVerified ? 'Verified' : 'Pending', status: data.user.emailVerified ? 'approved' : 'pending' },
-              { label: 'Phone', value: data.user.phoneVerified ? 'Verified' : 'Pending', status: data.user.phoneVerified ? 'approved' : 'pending' },
-              { label: 'Driver licence', value: driverLicenceStatus.replace(/_/g, ' '), status: driverLicenceStatus },
-              { label: 'Trust tier', value: trustLabel, status: data.user.trustScore >= 70 ? 'approved' : 'pending' },
-            ].map((item) => {
-              const tone = statusTone(item.status);
-              return (
-                <div key={item.label} className="card-flat" style={{ padding: 16 }}>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>{item.label}</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, textTransform: 'capitalize' }}>{item.value}</div>
-                  <div style={{ marginTop: 10, display: 'inline-flex', padding: '4px 10px', borderRadius: 999, background: tone.bg, color: tone.color, fontSize: 12, fontWeight: 700 }}>
-                    {item.value}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="card">
-          <SectionTitle eyebrow="Next trip" title="Upcoming and active bookings" description="Critical trip details stay front and center, including pickup context, status, and amount." />
-          <div style={{ display: 'grid', gap: 14 }}>
-            {[...data.activeTrips, ...data.upcomingTrips].slice(0, 4).map((booking, index) => (
-              <BookingCard key={booking.id} booking={booking} emphasis={index === 0 ? 'primary' : 'muted'} />
-            ))}
-            {data.activeTrips.length + data.upcomingTrips.length === 0 ? (
-              <div className="card-flat" style={{ padding: 18, color: 'var(--color-text-3)' }}>
-                No upcoming trips yet. Once bookings are created they will appear here with real-time state.
-              </div>
-            ) : null}
-          </div>
-        </section>
-      </div>
-
-      <div style={{ display: 'grid', gap: 20 }}>
-        <section className="card">
-          <SectionTitle eyebrow="Personal layer" title="Identity snapshot" description="The essentials hosts and support teams rely on during urgent trip moments." />
-          <div style={{ display: 'grid', gap: 10 }}>
-            {[
-              ['Full name', data.user.fullName],
-              ['Email', data.user.email],
-              ['Phone', data.user.phone || 'Add phone number'],
-              ['City', data.user.city || 'Not set'],
-              ['Emergency contact', data.guestProfile?.emergencyContactName || 'Not set'],
-            ].map(([label, value]) => (
-              <div key={label} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
-                <strong>{value}</strong>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="card">
-          <SectionTitle eyebrow="Savings" title="Wallet and referrals" description="Rewards, promo credits, and referral-led growth should feel like part of the travel product." />
-          <div className="card-flat" style={{ padding: 16, marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Available balance</div>
-            <div style={{ fontSize: 28, fontWeight: 900, margin: '6px 0' }}>{money(data.wallet?.balance || 0)}</div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>
-              Promo credits {money(data.wallet?.promoCreditBalance || 0)} - Referral credits {money(data.wallet?.referralCreditBalance || 0)}
-            </div>
-          </div>
-          <div className="card-flat" style={{ padding: 16 }}>
-            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Referral performance</div>
-            <div style={{ fontSize: 22, fontWeight: 800, margin: '6px 0' }}>{data.guestProfile?.referralCompletedCount || 0} successful referrals</div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>Rewards, wallet credits, and growth loops should all converge inside one account surface.</div>
-          </div>
-        </section>
-
-        <section className="card">
-          <SectionTitle eyebrow="Taste profile" title="Saved cars and reviews" description="Your profile should learn from what you save, book, and review." />
-          <div style={{ display: 'grid', gap: 12 }}>
-            {favouriteCars.slice(0, 3).map((entry) => (
-              <div key={entry.car.id} className="card-flat" style={{ padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 800 }}>{entry.car.make} {entry.car.model}</div>
-                    <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{entry.car.location_name} - {money(entry.car.price_daily)}/day</div>
-                  </div>
-                  <button
-                    className="btn btn-danger btn-sm"
-                    disabled={isPending}
-                    onClick={() => mutate('/api/account/favourites', { method: 'DELETE', body: JSON.stringify({ carId: entry.car.id }) }, 'Favourite removed.')}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
-            {reviewItems.slice(0, 2).map((review) => (
-              <div key={review.id} className="card-flat" style={{ padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                  <div style={{ fontWeight: 800 }}>{review.title || `${review.target_type} review`}</div>
-                  <div style={{ color: '#f59e0b', fontWeight: 700 }}>{review.rating}/5</div>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{review.body || 'No written feedback provided.'}</div>
-              </div>
-            ))}
-            {favouriteCars.length === 0 && reviewItems.length === 0 ? (
-              <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>
-                Save cars, take trips, and leave reviews to unlock GlideGo recommendations.
-              </div>
-            ) : null}
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-function TripsView({ allTrips }: { allTrips: Array<any> }) {
-  return (
-    <div style={{ display: 'grid', gap: 20 }}>
-      <section className="card">
-        <SectionTitle eyebrow="Trips" title="Trip timeline" description="Every reservation should be legible at a glance, from pending approval to completed and reviewed." />
-        <div style={{ display: 'grid', gap: 14 }}>
-          {allTrips.map((booking) => (
-            <div key={booking.id}>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{booking.lane}</div>
-              <BookingCard booking={booking} />
-            </div>
-          ))}
-          {allTrips.length === 0 ? <div className="card-flat" style={{ padding: 18, color: 'var(--color-text-3)' }}>No trips yet.</div> : null}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function FinanceView({
-  data,
-  paymentMethods,
-  paymentHistory,
-  walletTransactions,
-}: {
-  data: GuestDashboardData;
-  paymentMethods: Array<any>;
-  paymentHistory: Array<any>;
-  walletTransactions: Array<any>;
-}) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20 }}>
-      <section className="card">
-        <SectionTitle eyebrow="Finance" title="Wallet and billing" description="Credits, payment methods, and charge history should feel trustworthy and transparent." />
-        <div className="card-flat" style={{ padding: 16, marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Current wallet</div>
-          <div style={{ fontSize: 30, fontWeight: 900, margin: '6px 0' }}>{money(data.wallet?.balance || 0)}</div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>
-            Promo {money(data.wallet?.promoCreditBalance || 0)} - Referral {money(data.wallet?.referralCreditBalance || 0)}
-          </div>
-        </div>
-        <div style={{ display: 'grid', gap: 12 }}>
-          {paymentMethods.map((method) => (
-            <div key={method.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 800 }}>{method.brand || 'Card'} ending {method.last4}</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>Expires {method.exp_month}/{method.exp_year}</div>
-              </div>
-              {method.is_default ? <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary-dark)' }}>Default</span> : null}
-            </div>
-          ))}
-          {paymentMethods.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>No saved cards on file yet.</div> : null}
-        </div>
-      </section>
-
-      <section className="card">
-        <SectionTitle eyebrow="Ledger" title="Transactions and rewards" description="A modern account center should show both travel payments and value recovery events." />
-        <div style={{ display: 'grid', gap: 12 }}>
-          {paymentHistory.slice(0, 6).map((payment) => (
-            <div key={payment.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-              <div>
-                <div style={{ fontWeight: 800 }}>{payment.bookings?.booking_reference || payment.type}</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{shortDate(payment.created_at)} - {payment.status}</div>
-              </div>
-              <div style={{ fontWeight: 800 }}>{money(payment.amount)}</div>
-            </div>
-          ))}
-          {walletTransactions.slice(0, 6).map((entry) => (
-            <div key={entry.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-              <div>
-                <div style={{ fontWeight: 800 }}>{entry.description}</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{shortDate(entry.created_at)} - {entry.type}</div>
-              </div>
-              <div style={{ fontWeight: 800, color: Number(entry.amount || 0) >= 0 ? 'var(--color-primary-dark)' : 'var(--color-danger)' }}>
-                {Number(entry.amount || 0) > 0 ? '+' : ''}{money(Number(entry.amount || 0))}
-              </div>
-            </div>
-          ))}
-          {paymentHistory.length === 0 && walletTransactions.length === 0 ? (
-            <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>No financial activity yet.</div>
-          ) : null}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function SecurityView({
-  data,
-  isPending,
-  mutate,
-  profileForm,
-  setProfileForm,
-  trustEvents,
-}: GuestViewProps & {
-  profileForm: { fullName: string; phone: string; city: string; emergencyContactName: string; emergencyContactPhone: string };
-  setProfileForm: React.Dispatch<React.SetStateAction<{ fullName: string; phone: string; city: string; emergencyContactName: string; emergencyContactPhone: string }>>;
-  trustEvents: Array<any>;
-}) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20 }}>
-      <section className="card">
-        <SectionTitle eyebrow="Security" title="Personal information" description="Critical account identity should be editable, reviewable, and support-friendly." />
-        <div style={{ display: 'grid', gap: 12 }}>
-          <div>
-            <label className="label" htmlFor="guest-fullName">Full name</label>
-            <input id="guest-fullName" className="input" value={profileForm.fullName} onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))} />
-          </div>
-          <div>
-            <label className="label" htmlFor="guest-phone">Phone</label>
-            <input id="guest-phone" className="input" value={profileForm.phone} onChange={(event) => setProfileForm((current) => ({ ...current, phone: event.target.value }))} />
-          </div>
-          <div>
-            <label className="label" htmlFor="guest-city">City</label>
-            <input id="guest-city" className="input" value={profileForm.city} onChange={(event) => setProfileForm((current) => ({ ...current, city: event.target.value }))} />
-          </div>
-          <div>
-            <label className="label" htmlFor="guest-emergencyContactName">Emergency contact</label>
-            <input id="guest-emergencyContactName" className="input" value={profileForm.emergencyContactName} onChange={(event) => setProfileForm((current) => ({ ...current, emergencyContactName: event.target.value }))} />
-          </div>
-          <div>
-            <label className="label" htmlFor="guest-emergencyContactPhone">Emergency contact phone</label>
-            <input id="guest-emergencyContactPhone" className="input" value={profileForm.emergencyContactPhone} onChange={(event) => setProfileForm((current) => ({ ...current, emergencyContactPhone: event.target.value }))} />
-          </div>
-          <button
-            className="btn btn-primary"
-            disabled={isPending}
-            onClick={() => mutate('/api/account/profile', { method: 'PATCH', body: JSON.stringify(profileForm) }, 'Profile updated.')}
-          >
-            Save profile
-          </button>
-        </div>
-      </section>
-
-      <div style={{ display: 'grid', gap: 20 }}>
-        <section className="card">
-          <SectionTitle eyebrow="Preferences" title="Notifications and sessions" description="Communication settings and session alerts belong in the core trust stack." />
-          <ToggleRow
-            label="Trip emails"
-            description="Booking confirmations, reminders, and trip changes."
-            checked={Boolean(data.notificationPreferences?.emailTripUpdates)}
-            onChange={(value) => mutate('/api/account/preferences', { method: 'PATCH', body: JSON.stringify({ email_trip_updates: value }) }, 'Notification preferences updated.')}
-          />
-          <ToggleRow
-            label="SMS trip updates"
-            description="Pickup reminders, host changes, and urgent alerts."
-            checked={Boolean(data.notificationPreferences?.smsTripUpdates)}
-            onChange={(value) => mutate('/api/account/preferences', { method: 'PATCH', body: JSON.stringify({ sms_trip_updates: value }) }, 'Notification preferences updated.')}
-          />
-          <ToggleRow
-            label="Push messages"
-            description="Real-time chat notifications from hosts."
-            checked={Boolean(data.notificationPreferences?.pushMessages)}
-            onChange={(value) => mutate('/api/account/preferences', { method: 'PATCH', body: JSON.stringify({ push_messages: value }) }, 'Notification preferences updated.')}
-          />
-          <ToggleRow
-            label="Login alerts"
-            description="Get alerted when a new session is created."
-            checked={Boolean(data.security?.loginAlerts)}
-            onChange={(value) => mutate('/api/account/preferences', { method: 'PATCH', body: JSON.stringify({ login_alerts: value }) }, 'Security settings updated.')}
-          />
-          <div className="divider" />
-          <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>
-            Active sessions: <strong>{data.security?.activeSessionCount || 0}</strong> - Last password reset: <strong>{shortDate(data.security?.lastPasswordResetAt)}</strong>
-          </div>
-        </section>
-
-        <section className="card">
-          <SectionTitle eyebrow="Trust log" title="Trust event history" description="A next-generation account should explain why trust changes, not hide it." />
-          <div style={{ display: 'grid', gap: 10 }}>
-            {trustEvents.map((event) => (
-              <div key={event.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{event.reason}</div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{event.source}</div>
-                </div>
-                <div style={{ fontWeight: 800, color: event.score_delta >= 0 ? 'var(--color-primary-dark)' : 'var(--color-danger)' }}>
-                  {event.score_delta > 0 ? '+' : ''}{event.score_delta}
-                </div>
-              </div>
-            ))}
-            {trustEvents.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>Trust events will appear here as GlideGo validates identity, payments, and trip behavior.</div> : null}
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-/* ── Main component (reduced cognitive complexity) ── */
-
-export default function GuestProfileDashboard({ data }: { data: GuestDashboardData }) {
+export default function GuestProfileDashboard({ data }: Readonly<{ data: GuestDashboardData }>) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState('');
@@ -656,38 +312,293 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
       <ViewSwitch value={view} onChange={setView} />
 
       {view === 'overview' ? (
-        <OverviewView
-          data={data}
-          isPending={isPending}
-          mutate={mutate}
-          commandCenter={commandCenter}
-          trustLabel={trustLabel}
-          driverLicenceStatus={driverLicenceStatus}
-          favouriteCars={favouriteCars}
-          reviewItems={reviewItems}
-        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gap: 20 }}>
+            <section className="card">
+              <SectionTitle eyebrow="Command center" title="Trip readiness" description="A world-class renter dashboard should surface what matters before something breaks." />
+              <div style={{ display: 'grid', gap: 12 }}>
+                {commandCenter.map((item) => (
+                  <div key={item.title} className="card-flat" style={{ padding: 16, borderLeft: `4px solid ${item.tone}` }}>
+                    <div style={{ fontWeight: 800, marginBottom: 4 }}>{item.title}</div>
+                    <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{item.description}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="card">
+              <SectionTitle eyebrow="Trust layer" title="Verification and trust" description="Identity, licence, contactability, and behavior signals shape eligibility and risk." />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12 }}>
+                {[
+                  { label: 'Email', value: data.user.emailVerified ? 'Verified' : 'Pending', status: data.user.emailVerified ? 'approved' : 'pending' },
+                  { label: 'Phone', value: data.user.phoneVerified ? 'Verified' : 'Pending', status: data.user.phoneVerified ? 'approved' : 'pending' },
+                  { label: 'Driver licence', value: driverLicenceStatus.replaceAll('_', ' '), status: driverLicenceStatus },
+                  { label: 'Trust tier', value: trustLabel, status: data.user.trustScore >= 70 ? 'approved' : 'pending' },
+                ].map((item) => {
+                  const tone = statusTone(item.status);
+                  return (
+                    <div key={item.label} className="card-flat" style={{ padding: 16 }}>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>{item.label}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, textTransform: 'capitalize' }}>{item.value}</div>
+                      <div style={{ marginTop: 10, display: 'inline-flex', padding: '4px 10px', borderRadius: 999, background: tone.bg, color: tone.color, fontSize: 12, fontWeight: 700 }}>
+                        {item.value}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="card">
+              <SectionTitle eyebrow="Next trip" title="Upcoming and active bookings" description="Critical trip details stay front and center, including pickup context, status, and amount." />
+              <div style={{ display: 'grid', gap: 14 }}>
+                {[...data.activeTrips, ...data.upcomingTrips].slice(0, 4).map((booking, index) => (
+                  <BookingCard key={booking.id} booking={booking} emphasis={index === 0 ? 'primary' : 'muted'} />
+                ))}
+                {data.activeTrips.length + data.upcomingTrips.length === 0 ? (
+                  <div className="card-flat" style={{ padding: 18, color: 'var(--color-text-3)' }}>
+                    No upcoming trips yet. Once bookings are created they will appear here with real-time state.
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          </div>
+
+          <div style={{ display: 'grid', gap: 20 }}>
+            <section className="card">
+              <SectionTitle eyebrow="Personal layer" title="Identity snapshot" description="The essentials hosts and support teams rely on during urgent trip moments." />
+              <div style={{ display: 'grid', gap: 10 }}>
+                {[
+                  ['Full name', data.user.fullName],
+                  ['Email', data.user.email],
+                  ['Phone', data.user.phone || 'Add phone number'],
+                  ['City', data.user.city || 'Not set'],
+                  ['Emergency contact', data.guestProfile?.emergencyContactName || 'Not set'],
+                ].map(([label, value]) => (
+                  <div key={label} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="card">
+              <SectionTitle eyebrow="Savings" title="Wallet and referrals" description="Rewards, promo credits, and referral-led growth should feel like part of the travel product." />
+              <div className="card-flat" style={{ padding: 16, marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Available balance</div>
+                <div style={{ fontSize: 28, fontWeight: 900, margin: '6px 0' }}>{money(data.wallet?.balance || 0)}</div>
+                <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>
+                  Promo credits {money(data.wallet?.promoCreditBalance || 0)} - Referral credits {money(data.wallet?.referralCreditBalance || 0)}
+                </div>
+              </div>
+              <div className="card-flat" style={{ padding: 16 }}>
+                <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Referral performance</div>
+                <div style={{ fontSize: 22, fontWeight: 800, margin: '6px 0' }}>{data.guestProfile?.referralCompletedCount || 0} successful referrals</div>
+                <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>Rewards, wallet credits, and growth loops should all converge inside one account surface.</div>
+              </div>
+            </section>
+
+            <section className="card">
+              <SectionTitle eyebrow="Taste profile" title="Saved cars and reviews" description="Your profile should learn from what you save, book, and review." />
+              <div style={{ display: 'grid', gap: 12 }}>
+                {favouriteCars.slice(0, 3).map((entry) => (
+                  <div key={entry.car.id} className="card-flat" style={{ padding: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                      <div>
+                        <div style={{ fontWeight: 800 }}>{entry.car.make} {entry.car.model}</div>
+                        <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{entry.car.location_name} - {money(entry.car.price_daily)}/day</div>
+                      </div>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        disabled={isPending}
+                        onClick={() => mutate('/api/account/favourites', { method: 'DELETE', body: JSON.stringify({ carId: entry.car.id }) }, 'Favourite removed.')}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {reviewItems.slice(0, 2).map((review) => (
+                  <div key={review.id} className="card-flat" style={{ padding: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                      <div style={{ fontWeight: 800 }}>{review.title || `${review.target_type} review`}</div>
+                      <div style={{ color: '#f59e0b', fontWeight: 700 }}>{review.rating}/5</div>
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{review.body || 'No written feedback provided.'}</div>
+                  </div>
+                ))}
+                {favouriteCars.length === 0 && reviewItems.length === 0 ? (
+                  <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>
+                    Save cars, take trips, and leave reviews to unlock GlideGo recommendations.
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          </div>
+        </div>
       ) : null}
 
-      {view === 'trips' ? <TripsView allTrips={allTrips} /> : null}
+      {view === 'trips' ? (
+        <div style={{ display: 'grid', gap: 20 }}>
+          <section className="card">
+            <SectionTitle eyebrow="Trips" title="Trip timeline" description="Every reservation should be legible at a glance, from pending approval to completed and reviewed." />
+            <div style={{ display: 'grid', gap: 14 }}>
+              {allTrips.map((booking) => (
+                <div key={booking.id}>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{booking.lane}</div>
+                  <BookingCard booking={booking} />
+                </div>
+              ))}
+              {allTrips.length === 0 ? <div className="card-flat" style={{ padding: 18, color: 'var(--color-text-3)' }}>No trips yet.</div> : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {view === 'finance' ? (
-        <FinanceView
-          data={data}
-          paymentMethods={paymentMethods}
-          paymentHistory={paymentHistory}
-          walletTransactions={walletTransactions}
-        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20 }}>
+          <section className="card">
+            <SectionTitle eyebrow="Finance" title="Wallet and billing" description="Credits, payment methods, and charge history should feel trustworthy and transparent." />
+            <div className="card-flat" style={{ padding: 16, marginBottom: 14 }}>
+              <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Current wallet</div>
+              <div style={{ fontSize: 30, fontWeight: 900, margin: '6px 0' }}>{money(data.wallet?.balance || 0)}</div>
+              <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>
+                Promo {money(data.wallet?.promoCreditBalance || 0)} - Referral {money(data.wallet?.referralCreditBalance || 0)}
+              </div>
+            </div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              {paymentMethods.map((method) => (
+                <div key={method.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{method.brand || 'Card'} ending {method.last4}</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>Expires {method.exp_month}/{method.exp_year}</div>
+                  </div>
+                  {method.is_default ? <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary-dark)' }}>Default</span> : null}
+                </div>
+              ))}
+              {paymentMethods.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>No saved cards on file yet.</div> : null}
+            </div>
+          </section>
+
+          <section className="card">
+            <SectionTitle eyebrow="Ledger" title="Transactions and rewards" description="A modern account center should show both travel payments and value recovery events." />
+            <div style={{ display: 'grid', gap: 12 }}>
+              {paymentHistory.slice(0, 6).map((payment) => (
+                <div key={payment.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{payment.bookings?.booking_reference || payment.type}</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{shortDate(payment.created_at)} - {payment.status}</div>
+                  </div>
+                  <div style={{ fontWeight: 800 }}>{money(payment.amount)}</div>
+                </div>
+              ))}
+              {walletTransactions.slice(0, 6).map((entry) => (
+                <div key={entry.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{entry.description}</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{shortDate(entry.created_at)} - {entry.type}</div>
+                  </div>
+                  <div style={{ fontWeight: 800, color: Number(entry.amount || 0) >= 0 ? 'var(--color-primary-dark)' : 'var(--color-danger)' }}>
+                    {Number(entry.amount || 0) > 0 ? '+' : ''}{money(Number(entry.amount || 0))}
+                  </div>
+                </div>
+              ))}
+              {paymentHistory.length === 0 && walletTransactions.length === 0 ? (
+                <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>No financial activity yet.</div>
+              ) : null}
+            </div>
+          </section>
+        </div>
       ) : null}
 
       {view === 'security' ? (
-        <SecurityView
-          data={data}
-          isPending={isPending}
-          mutate={mutate}
-          profileForm={profileForm}
-          setProfileForm={setProfileForm}
-          trustEvents={trustEvents}
-        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20 }}>
+          <section className="card">
+            <SectionTitle eyebrow="Security" title="Personal information" description="Critical account identity should be editable, reviewable, and support-friendly." />
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div>
+                <label className="label">Full name</label>
+                <input className="input" value={profileForm.fullName} onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Phone</label>
+                <input className="input" value={profileForm.phone} onChange={(event) => setProfileForm((current) => ({ ...current, phone: event.target.value }))} />
+              </div>
+              <div>
+                <label className="label">City</label>
+                <input className="input" value={profileForm.city} onChange={(event) => setProfileForm((current) => ({ ...current, city: event.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Emergency contact</label>
+                <input className="input" value={profileForm.emergencyContactName} onChange={(event) => setProfileForm((current) => ({ ...current, emergencyContactName: event.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Emergency contact phone</label>
+                <input className="input" value={profileForm.emergencyContactPhone} onChange={(event) => setProfileForm((current) => ({ ...current, emergencyContactPhone: event.target.value }))} />
+              </div>
+              <button
+                className="btn btn-primary"
+                disabled={isPending}
+                onClick={() => mutate('/api/account/profile', { method: 'PATCH', body: JSON.stringify(profileForm) }, 'Profile updated.')}
+              >
+                Save profile
+              </button>
+            </div>
+          </section>
+
+          <div style={{ display: 'grid', gap: 20 }}>
+            <section className="card">
+              <SectionTitle eyebrow="Preferences" title="Notifications and sessions" description="Communication settings and session alerts belong in the core trust stack." />
+              <ToggleRow
+                label="Trip emails"
+                description="Booking confirmations, reminders, and trip changes."
+                checked={Boolean(data.notificationPreferences?.emailTripUpdates)}
+                onChange={(value) => mutate('/api/account/preferences', { method: 'PATCH', body: JSON.stringify({ email_trip_updates: value }) }, 'Notification preferences updated.')}
+              />
+              <ToggleRow
+                label="SMS trip updates"
+                description="Pickup reminders, host changes, and urgent alerts."
+                checked={Boolean(data.notificationPreferences?.smsTripUpdates)}
+                onChange={(value) => mutate('/api/account/preferences', { method: 'PATCH', body: JSON.stringify({ sms_trip_updates: value }) }, 'Notification preferences updated.')}
+              />
+              <ToggleRow
+                label="Push messages"
+                description="Real-time chat notifications from hosts."
+                checked={Boolean(data.notificationPreferences?.pushMessages)}
+                onChange={(value) => mutate('/api/account/preferences', { method: 'PATCH', body: JSON.stringify({ push_messages: value }) }, 'Notification preferences updated.')}
+              />
+              <ToggleRow
+                label="Login alerts"
+                description="Get alerted when a new session is created."
+                checked={Boolean(data.security?.loginAlerts)}
+                onChange={(value) => mutate('/api/account/preferences', { method: 'PATCH', body: JSON.stringify({ login_alerts: value }) }, 'Security settings updated.')}
+              />
+              <div className="divider" />
+              <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>
+                Active sessions: <strong>{data.security?.activeSessionCount || 0}</strong> - Last password reset: <strong>{shortDate(data.security?.lastPasswordResetAt)}</strong>
+              </div>
+            </section>
+
+            <section className="card">
+              <SectionTitle eyebrow="Trust log" title="Trust event history" description="A next-generation account should explain why trust changes, not hide it." />
+              <div style={{ display: 'grid', gap: 10 }}>
+                {trustEvents.map((event) => (
+                  <div key={event.id} className="card-flat" style={{ padding: 14, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{event.reason}</div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{event.source}</div>
+                    </div>
+                    <div style={{ fontWeight: 800, color: event.score_delta >= 0 ? 'var(--color-primary-dark)' : 'var(--color-danger)' }}>
+                      {event.score_delta > 0 ? '+' : ''}{event.score_delta}
+                    </div>
+                  </div>
+                ))}
+                {trustEvents.length === 0 ? <div className="card-flat" style={{ padding: 14, color: 'var(--color-text-3)' }}>Trust events will appear here as GlideGo validates identity, payments, and trip behavior.</div> : null}
+              </div>
+            </section>
+          </div>
+        </div>
       ) : null}
     </div>
   );

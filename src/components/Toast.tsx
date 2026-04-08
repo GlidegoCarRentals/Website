@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -50,28 +50,26 @@ function createToastId() {
 // ─────────────────────────────────────────────
 // Single Toast Item
 // ─────────────────────────────────────────────
-function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+function ToastItem({ toast, onRemove }: Readonly<{ toast: Toast; onRemove: (id: string) => void }>) {
   return (
-    <div
+    <button
       id={`toast-${toast.id}`}
+      type="button"
       className={`toast toast-${toast.type}`}
-      role="button"
-      tabIndex={0}
       onClick={() => onRemove(toast.id)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRemove(toast.id); } }}
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', padding: 0, font: 'inherit', color: 'inherit' }}
     >
       <span style={{ fontSize: 18, flexShrink: 0 }}>{ICONS[toast.type]}</span>
       <span style={{ flex: 1 }}>{toast.message}</span>
       <span style={{ opacity: 0.7, fontSize: 18, flexShrink: 0 }}>×</span>
-    </div>
+    </button>
   );
 }
 
 // ─────────────────────────────────────────────
 // Toast Provider
 // ─────────────────────────────────────────────
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const removeToast = useCallback((id: string) => {
@@ -84,13 +82,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => animateAndRemove(id, setToasts), 4000);
   }, []);
 
-  const ctx = useMemo<ToastContextType>(() => ({
+  const ctx: ToastContextType = {
     toast: addToast,
     success: (m) => addToast(m, 'success'),
     error:   (m) => addToast(m, 'error'),
     info:    (m) => addToast(m, 'info'),
     warning: (m) => addToast(m, 'warning'),
-  }), [addToast]);
+  };
 
   return (
     <ToastContext.Provider value={ctx}>

@@ -13,37 +13,23 @@ const CAR_FALLBACK: Record<string, string> = {
 export default function CarDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [car, setCar] = useState<any>(null);
+  const [car, setCar] = useState<Awaited<ReturnType<typeof fetchCarBySlugOrId>>>(null);
   const [loading, setLoading] = useState(true);
-  const [pickupDate, setPickupDate] = useState('');
-  const [returnDate, setReturnDate] = useState('');
-  const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
-  const [imgError, setImgError] = useState(false);
+const [pickupDate, setPickupDate] = useState('');
+const [returnDate, setReturnDate] = useState('');
+const [pickupLocation, setPickupLocation] = useState('Melbourne Airport (MEL)');
+const [imgError, setImgError] = useState(false);
   useEffect(() => {
     const id = params.id as string;
     fetchCarBySlugOrId(id).then(dbCar => {
-      setCar(dbCar ?? null);
+      if (dbCar) setCar(dbCar);
       setLoading(false);
     });
   }, [params.id]);
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter,sans-serif' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
-        {/* Image skeleton */}
-        <div className="animate-pulse" style={{ height: 420, background: '#e2e8f0', borderRadius: 20, marginBottom: 32 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32 }}>
-          <div>
-            <div className="animate-pulse" style={{ height: 32, background: '#e2e8f0', borderRadius: 8, marginBottom: 12, width: '60%' }} />
-            <div className="animate-pulse" style={{ height: 18, background: '#f1f5f9', borderRadius: 8, marginBottom: 24, width: '40%' }} />
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-              {[1,2,3,4].map(i => <div key={i} className="animate-pulse" style={{ height: 56, background: '#f1f5f9', borderRadius: 12, flex: 1 }} />)}
-            </div>
-            <div className="animate-pulse" style={{ height: 120, background: '#f1f5f9', borderRadius: 12 }} />
-          </div>
-          <div className="animate-pulse" style={{ height: 420, background: '#e2e8f0', borderRadius: 18 }} />
-        </div>
-      </div>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+      <div style={{ fontSize: 40 }}>🚗</div>
     </div>
   );
 
@@ -256,7 +242,7 @@ export default function CarDetailPage() {
             <div style={{ background: 'white', borderRadius: 16, padding: '24px', marginBottom: 20, border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               <h2 className="playfair" style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>What&apos;s Included</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
-                {car.included.map((i: any) => (
+                {car.included.map((i: string) => (
                   <div key={i} className="included-row">
                     <span style={{ fontSize: 16, flexShrink: 0 }}>✅</span> {i}
                   </div>
@@ -303,8 +289,8 @@ export default function CarDetailPage() {
                   <span style={{ fontSize: 12, color: '#64748b' }}>({car.trips} trips)</span>
                 </div>
               </div>
-              {car.reviews.map((r: { name: string; date: string; rating: number; text: string; [key: string]: unknown }, i: number) => (
-                <div key={`review-${i}`} style={{ background: '#f8fafc', borderRadius: 12, padding: '18px', border: '1px solid #f1f5f9', marginBottom: 12 }}>
+              {car.reviews.map((r) => (
+                <div key={r.name + r.date} style={{ background: '#f8fafc', borderRadius: 12, padding: '18px', border: '1px solid #f1f5f9', marginBottom: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#eff6ff,#f0fdf4)', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#1d4ed8' }}>
@@ -341,10 +327,10 @@ export default function CarDetailPage() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
                 <div>
-                  <label htmlFor="pickup-location-select" style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.1em', display: 'block', marginBottom: 7 }}>PICKUP LOCATION</label>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.1em', display: 'block', marginBottom: 7 }}>PICKUP LOCATION</label>
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, pointerEvents: 'none' }}>📍</span>
-                    <select id="pickup-location-select" value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} className="form-input" style={{ paddingLeft: 34 }}>
+                    <select value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} className="form-input" style={{ paddingLeft: 34 }}>
                       {LOCATIONS.map((l: any) => <option key={l} value={l}>{l}</option>)}
                     </select>
                     <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8', fontSize: 11 }}>▾</span>
@@ -402,14 +388,12 @@ export default function CarDetailPage() {
               </div>
             </div>
 
-            {/* Browse More */}
+            {/* Browse Fleet */}
             <div style={{ marginTop: 20, background: 'white', borderRadius: 16, padding: '20px', border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>🚗</div>
-              <h3 className="playfair" style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Explore More Cars</h3>
-              <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.6 }}>Browse our full fleet of premium vehicles available across Melbourne.</p>
-              <Link href="/fleet" style={{ display: 'inline-block', background: '#1d4ed8', color: 'white', textDecoration: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600 }}>
-                View All Cars →
-              </Link>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>🚗</div>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 6 }}>Looking for something else?</h3>
+              <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 14 }}>Browse our full fleet of premium vehicles.</p>
+              <Link href="/fleet" style={{ display: 'inline-block', padding: '9px 20px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>View All Cars</Link>
             </div>
           </div>
         </div>

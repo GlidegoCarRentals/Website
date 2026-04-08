@@ -132,11 +132,10 @@ export default function BecomeHostPage() {
           )}
 
           <label className="flex items-start gap-3 cursor-pointer group">
-            <div
-              role="button"
-              tabIndex={0}
+            <button
+              type="button"
               onClick={() => setAgreed(a => !a)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAgreed(a => !a); } }}
+              aria-pressed={agreed}
               className={`w-4 h-4 mt-0.5 rounded border flex items-center justify-center flex-shrink-0 transition-all cursor-pointer ${
                 agreed ? 'bg-blue-600 border-blue-600' : 'border-zinc-600 hover:border-zinc-400'
               }`}
@@ -146,7 +145,7 @@ export default function BecomeHostPage() {
                   <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
-            </div>
+            </button>
             <span className="text-zinc-400 text-sm leading-relaxed group-hover:text-zinc-300 transition-colors">
               I agree to the{' '}
               <Link href="/host-terms" className="text-blue-400 hover:text-blue-300">Host Terms of Service</Link>
@@ -162,7 +161,7 @@ export default function BecomeHostPage() {
         >
           {submitting ? (
             <span className="flex items-center justify-center gap-2">
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />{' '}
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Setting up your host account...
             </span>
           ) : 'Become a Host — List Your Car'}

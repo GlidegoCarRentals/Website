@@ -110,7 +110,7 @@ export default function HostEarningsPage() {
               <h2 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Payout History</h2>
             </div>
             <div style={{ padding: '12px 20px 8px', display: 'grid', gridTemplateColumns: '1fr 100px 130px 80px', gap: 16 }}>{['Date', 'Amount', 'Method', 'Trips'].map((heading) => <div key={heading} style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em' }}>{heading}</div>)}</div>
-            {payouts.map((payout, index) => <div key={`payout-${index}`} className="payout-row"><div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{payout.date}</div><div style={{ fontSize: 15, fontWeight: 800, color: '#059669' }}>${Number(payout.amount).toLocaleString()}</div><div style={{ fontSize: 12, color: '#64748b' }}>{payout.method}</div><div><span style={{ background: '#f0fdf4', color: '#15803d', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20 }}>Paid</span></div></div>)}
+            {payouts.map((payout) => <div key={payout.date} className="payout-row"><div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{payout.date}</div><div style={{ fontSize: 15, fontWeight: 800, color: '#059669' }}>${Number(payout.amount).toLocaleString()}</div><div style={{ fontSize: 12, color: '#64748b' }}>{payout.method}</div><div><span style={{ background: '#f0fdf4', color: '#15803d', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20 }}>Paid</span></div></div>)}
           </div>
 
           <div className="card" style={{ padding: 20 }}>

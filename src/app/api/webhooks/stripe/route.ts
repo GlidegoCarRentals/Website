@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import {
   sendBookingConfirmation,
@@ -8,9 +8,9 @@ import {
   sendAdminAlert,
 } from '@/lib/email';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+const getSupabase = () => createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 );
 
 export async function POST(req: NextRequest) {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   let event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET ?? '');
   } catch (err: any) {
     console.error('Webhook signature error:', err.message);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
@@ -34,10 +34,10 @@ export async function POST(req: NextRequest) {
       const meta = pi.metadata || {};
 
       if (meta.bookingId && meta.type === 'rental_charge') {
-        await supabase.from('payments').update({ status: 'succeeded' }).eq('stripe_payment_intent_id', pi.id);
-        await supabase.from('bookings').update({ payment_status: 'paid', booking_status: 'confirmed' }).eq('id', meta.bookingId);
+        await getSupabase().from('payments').update({ status: 'succeeded' }).eq('stripe_payment_intent_id', pi.id);
+        await getSupabase().from('bookings').update({ payment_status: 'paid', booking_status: 'confirmed' }).eq('id', meta.bookingId);
 
-        const { data: booking } = await supabase.from('bookings').select('*').eq('id', meta.bookingId).single();
+        const { data: booking } = await getSupabase().from('bookings').select('*').eq('id', meta.bookingId).single();
 
         const emailData = {
           bookingId: booking?.id || meta.bookingId,
@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
       const pi = event.data.object as any;
       const meta = pi.metadata || {};
       if (meta.bookingId) {
-        await supabase.from('payments').update({ status: 'failed' }).eq('stripe_payment_intent_id', pi.id);
-        await supabase.from('bookings').update({ payment_status: 'failed', booking_status: 'cancelled' }).eq('id', meta.bookingId);
+        await getSupabase().from('payments').update({ status: 'failed' }).eq('stripe_payment_intent_id', pi.id);
+        await getSupabase().from('bookings').update({ payment_status: 'failed', booking_status: 'cancelled' }).eq('id', meta.bookingId);
       }
       await sendAdminAlert(
         `⚠️ Payment Failed — ${meta.carName || 'Unknown Car'}`,
@@ -90,11 +90,11 @@ export async function POST(req: NextRequest) {
     case 'charge.refunded': {
       const charge = event.data.object as any;
       const refundAmount = charge.amount_refunded / 100;
-      await supabase.from('payments').update({ status: 'refunded' }).eq('stripe_payment_intent_id', charge.payment_intent);
+      await getSupabase().from('payments').update({ status: 'refunded' }).eq('stripe_payment_intent_id', charge.payment_intent);
 
-      const { data: payment } = await supabase.from('payments').select('booking_id').eq('stripe_payment_intent_id', charge.payment_intent).single();
+      const { data: payment } = await getSupabase().from('payments').select('booking_id').eq('stripe_payment_intent_id', charge.payment_intent).single();
       if (payment?.booking_id) {
-        const { data: booking } = await supabase.from('bookings').select('*').eq('id', payment.booking_id).single();
+        const { data: booking } = await getSupabase().from('bookings').select('*').eq('id', payment.booking_id).single();
         if (booking?.customer_email) {
           await sendCancellationEmail({
             customerName: booking.customer_name || 'Customer',

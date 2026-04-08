@@ -9,7 +9,7 @@ interface CheckoutFormProps {
   onSuccess: () => void;
 }
 
-export default function CheckoutForm({ bookingId, totalAmount, onSuccess }: CheckoutFormProps) {
+export default function CheckoutForm({ bookingId, totalAmount, onSuccess }: Readonly<CheckoutFormProps>) {
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +26,7 @@ export default function CheckoutForm({ bookingId, totalAmount, onSuccess }: Chec
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/payment-success?bookingId=${bookingId}`,
+          return_url: `${globalThis.location.origin}/payment-success?bookingId=${bookingId}`,
         },
         redirect: 'if_required',
       });

@@ -6,8 +6,8 @@ import { createBrowserClient } from '@supabase/ssr';
 // Supabase client — SSR compatible
 // ─────────────────────────────────────────────
 const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-anon-key'
 );
 
 export { supabase };
@@ -63,7 +63,7 @@ function getAuthCallbackUrl(nextPath = '/', role: 'guest' | 'host' = 'guest') {
 
   const safeNext = nextPath.startsWith('/') ? nextPath : '/';
   const safeRole = role === 'host' ? 'host' : 'guest';
-  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}&role=${safeRole}`;
+  return `${globalThis.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}&role=${safeRole}`;
 }
 
 async function hasAuthenticatedSession() {
@@ -174,7 +174,7 @@ async function loadProfile(authUser: {
   };
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

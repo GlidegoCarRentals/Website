@@ -58,7 +58,7 @@ function LoginContent() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+        redirectTo: `${globalThis.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
@@ -69,7 +69,7 @@ function LoginContent() {
     if (!email.trim()) { setError('Enter your email address first.'); return }
     setLoading(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+      redirectTo: `${globalThis.location.origin}/auth/callback?type=recovery`,
     })
     setLoading(false)
     if (error) { setError(error.message); return }
@@ -124,16 +124,16 @@ function LoginContent() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label htmlFor="login-email-input" className="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
-              <input id="login-email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email"
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email"
                 placeholder="you@example.com"
                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
             </div>
 
             <div>
-              <label htmlFor="login-password-input" className="block text-sm font-medium text-zinc-400 mb-2">Password</label>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Password</label>
               <div className="relative">
-                <input id="login-password-input" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password"
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password"
                   placeholder="••••••••"
                   className="w-full px-4 py-3 pr-14 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
                 <button type="button" onClick={() => setShowPassword(s => !s)}
@@ -145,11 +145,14 @@ function LoginContent() {
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2.5 cursor-pointer">
-                <div role="button" tabIndex={0} onClick={() => setRememberMe(r => !r)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRememberMe(r => !r); } }}
-                  className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-zinc-600 hover:border-zinc-400'}`}>
+                <button
+                  type="button"
+                  onClick={() => setRememberMe(r => !r)}
+                  aria-pressed={rememberMe}
+                  className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-zinc-600 hover:border-zinc-400'}`}
+                >
                   {rememberMe && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                </div>
+                </button>
                 <span className="text-zinc-400 text-sm">Remember me</span>
               </label>
               <button type="button" onClick={handleForgotPassword} disabled={resetSent}

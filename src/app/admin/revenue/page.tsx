@@ -32,7 +32,10 @@ export default function RevenuePage() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `glidego-revenue-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -98,7 +101,7 @@ export default function RevenuePage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {vehicleData.toSorted((a, b) => b.revenue - a.revenue).map((v) => (
+            {[...vehicleData].sort((a, b) => b.revenue - a.revenue).map((v) => (
               <tr key={v.name} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 font-semibold text-gray-900">{v.name}</td>
                 <td className="px-6 py-4 font-bold text-green-600">${v.revenue.toLocaleString()}</td>
@@ -108,7 +111,7 @@ export default function RevenuePage() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 bg-gray-100 rounded-full h-2 min-w-16">
                       <div
-                        className={`h-2 rounded-full ${(() => { if (v.utilisation > 60) return 'bg-green-500'; if (v.utilisation > 40) return 'bg-yellow-500'; return 'bg-red-400'; })()}`}
+                        className={`h-2 rounded-full ${v.utilisation > 60 ? 'bg-green-500' : v.utilisation > 40 ? 'bg-yellow-500' : 'bg-red-400'}`}
                         style={{ width: `${v.utilisation}%` }}
                       />
                     </div>

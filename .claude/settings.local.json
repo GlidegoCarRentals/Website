@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(where gh:*)",
+      "Read(//c/Users/globa/Downloads/**)",
+      "Bash(unzip -q \"Database files.zip\")",
+      "Bash(unzip -l \"Database files.zip\")",
+      "Bash(grep -rn \"''available''\" src/lib/db-cars.ts src/app/host/add-vehicle/page.tsx supabase/seed.sql)",
+      "Bash(gh pr:*)",
+      "Bash(winget list:*)",
+      "Bash(where python3:*)",
+      "Bash(where py:*)",
+      "Bash(where python:*)",
+      "Bash(pandoc --version)",
+      "Read(//c/Users/globa/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/3d3040fc-9c51-49ae-9372-245a2c7e892e/21c3f1f0-2cff-4e88-9059-3919553a7e2e/skills/docx/**)",
+      "Bash(python3 scripts/office/unpack.py \"C:\\\\Users\\\\globa\\\\Downloads\\\\issuers.docx\" \"C:\\\\Users\\\\globa\\\\Downloads\\\\issuers_unpacked/\")",
+      "Bash(node -e ':*)",
+      "Bash(powershell -Command \"Expand-Archive -Path 'C:\\\\Users\\\\globa\\\\Downloads\\\\issuers.docx' -DestinationPath 'C:\\\\Users\\\\globa\\\\Downloads\\\\issuers_unpacked' -Force\")",
+      "Bash(copy \"C:\\\\Users\\\\globa\\\\Downloads\\\\issuers.docx\" \"C:\\\\Users\\\\globa\\\\Downloads\\\\issuers_temp.zip\")",
+      "Bash(powershell -Command \"Expand-Archive -Path 'C:\\\\Users\\\\globa\\\\Downloads\\\\issuers_temp.zip' -DestinationPath 'C:\\\\Users\\\\globa\\\\Downloads\\\\issuers_unpacked' -Force\")",
+      "Bash(del \"C:\\\\Users\\\\globa\\\\Downloads\\\\issuers_temp.zip\")",
+      "Bash(cp \"C:\\\\Users\\\\globa\\\\Downloads\\\\issuers.docx\" \"C:\\\\Users\\\\globa\\\\Downloads\\\\issuers_temp.zip\")",
+      "Bash(rm \"C:\\\\Users\\\\globa\\\\Downloads\\\\issuers_temp.zip\")",
+      "Bash(npx tsc:*)",
+      "Bash(skeleton\")",
+      "Bash(grep -v \"skeleton-\\\\|strength-\\\\|line-\\\\|col-\\\\|`skeleton\")"
+    ]
+  }
+}

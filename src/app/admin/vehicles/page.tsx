@@ -1,69 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchCars } from '@/lib/db-cars';
-
-function mapVehicleData(vehicle: any) {
-  return {
-    id: String(vehicle.id),
-    name: vehicle.name,
-    seats: vehicle.seats,
-    transmission: vehicle.transmission,
-    fuel: vehicle.fuel,
-    dailyRate: vehicle.price,
-    weeklyRate: vehicle.weeklyPrice,
-    status: vehicle.available ? 'active' : 'inactive',
-  };
-}
-
-async function persistVehicle(id: string, body: Record<string, unknown>) {
-  const response = await fetch(`/api/host/cars/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'Vehicle update failed.');
-  return result.car;
-}
-
-function VehicleRow({
-  vehicle,
-  onStatusChange,
-  onEditRate,
-  onDelete,
-}: {
-  vehicle: any;
-  onStatusChange: (id: string, status: string) => void;
-  onEditRate: (id: string, currentRate: number) => void;
-  onDelete: (id: string) => void;
-}) {
-  return (
-    <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4 font-semibold text-gray-900">{vehicle.name}</td>
-      <td className="px-6 py-4 text-gray-500 text-xs">{vehicle.seats} seats · {vehicle.transmission} · {vehicle.fuel}</td>
-      <td className="px-6 py-4 font-bold text-blue-600">${vehicle.dailyRate}/day</td>
-      <td className="px-6 py-4 text-gray-700">${vehicle.weeklyRate}/wk</td>
-      <td className="px-6 py-4">
-        <select
-          value={vehicle.status}
-          onChange={(event) => onStatusChange(vehicle.id, event.target.value)}
-          className="text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-200 cursor-pointer"
-        >
-          <option value="active">Active</option>
-          <option value="maintenance">Maintenance</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex gap-3">
-          <button onClick={() => onEditRate(vehicle.id, vehicle.dailyRate)} className="text-blue-600 hover:text-blue-800 font-medium text-xs">Edit</button>
-          <button onClick={() => onDelete(vehicle.id)} className="text-red-500 hover:text-red-700 font-medium text-xs">Delete</button>
-        </div>
-      </td>
-    </tr>
-  );
-}
 
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -71,11 +9,31 @@ export default function VehiclesPage() {
 
   useEffect(() => {
     fetchCars()
-      .then((data) => setVehicles(data.map(mapVehicleData)))
+      .then((data) => setVehicles(data.map((vehicle) => ({
+        id: String(vehicle.id),
+        name: vehicle.name,
+        seats: vehicle.seats,
+        transmission: vehicle.transmission,
+        fuel: vehicle.fuel,
+        dailyRate: vehicle.price,
+        weeklyRate: vehicle.weeklyPrice,
+        status: vehicle.available ? 'active' : 'inactive',
+      }))))
       .catch(() => setError('Vehicles could not be loaded.'));
   }, []);
 
-  const handleDelete = useCallback(async (id: string) => {
+  const persistVehicle = async (id: string, body: Record<string, unknown>) => {
+    const response = await fetch(`/api/host/cars/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Vehicle update failed.');
+    return result.car;
+  };
+
+  const handleDelete = async (id: string) => {
     const response = await fetch(`/api/host/cars/${id}`, { method: 'DELETE' });
     const result = await response.json();
     if (!response.ok) {
@@ -83,27 +41,7 @@ export default function VehiclesPage() {
       return;
     }
     setVehicles((items) => items.filter((vehicle) => vehicle.id !== id));
-  }, []);
-
-  const handleStatusChange = useCallback(async (id: string, status: string) => {
-    try {
-      const updated = await persistVehicle(id, { status });
-      setVehicles((items) => items.map((item) => item.id === id ? { ...item, status: updated.status } : item));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'The vehicle status could not be updated.');
-    }
-  }, []);
-
-  const handleEditRate = useCallback(async (id: string, currentRate: number) => {
-    const nextRate = window.prompt('New daily rate', String(currentRate));
-    if (!nextRate) return;
-    try {
-      const updated = await persistVehicle(id, { price_daily: Number(nextRate) });
-      setVehicles((items) => items.map((item) => item.id === id ? { ...item, dailyRate: updated.price_daily } : item));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'The vehicle could not be updated.');
-    }
-  }, []);
+  };
 
   return (
     <div>
@@ -127,13 +65,45 @@ export default function VehiclesPage() {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {vehicles.map((vehicle) => (
-              <VehicleRow
-                key={vehicle.id}
-                vehicle={vehicle}
-                onStatusChange={handleStatusChange}
-                onEditRate={handleEditRate}
-                onDelete={handleDelete}
-              />
+              <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 font-semibold text-gray-900">{vehicle.name}</td>
+                <td className="px-6 py-4 text-gray-500 text-xs">{vehicle.seats} seats · {vehicle.transmission} · {vehicle.fuel}</td>
+                <td className="px-6 py-4 font-bold text-blue-600">${vehicle.dailyRate}/day</td>
+                <td className="px-6 py-4 text-gray-700">${vehicle.weeklyRate}/wk</td>
+                <td className="px-6 py-4">
+                  <select
+                    value={vehicle.status}
+                    onChange={async (event) => {
+                      try {
+                        const updated = await persistVehicle(vehicle.id, { status: event.target.value });
+                        setVehicles((items) => items.map((item) => item.id === vehicle.id ? { ...item, status: updated.status } : item));
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'The vehicle status could not be updated.');
+                      }
+                    }}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-200 cursor-pointer"
+                  >
+                    <option value="active">Active</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex gap-3">
+                    <button onClick={async () => {
+                      const nextRate = globalThis.prompt('New daily rate', String(vehicle.dailyRate));
+                      if (!nextRate) return;
+                      try {
+                        const updated = await persistVehicle(vehicle.id, { price_daily: Number(nextRate) });
+                        setVehicles((items) => items.map((item) => item.id === vehicle.id ? { ...item, dailyRate: updated.price_daily } : item));
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'The vehicle could not be updated.');
+                      }
+                    }} className="text-blue-600 hover:text-blue-800 font-medium text-xs">Edit</button>
+                    <button onClick={() => handleDelete(vehicle.id)} className="text-red-500 hover:text-red-700 font-medium text-xs">Delete</button>
+                  </div>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
