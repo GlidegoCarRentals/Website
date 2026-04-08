@@ -110,7 +110,7 @@ export default function HostBookingsPage() {
               {filtered.map(b => {
                 const sc = STATUS_CONFIG[b.status] || STATUS_CONFIG.pending;
                 return (
-                  <div key={b.id} className="booking-row" onClick={() => setSelected(b)} style={{ background: selected?.id === b.id ? '#f8fafc' : undefined }}>
+                  <button type="button" key={b.id} className="booking-row" onClick={() => setSelected(b)} style={{ background: selected?.id === b.id ? '#f8fafc' : undefined, border: 'none', textAlign: 'left', width: '100%', cursor: 'pointer' }}>
                     <div style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg,${b.status === 'pending' ? '#d97706' : '#1d4ed8'},${b.status === 'pending' ? '#f59e0b' : '#059669'})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'white' }}>{b.avatar}</div>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>{b.guest}</div>
@@ -131,7 +131,7 @@ export default function HostBookingsPage() {
                       {b.status === 'confirmed' && <button className="action-btn" onClick={() => setSelected(b)} style={{ background: '#eff6ff', color: '#1d4ed8' }}>Details</button>}
                       {b.status === 'completed' && <button className="action-btn" style={{ background: '#f5f3ff', color: '#7c3aed' }}>Review</button>}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
     ];
 
     const seed =
-      (rego.charCodeAt(0) || 0) +
-      (rego.charCodeAt(rego.length - 1) || 0) +
+      (rego.codePointAt(0) || 0) +
+      (rego.codePointAt(rego.length - 1) || 0) +
       rego.length;
     const car = catalog[seed % catalog.length];
 

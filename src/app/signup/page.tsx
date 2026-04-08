@@ -24,7 +24,7 @@ function SignupContent() {
     let s = 0
     if (password.length >= 8) s++
     if (/[A-Z]/.test(password)) s++
-    if (/[0-9]/.test(password)) s++
+    if (/\d/.test(password)) s++
     if (/[^A-Za-z0-9]/.test(password)) s++
     return s
   })()
@@ -45,7 +45,7 @@ function SignupContent() {
       password,
       options: {
         data: { full_name: fullName.trim() },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${globalThis.location.origin}/auth/callback`,
       },
     })
 
@@ -75,7 +75,7 @@ function SignupContent() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${globalThis.location.origin}/auth/callback`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
@@ -98,7 +98,7 @@ function SignupContent() {
             </p>
             <button
               onClick={async () => {
-                await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
+                await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${globalThis.location.origin}/auth/callback` } })
                 alert('Verification email resent!')
               }}
               className="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm py-3 rounded-xl font-medium transition-all mb-3"
@@ -180,7 +180,7 @@ function SignupContent() {
               </div>
               {password && (
                 <div className="mt-2">
-                  <div className="flex gap-1 mb-1">{[1,2,3,4].map(i => <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= strength ? strengthColor : 'bg-zinc-700'}`} />)}</div>
+                  <div className="flex gap-1 mb-1">{[1,2,3,4].map(i => <div key={`strength-${i}`} className={`h-1 flex-1 rounded-full transition-all ${i <= strength ? strengthColor : 'bg-zinc-700'}`} />)}</div>
                   <p className="text-xs text-zinc-500">{strengthLabel} password</p>
                 </div>
               )}

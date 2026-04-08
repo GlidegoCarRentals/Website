@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body.', code: 'INVALID_REGO' }, { status: 400 })
   }
 
-  const rego  = (body.rego  || '').toString().trim().toUpperCase().replace(/\s/g, '')
+  const rego  = (body.rego  || '').toString().trim().toUpperCase().replaceAll(' ', '')
   const state = (body.state || 'VIC').toString().trim().toUpperCase()
 
   // ── Validate plate ──────────────────────────

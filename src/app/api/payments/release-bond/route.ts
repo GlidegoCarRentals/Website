@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, toCents } from '@/lib/stripe';
+import { getStripe, toCents } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+const getSupabase = () => createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 );
 
 export async function POST(req: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const { data: booking, error } = await supabase
+    const { data: booking, error } = await getSupabase()
       .from('bookings').select('bond_intent_id').eq('id', bookingId).single();
 
     if (error || !booking?.bond_intent_id) {
@@ -23,15 +23,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'release') {
-      await stripe.paymentIntents.cancel(booking.bond_intent_id);
-      await supabase.from('bookings').update({ bond_status: 'released' }).eq('id', bookingId);
+      await getStripe().paymentIntents.cancel(booking.bond_intent_id);
+      await getSupabase().from('bookings').update({ bond_status: 'released' }).eq('id', bookingId);
       return NextResponse.json({ message: 'Bond released successfully' });
     }
 
     if (action === 'capture') {
       if (!damageAmount) return NextResponse.json({ error: 'Damage amount required' }, { status: 400 });
-      await stripe.paymentIntents.capture(booking.bond_intent_id, { amount_to_capture: toCents(damageAmount) });
-      await supabase.from('bookings').update({ bond_status: 'captured', damage_charge: damageAmount }).eq('id', bookingId);
+      await getStripe().paymentIntents.capture(booking.bond_intent_id, { amount_to_capture: toCents(damageAmount) });
+      await getSupabase().from('bookings').update({ bond_status: 'captured', damage_charge: damageAmount }).eq('id', bookingId);
       return NextResponse.json({ message: `Bond captured: $${damageAmount} AUD` });
     }
 

@@ -13,7 +13,7 @@ const CAR_FALLBACK: Record<string, string> = {
 export default function CarDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [car, setCar] = useState<any>(null);
+  const [car, setCar] = useState<Awaited<ReturnType<typeof fetchCarBySlugOrId>>>(null);
   const [loading, setLoading] = useState(true);
 const [pickupDate, setPickupDate] = useState('');
 const [returnDate, setReturnDate] = useState('');
@@ -242,7 +242,7 @@ const [imgError, setImgError] = useState(false);
             <div style={{ background: 'white', borderRadius: 16, padding: '24px', marginBottom: 20, border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               <h2 className="playfair" style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>What&apos;s Included</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
-                {car.included.map((i: any) => (
+                {car.included.map((i: string) => (
                   <div key={i} className="included-row">
                     <span style={{ fontSize: 16, flexShrink: 0 }}>✅</span> {i}
                   </div>
@@ -289,8 +289,8 @@ const [imgError, setImgError] = useState(false);
                   <span style={{ fontSize: 12, color: '#64748b' }}>({car.trips} trips)</span>
                 </div>
               </div>
-              {car.reviews.map((r, i) => (
-                <div key={i} style={{ background: '#f8fafc', borderRadius: 12, padding: '18px', border: '1px solid #f1f5f9', marginBottom: 12 }}>
+              {car.reviews.map((r) => (
+                <div key={r.name + r.date} style={{ background: '#f8fafc', borderRadius: 12, padding: '18px', border: '1px solid #f1f5f9', marginBottom: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#eff6ff,#f0fdf4)', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#1d4ed8' }}>

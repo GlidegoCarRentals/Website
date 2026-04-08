@@ -18,9 +18,9 @@ function useNavColors(darkMode: boolean) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    const onScroll = () => setScrolled(globalThis.scrollY > 20);
+    globalThis.addEventListener('scroll', onScroll);
+    return () => globalThis.removeEventListener('scroll', onScroll);
   }, []);
 
   const isHome = pathname === '/';
@@ -39,7 +39,7 @@ function useNavColors(darkMode: boolean) {
 // ─────────────────────────────────────────────
 // Dark Mode Toggle Button
 // ─────────────────────────────────────────────
-function DarkModeToggle({ darkMode, onToggle }: { darkMode: boolean; onToggle: () => void }) {
+function DarkModeToggle({ darkMode, onToggle }: Readonly<{ darkMode: boolean; onToggle: () => void }>) {
   return (
     <button
       onClick={onToggle}
@@ -62,7 +62,7 @@ function DarkModeToggle({ darkMode, onToggle }: { darkMode: boolean; onToggle: (
 // ─────────────────────────────────────────────
 // Desktop Nav Links
 // ─────────────────────────────────────────────
-function DesktopLinks({ textCol, userRole }: { textCol: string; userRole?: string }) {
+function DesktopLinks({ textCol, userRole }: Readonly<{ textCol: string; userRole?: string }>) {
   const links = [
     { href: '/#fleet', label: 'Browse Cars' },
     { href: '/fleet', label: 'All Fleet' },
@@ -85,12 +85,12 @@ function DesktopLinks({ textCol, userRole }: { textCol: string; userRole?: strin
 // ─────────────────────────────────────────────
 // Profile Dropdown
 // ─────────────────────────────────────────────
-function ProfileDropdown({ darkMode, user, onClose, onLogout }: {
+function ProfileDropdown({ darkMode, user, onClose, onLogout }: Readonly<{
   darkMode: boolean;
   user: any;
   onClose: () => void;
   onLogout: () => void;
-}) {
+}>) {
   const dropBg = darkMode ? '#0f1b35' : 'white';
   const dropBorder = darkMode ? 'rgba(255,255,255,0.08)' : '#f1f5f9';
   const dividerCol = darkMode ? 'rgba(255,255,255,0.06)' : '#f1f5f9';
@@ -128,11 +128,11 @@ function ProfileDropdown({ darkMode, user, onClose, onLogout }: {
 // ─────────────────────────────────────────────
 // Auth Buttons (logged in / logged out)
 // ─────────────────────────────────────────────
-function AuthSection({ darkMode, textCol, isTransparent }: {
+function AuthSection({ darkMode, textCol, isTransparent }: Readonly<{
   darkMode: boolean;
   textCol: string;
   isTransparent: boolean;
-}) {
+}>) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -223,7 +223,7 @@ function AuthSection({ darkMode, textCol, isTransparent }: {
 // ─────────────────────────────────────────────
 // Mobile Menu
 // ─────────────────────────────────────────────
-function MobileMenu({ darkMode, onClose }: { darkMode: boolean; onClose: () => void }) {
+function MobileMenu({ darkMode, onClose }: Readonly<{ darkMode: boolean; onClose: () => void }>) {
   const { user, logout } = useAuth();
 
   const baseLinks = [
@@ -300,7 +300,7 @@ function MobileMenu({ darkMode, onClose }: { darkMode: boolean; onClose: () => v
 // ─────────────────────────────────────────────
 // Main Navbar Component
 // ─────────────────────────────────────────────
-export default function Navbar({ darkMode = false, onDarkModeToggle }: NavbarProps) {
+export default function Navbar({ darkMode = false, onDarkModeToggle }: Readonly<NavbarProps>) {
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const { navBg, textCol, borderCol, isTransparent } = useNavColors(darkMode);
@@ -348,7 +348,7 @@ export default function Navbar({ darkMode = false, onDarkModeToggle }: NavbarPro
               style={{ display: 'none', flexDirection: 'column', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}
               className="hamburger"
             >
-              {[0, 1, 2].map(i => <div key={i} className="hamburger-line" style={{ background: textCol }} />)}
+              {[0, 1, 2].map(i => <div key={`line-${i}`} className="hamburger-line" style={{ background: textCol }} />)}
             </button>
           </div>
         </div>

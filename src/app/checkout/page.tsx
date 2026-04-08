@@ -14,7 +14,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
   const carId = searchParams.get('carId');
-  const totalAmount = parseFloat(searchParams.get('amount') || '0');
+  const totalAmount = Number.parseFloat(searchParams.get('amount') || '0');
 
   // Accept either bookingId or carId
   const referenceId = bookingId || carId;
@@ -47,7 +47,7 @@ function CheckoutContent() {
   }, [authLoading, bookingId, referenceId, totalAmount, user?.email, user?.name]);
 
   const handlePaymentSuccess = () => {
-    window.location.href = `/payment-success?bookingId=${referenceId}`;
+    globalThis.location.href = `/payment-success?bookingId=${referenceId}`;
   };
 
   if (!referenceId || !totalAmount) {
@@ -57,7 +57,7 @@ function CheckoutContent() {
           <div className="text-4xl mb-4">❌</div>
           <p className="text-red-700 font-medium mb-4">Missing booking details.</p>
           <button
-            onClick={() => window.history.back()}
+            onClick={() => globalThis.history.back()}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold"
           >
             Go Back
@@ -85,7 +85,7 @@ function CheckoutContent() {
           <div className="text-4xl mb-4">❌</div>
           <p className="text-red-700 font-medium mb-4">{error}</p>
           <button
-            onClick={() => window.history.back()}
+            onClick={() => globalThis.history.back()}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold"
           >
             Go Back

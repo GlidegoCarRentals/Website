@@ -1,12 +1,12 @@
 'use client';
 
 // Generic skeleton block
-export function Skeleton({ width = '100%', height = 16, borderRadius = 8, style = {} }: {
+export function Skeleton({ width = '100%', height = 16, borderRadius = 8, style = {} }: Readonly<{
   width?: string | number;
   height?: string | number;
   borderRadius?: number;
   style?: React.CSSProperties;
-}) {
+}>) {
   return (
     <div
       className="skeleton"
@@ -42,7 +42,7 @@ export function FleetSkeleton() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 22 }}>
       {Array.from({ length: 8 }).map((_, i) => (
-        <CarCardSkeleton key={i} />
+        <CarCardSkeleton key={`skeleton-${i}`} />
       ))}
     </div>
   );
@@ -62,11 +62,11 @@ export function StatCardSkeleton() {
 }
 
 // Table row skeleton
-export function TableRowSkeleton({ cols = 5 }: { cols?: number }) {
+export function TableRowSkeleton({ cols = 5 }: Readonly<{ cols?: number }>) {
   return (
     <tr>
       {Array.from({ length: cols }).map((_, i) => (
-        <td key={i} style={{ padding: '14px 16px' }}>
+        <td key={`col-${i}`} style={{ padding: '14px 16px' }}>
           <Skeleton height={14} width={i === 0 ? '80%' : '60%'} />
         </td>
       ))}

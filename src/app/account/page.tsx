@@ -100,7 +100,7 @@ export default function AccountPage() {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: user.email!,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${globalThis.location.origin}/auth/callback` },
     })
     if (error) showErr(error.message)
     else showMsg('Verification email sent. Check your inbox.')
@@ -416,7 +416,7 @@ export default function AccountPage() {
                     <button
                       onClick={async () => {
                         await supabase.auth.resetPasswordForEmail(user.email!, {
-                          redirectTo: `${window.location.origin}/reset-password`,
+                          redirectTo: `${globalThis.location.origin}/reset-password`,
                         })
                         showMsg('Password reset link sent to your email.')
                       }}

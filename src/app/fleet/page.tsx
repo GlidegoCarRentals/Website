@@ -57,7 +57,7 @@ function sortCars(cars: any[], sort: string) {
 // ─────────────────────────────────────────────
 // Car Card — Grid View
 // ─────────────────────────────────────────────
-function CarCardGrid({ car, isFav, dm, text, muted, accent, onFav }: any) {
+function CarCardGrid({ car, isFav, dm, text, muted, accent, onFav }: Readonly<any>) {
   return (
     <div className="car-card">
       <div style={{ position: 'relative' }}>
@@ -104,7 +104,7 @@ function CarCardGrid({ car, isFav, dm, text, muted, accent, onFav }: any) {
 // ─────────────────────────────────────────────
 // Car Card — List View
 // ─────────────────────────────────────────────
-function CarCardList({ car, isFav, dm, text, muted, accent, border, surface, onFav }: any) {
+function CarCardList({ car, isFav, dm, text, muted, accent, border, surface, onFav }: Readonly<any>) {
   return (
     <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 16, display: 'flex', gap: 16, padding: 16, transition: 'all 0.2s' }}>
       <div style={{ position: 'relative', flexShrink: 0 }}>

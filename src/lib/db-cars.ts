@@ -78,6 +78,7 @@ export function dbCarToUiCar(car: DbCar) {
     location: car.location_name,
     slug: car.slug,
     colour: car.colour,
+    host_id: car.host_id,
     deposit: car.deposit_amount,
     minAge: car.min_age_years,
     minDays: 1,

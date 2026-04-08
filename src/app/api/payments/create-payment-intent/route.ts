@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, toCents } from '@/lib/stripe';
+import { getStripe, toCents } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+const getSupabase = () => createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 );
 
 export async function POST(req: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: toCents(totalAmount),
       currency: 'aud',
       receipt_email: customerEmail || null,
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!skipDatabase) {
-      await supabase.from('payments').insert({
+      await getSupabase().from('payments').insert({
         booking_id: bookingId,
         stripe_payment_intent_id: paymentIntent.id,
         amount: totalAmount,

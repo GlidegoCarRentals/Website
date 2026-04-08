@@ -91,7 +91,7 @@ export default function VehiclesPage() {
                 <td className="px-6 py-4">
                   <div className="flex gap-3">
                     <button onClick={async () => {
-                      const nextRate = window.prompt('New daily rate', String(vehicle.dailyRate));
+                      const nextRate = globalThis.prompt('New daily rate', String(vehicle.dailyRate));
                       if (!nextRate) return;
                       try {
                         const updated = await persistVehicle(vehicle.id, { price_daily: Number(nextRate) });

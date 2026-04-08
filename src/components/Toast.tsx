@@ -50,25 +50,26 @@ function createToastId() {
 // ─────────────────────────────────────────────
 // Single Toast Item
 // ─────────────────────────────────────────────
-function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+function ToastItem({ toast, onRemove }: Readonly<{ toast: Toast; onRemove: (id: string) => void }>) {
   return (
-    <div
+    <button
       id={`toast-${toast.id}`}
+      type="button"
       className={`toast toast-${toast.type}`}
       onClick={() => onRemove(toast.id)}
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', padding: 0, font: 'inherit', color: 'inherit' }}
     >
       <span style={{ fontSize: 18, flexShrink: 0 }}>{ICONS[toast.type]}</span>
       <span style={{ flex: 1 }}>{toast.message}</span>
       <span style={{ opacity: 0.7, fontSize: 18, flexShrink: 0 }}>×</span>
-    </div>
+    </button>
   );
 }
 
 // ─────────────────────────────────────────────
 // Toast Provider
 // ─────────────────────────────────────────────
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const removeToast = useCallback((id: string) => {

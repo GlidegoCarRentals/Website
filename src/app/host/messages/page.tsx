@@ -49,7 +49,7 @@ const QUICK_REPLIES = [
 // ─────────────────────────────────────────────
 // Message Bubble
 // ─────────────────────────────────────────────
-function MessageBubble({ msg, avatar }: { msg: any; avatar: string }) {
+function MessageBubble({ msg, avatar }: Readonly<{ msg: any; avatar: string }>) {
   const isHost = msg.from === 'host';
   return (
     <div style={{ display: 'flex', justifyContent: isHost ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
@@ -69,9 +69,9 @@ function MessageBubble({ msg, avatar }: { msg: any; avatar: string }) {
 // ─────────────────────────────────────────────
 // Conversation Item
 // ─────────────────────────────────────────────
-function ConversationItem({ conv, isActive, onClick }: { conv: any; isActive: boolean; onClick: () => void }) {
+function ConversationItem({ conv, isActive, onClick }: Readonly<{ conv: any; isActive: boolean; onClick: () => void }>) {
   return (
-    <div className={`conv-item ${isActive ? 'active' : ''}`} onClick={onClick}>
+    <button type="button" className={`conv-item ${isActive ? 'active' : ''}`} onClick={onClick} style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', padding: 0, cursor: 'pointer' }}>
       <div style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg,${conv.unread ? '#1d4ed8' : '#64748b'},${conv.unread ? '#059669' : '#94a3b8'})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'white', flexShrink: 0, position: 'relative' }}>
         {conv.avatar}
         {conv.unread > 0 && (
@@ -88,14 +88,14 @@ function ConversationItem({ conv, isActive, onClick }: { conv: any; isActive: bo
         <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 2 }}>🚗 {conv.car}</div>
         <div style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.lastMsg}</div>
       </div>
-    </div>
+    </button>
   );
 }
 
 // ─────────────────────────────────────────────
 // Chat Messages Area
 // ─────────────────────────────────────────────
-function ChatMessages({ selected, messagesEndRef }: { selected: any; messagesEndRef: React.RefObject<HTMLDivElement> }) {
+function ChatMessages({ selected, messagesEndRef }: Readonly<{ selected: any; messagesEndRef: React.RefObject<HTMLDivElement> }>) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {selected.messages.map((msg: any, i: number) => {
@@ -254,8 +254,8 @@ export default function HostMessagesPage() {
 
           {/* Quick Replies */}
           <div style={{ padding: '12px 24px 10px', background: 'white', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8, overflowX: 'auto' }}>
-            {QUICK_REPLIES.map((r, i) => (
-              <button key={i} className="quick-btn" onClick={() => sendMessage(r)}>
+            {QUICK_REPLIES.map((r) => (
+              <button key={r} className="quick-btn" onClick={() => sendMessage(r)}>
                 {r.slice(0, 30)}{r.length > 30 ? '…' : ''}
               </button>
             ))}

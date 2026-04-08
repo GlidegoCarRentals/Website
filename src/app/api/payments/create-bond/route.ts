@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, BOND_AMOUNT, toCents } from '@/lib/stripe';
+import { getStripe, BOND_AMOUNT, toCents } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+const getSupabase = () => createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 );
 
 export async function POST(req: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     const bondAmount = customBondAmount ? toCents(customBondAmount) : BOND_AMOUNT;
 
-    const bondIntent = await stripe.paymentIntents.create({
+    const bondIntent = await getStripe().paymentIntents.create({
       amount: bondAmount,
       currency: 'aud',
       capture_method: 'manual',
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       description: `Bond Hold - Booking #${bookingId}`,
     });
 
-    await supabase.from('payments').insert({
+    await getSupabase().from('payments').insert({
       booking_id: bookingId,
       stripe_payment_intent_id: bondIntent.id,
       amount: bondAmount / 100,
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       type: 'bond',
     });
 
-    await supabase.from('bookings')
+    await getSupabase().from('bookings')
       .update({ bond_status: 'authorized', bond_intent_id: bondIntent.id })
       .eq('id', bookingId);
 

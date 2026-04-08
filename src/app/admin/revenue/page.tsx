@@ -32,7 +32,10 @@ export default function RevenuePage() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `glidego-revenue-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -98,7 +101,7 @@ export default function RevenuePage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {vehicleData.sort((a, b) => b.revenue - a.revenue).map((v) => (
+            {[...vehicleData].sort((a, b) => b.revenue - a.revenue).map((v) => (
               <tr key={v.name} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 font-semibold text-gray-900">{v.name}</td>
                 <td className="px-6 py-4 font-bold text-green-600">${v.revenue.toLocaleString()}</td>

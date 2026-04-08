@@ -135,17 +135,17 @@ function validateStep(step: number, form: Form): FieldErrors {
 // ─────────────────────────────────────────────
 // Small UI helpers
 // ─────────────────────────────────────────────
-function FieldError({ msg }: { msg?: string }) {
+function FieldError({ msg }: Readonly<{ msg?: string }>) {
   if (!msg) return null
   return <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1"><span>⚠</span>{msg}</p>
 }
 
-function FieldOk({ show }: { show: boolean }) {
+function FieldOk({ show }: Readonly<{ show: boolean }>) {
   if (!show) return null
   return <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400 text-sm">✓</span>
 }
 
-function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
+function Label({ children, required }: Readonly<{ children: React.ReactNode; required?: boolean }>) {
   return (
     <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
       {children}{required && <span className="text-red-400 ml-0.5">*</span>}
@@ -300,13 +300,13 @@ export default function AddVehiclePage() {
     }
     setGlobalErr('')
     setStep(s => s + 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    globalThis.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const goBack = () => {
     setGlobalErr('')
     setStep(s => s - 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    globalThis.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // ── Submit ────────────────────────────────────
@@ -498,10 +498,10 @@ export default function AddVehiclePage() {
                 {/* PPSR Warnings (stolen / written-off / finance) */}
                 {regoWarnings.length > 0 && (
                   <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {regoWarnings.map((w, i) => {
+                    {regoWarnings.map((w) => {
                       const isAlert = w.startsWith('⚠️')
                       return (
-                        <div key={i} style={{ padding: '10px 14px', background: isAlert ? 'rgba(239,68,68,0.08)' : 'rgba(251,191,36,0.08)', border: `1px solid ${isAlert ? 'rgba(239,68,68,0.25)' : 'rgba(251,191,36,0.25)'}`, borderRadius: 10 }}>
+                        <div key={w} style={{ padding: '10px 14px', background: isAlert ? 'rgba(239,68,68,0.08)' : 'rgba(251,191,36,0.08)', border: `1px solid ${isAlert ? 'rgba(239,68,68,0.25)' : 'rgba(251,191,36,0.25)'}`, borderRadius: 10 }}>
                           <p style={{ color: isAlert ? '#f87171' : '#fbbf24', fontSize: 12, fontWeight: 600 }}>{w}</p>
                         </div>
                       )
@@ -579,7 +579,7 @@ export default function AddVehiclePage() {
                   <Label required>Year</Label>
                   <div style={{ position: 'relative' }}>
                     <input type="number" value={form.year}
-                      onChange={e => set('year', parseInt(e.target.value) || CY)}
+                      onChange={e => set('year', Number.parseInt(e.target.value) || CY)}
                       onBlur={() => setTouched(p => ({ ...p, year: true }))}
                       min={2000} max={CY + 1}
                       className={inputCls(errMsg('year'), isOk('year'))}
@@ -592,7 +592,7 @@ export default function AddVehiclePage() {
                 {/* Seats */}
                 <div>
                   <Label required>Seats</Label>
-                  <select value={form.seats} onChange={e => set('seats', parseInt(e.target.value))}
+                  <select value={form.seats} onChange={e => set('seats', Number.parseInt(e.target.value))}
                     style={{ width: '100%', padding: '12px 16px', background: 'rgba(30,40,60,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}>
                     {SEAT_OPTS.map(n => <option key={n} value={n}>{n} seats</option>)}
                   </select>
@@ -709,7 +709,7 @@ export default function AddVehiclePage() {
               {form.photos.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                   {form.photos.map((url, i) => (
-                    <div key={i} style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', aspectRatio: '16/10', background: '#0d1117', border: i === 0 ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.06)' }}
+                    <div key={url} style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', aspectRatio: '16/10', background: '#0d1117', border: i === 0 ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.06)' }}
                       onMouseEnter={e => { const btn = e.currentTarget.querySelector('.del-btn') as HTMLElement; if (btn) btn.style.opacity = '1' }}
                       onMouseLeave={e => { const btn = e.currentTarget.querySelector('.del-btn') as HTMLElement; if (btn) btn.style.opacity = '0' }}>
                       <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -790,7 +790,7 @@ export default function AddVehiclePage() {
                 <div style={{ position: 'relative', marginBottom: 4 }}>
                   <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontWeight: 700, fontSize: 14 }}>AUD $</span>
                   <input type="number" value={form.price_daily || ''}
-                    onChange={e => { const v = parseFloat(e.target.value) || 0; set('price_daily', v); if (!form.price_weekly) set('price_weekly', Math.round(v * 6)); if (!form.price_monthly) set('price_monthly', Math.round(v * 22)) }}
+                    onChange={e => { const v = Number.parseFloat(e.target.value) || 0; set('price_daily', v); if (!form.price_weekly) set('price_weekly', Math.round(v * 6)); if (!form.price_monthly) set('price_monthly', Math.round(v * 22)) }}
                     onBlur={() => setTouched(p => ({ ...p, price_daily: true }))}
                     min={20} max={2000} placeholder="80"
                     className={inputCls(errMsg('price_daily'), isOk('price_daily'))}
@@ -815,7 +815,7 @@ export default function AddVehiclePage() {
                     <div style={{ position: 'relative' }}>
                       <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569', fontWeight: 600, fontSize: 12 }}>AUD $</span>
                       <input type="number" value={form[key as keyof Form] as number || ''}
-                        onChange={e => set(key as keyof Form, parseFloat(e.target.value) || 0 as any)}
+                        onChange={e => set(key as keyof Form, Number.parseFloat(e.target.value) || 0 as any)}
                         onBlur={() => setTouched(p => ({ ...p, [key]: true }))}
                         placeholder={String(key === 'price_weekly' ? Math.round(form.price_daily * 6) : Math.round(form.price_daily * 22))}
                         className={inputCls(errMsg(key), isOk(key))}
@@ -831,7 +831,7 @@ export default function AddVehiclePage() {
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569', fontWeight: 600, fontSize: 12 }}>AUD $</span>
                     <input type="number" value={form.deposit_amount || ''}
-                      onChange={e => set('deposit_amount', parseFloat(e.target.value) || 0)}
+                      onChange={e => set('deposit_amount', Number.parseFloat(e.target.value) || 0)}
                       onBlur={() => setTouched(p => ({ ...p, deposit_amount: true }))}
                       min={100} max={5000} placeholder="500"
                       className={inputCls(errMsg('deposit_amount'), isOk('deposit_amount'))}
@@ -848,14 +848,14 @@ export default function AddVehiclePage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                 <div>
                   <Label required>Minimum Days</Label>
-                  <select value={form.min_days} onChange={e => set('min_days', parseInt(e.target.value))}
+                  <select value={form.min_days} onChange={e => set('min_days', Number.parseInt(e.target.value))}
                     style={{ width: '100%', padding: '12px 16px', background: 'rgba(30,40,60,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}>
                     {MIN_DAYS_OPTS.map(n => <option key={n} value={n}>{n} day{n > 1 ? 's' : ''}</option>)}
                   </select>
                 </div>
                 <div>
                   <Label required>Minimum Driver Age</Label>
-                  <select value={form.min_age_years} onChange={e => set('min_age_years', parseInt(e.target.value))}
+                  <select value={form.min_age_years} onChange={e => set('min_age_years', Number.parseInt(e.target.value))}
                     style={{ width: '100%', padding: '12px 16px', background: 'rgba(30,40,60,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', fontSize: 14, outline: 'none' }}>
                     {MIN_AGE_OPTS.map(n => <option key={n} value={n}>{n}+ years</option>)}
                   </select>
@@ -892,7 +892,7 @@ export default function AddVehiclePage() {
                     <div style={{ position: 'relative' }}>
                       <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569', fontWeight: 600, fontSize: 12 }}>AUD $</span>
                       <input type="number" value={form.delivery_fee || ''}
-                        onChange={e => set('delivery_fee', parseFloat(e.target.value) || 0)}
+                        onChange={e => set('delivery_fee', Number.parseFloat(e.target.value) || 0)}
                         onBlur={() => setTouched(p => ({ ...p, delivery_fee: true }))}
                         min={10} placeholder="50"
                         className={inputCls(errMsg('delivery_fee'), isOk('delivery_fee'))}

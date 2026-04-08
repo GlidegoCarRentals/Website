@@ -20,7 +20,7 @@ const actionTone = (status: string) =>
       ? { bg: 'rgba(16,185,129,0.12)', color: '#059669' }
       : { bg: 'rgba(239,68,68,0.12)', color: '#dc2626' };
 
-function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
+function Metric({ label, value, sub }: Readonly<{ label: string; value: string; sub: string }>) {
   return (
     <div className="card-flat" style={{ padding: 20 }}>
       <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>{label}</div>
@@ -30,7 +30,7 @@ function Metric({ label, value, sub }: { label: string; value: string; sub: stri
   );
 }
 
-function SectionTitle({ eyebrow, title, description }: { eyebrow?: string; title: string; description: string }) {
+function SectionTitle({ eyebrow, title, description }: Readonly<{ eyebrow?: string; title: string; description: string }>) {
   return (
     <div style={{ marginBottom: 18 }}>
       {eyebrow ? <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{eyebrow}</div> : null}
@@ -40,7 +40,7 @@ function SectionTitle({ eyebrow, title, description }: { eyebrow?: string; title
   );
 }
 
-function ToggleRow({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (value: boolean) => void }) {
+function ToggleRow({ label, description, checked, onChange }: Readonly<{ label: string; description: string; checked: boolean; onChange: (value: boolean) => void }>) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', padding: '14px 0', borderTop: '1px solid var(--color-border)' }}>
       <div>
@@ -52,7 +52,7 @@ function ToggleRow({ label, description, checked, onChange }: { label: string; d
   );
 }
 
-function ViewSwitch({ value, onChange }: { value: HostView; onChange: (next: HostView) => void }) {
+function ViewSwitch({ value, onChange }: Readonly<{ value: HostView; onChange: (next: HostView) => void }>) {
   const views: Array<{ id: HostView; label: string; description: string }> = [
     { id: 'overview', label: 'Overview', description: 'Health, revenue, host readiness' },
     { id: 'operations', label: 'Operations', description: 'Bookings, chats, service control' },
@@ -71,7 +71,7 @@ function ViewSwitch({ value, onChange }: { value: HostView; onChange: (next: Hos
   );
 }
 
-function BookingCard({ booking, isPending, onDecision }: { booking: any; isPending: boolean; onDecision: (id: string, decision: 'confirm' | 'decline') => void }) {
+function BookingCard({ booking, isPending, onDecision }: Readonly<{ booking: any; isPending: boolean; onDecision: (id: string, decision: 'confirm' | 'decline') => void }>) {
   const tone = actionTone(booking.status);
   return (
     <div className="card-flat" style={{ padding: 18 }}>
@@ -96,7 +96,7 @@ function BookingCard({ booking, isPending, onDecision }: { booking: any; isPendi
   );
 }
 
-export default function HostProfileDashboard({ data }: { data: HostDashboardData }) {
+export default function HostProfileDashboard({ data }: Readonly<{ data: HostDashboardData }>) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState('');

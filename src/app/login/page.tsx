@@ -58,7 +58,7 @@ function LoginContent() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+        redirectTo: `${globalThis.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
@@ -69,7 +69,7 @@ function LoginContent() {
     if (!email.trim()) { setError('Enter your email address first.'); return }
     setLoading(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+      redirectTo: `${globalThis.location.origin}/auth/callback?type=recovery`,
     })
     setLoading(false)
     if (error) { setError(error.message); return }
@@ -145,10 +145,14 @@ function LoginContent() {
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2.5 cursor-pointer">
-                <div onClick={() => setRememberMe(r => !r)}
-                  className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-zinc-600 hover:border-zinc-400'}`}>
+                <button
+                  type="button"
+                  onClick={() => setRememberMe(r => !r)}
+                  aria-pressed={rememberMe}
+                  className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-zinc-600 hover:border-zinc-400'}`}
+                >
                   {rememberMe && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                </div>
+                </button>
                 <span className="text-zinc-400 text-sm">Remember me</span>
               </label>
               <button type="button" onClick={handleForgotPassword} disabled={resetSent}

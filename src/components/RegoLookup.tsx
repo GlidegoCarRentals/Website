@@ -22,11 +22,11 @@ export default function RegoLookup({
   rego,
   onRegChange,
   onCarDetails,
-}: {
+}: Readonly<{
   rego: string;
   onRegChange: (next: string) => void;
   onCarDetails: (details: CarDetails) => void;
-}) {
+}>) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);

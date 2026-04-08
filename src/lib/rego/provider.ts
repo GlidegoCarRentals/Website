@@ -225,11 +225,11 @@ async function decodeVINWithNHTSA(vin: string): Promise<NHTSAResult | null> {
   const model = r.Model || ''
   if (!make || !model) return null
 
-  const rawYear  = parseInt(r.ModelYear)           || 0
+  const rawYear  = Number.parseInt(r.ModelYear)     || 0
   const rawFuel  = r.FuelTypePrimary               || ''
   const rawBody  = r.BodyClass                     || ''
   const rawTrans = r.TransmissionStyle             || ''
-  const dispL    = parseFloat(r.DisplacementL)     || 0
+  const dispL    = Number.parseFloat(r.DisplacementL) || 0
   const cylinders= r.Cylinders                     || ''
 
   // Build engine string: e.g. "2.5L 4-cyl" or "3.0L 6-cyl"

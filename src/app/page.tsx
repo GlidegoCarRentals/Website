@@ -21,9 +21,9 @@ export default function HomePage() {
   const [imgErrors, setImgErrors] = useState<Record<number,boolean>>({});
 
   useEffect(() => {
-    const fn = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', fn, {passive:true});
-    return () => window.removeEventListener('scroll', fn);
+    const fn = () => setScrollY(globalThis.scrollY);
+    globalThis.addEventListener('scroll', fn, {passive:true});
+    return () => globalThis.removeEventListener('scroll', fn);
   }, []);
 
   const [cars, setCars] = useState<any[]>([]);
@@ -364,8 +364,8 @@ export default function HomePage() {
                   Search Available Cars →
                 </button>
                 <div style={{display:'flex',justifyContent:'center',gap:4,flexWrap:'wrap'}}>
-                  {['Free cancellation','·','No credit card surcharge','·','Instant confirmation'].map((t,i)=>(
-                    <span key={i} style={{fontSize:11,color:'#94a3b8'}}>{t}</span>
+                  {['Free cancellation','·','No credit card surcharge','·','Instant confirmation'].map((t)=>(
+                    <span key={t} style={{fontSize:11,color:'#94a3b8'}}>{t}</span>
                   ))}
                 </div>
               </div>
@@ -444,7 +444,7 @@ export default function HomePage() {
           {/* Car Grid */}
           {carsLoading ? (
             <div className="fleet-grid" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:22}}>
-              {Array.from({length:8}).map((_,i)=><CarCardSkeleton key={i}/>)}
+              {Array.from({length:8}).map((_,i)=><CarCardSkeleton key={`skeleton-${i}`}/>)}
             </div>
           ) : filtered.length === 0 ? (
             <div style={{textAlign:'center',padding:'60px 0'}}>

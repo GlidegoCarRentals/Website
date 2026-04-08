@@ -35,7 +35,7 @@ function statusTone(status: string) {
   return { bg: 'rgba(239,68,68,0.12)', color: '#dc2626' };
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+function StatCard({ label, value, sub }: Readonly<{ label: string; value: string; sub: string }>) {
   return (
     <div className="card-flat" style={{ padding: 20 }}>
       <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>{label}</div>
@@ -45,7 +45,7 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub: st
   );
 }
 
-function SectionTitle({ eyebrow, title, description }: { eyebrow?: string; title: string; description: string }) {
+function SectionTitle({ eyebrow, title, description }: Readonly<{ eyebrow?: string; title: string; description: string }>) {
   return (
     <div style={{ marginBottom: 18 }}>
       {eyebrow ? <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{eyebrow}</div> : null}
@@ -60,12 +60,12 @@ function ToggleRow({
   description,
   checked,
   onChange,
-}: {
+}: Readonly<{
   label: string;
   description: string;
   checked: boolean;
   onChange: (value: boolean) => void;
-}) {
+}>) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', padding: '14px 0', borderTop: '1px solid var(--color-border)' }}>
       <div>
@@ -80,10 +80,10 @@ function ToggleRow({
 function ViewSwitch({
   value,
   onChange,
-}: {
+}: Readonly<{
   value: GuestView;
   onChange: (next: GuestView) => void;
-}) {
+}>) {
   const views: Array<{ id: GuestView; label: string; description: string }> = [
     { id: 'overview', label: 'Overview', description: 'Readiness, trust, next actions' },
     { id: 'trips', label: 'Trips', description: 'Upcoming, active, history' },
@@ -114,7 +114,7 @@ function ViewSwitch({
   );
 }
 
-function BookingCard({ booking, emphasis }: { booking: any; emphasis?: 'primary' | 'muted' }) {
+function BookingCard({ booking, emphasis }: Readonly<{ booking: any; emphasis?: 'primary' | 'muted' }>) {
   const tone = statusTone(booking.status);
 
   return (
@@ -163,7 +163,7 @@ function BookingCard({ booking, emphasis }: { booking: any; emphasis?: 'primary'
   );
 }
 
-export default function GuestProfileDashboard({ data }: { data: GuestDashboardData }) {
+export default function GuestProfileDashboard({ data }: Readonly<{ data: GuestDashboardData }>) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState('');
@@ -332,7 +332,7 @@ export default function GuestProfileDashboard({ data }: { data: GuestDashboardDa
                 {[
                   { label: 'Email', value: data.user.emailVerified ? 'Verified' : 'Pending', status: data.user.emailVerified ? 'approved' : 'pending' },
                   { label: 'Phone', value: data.user.phoneVerified ? 'Verified' : 'Pending', status: data.user.phoneVerified ? 'approved' : 'pending' },
-                  { label: 'Driver licence', value: driverLicenceStatus.replace(/_/g, ' '), status: driverLicenceStatus },
+                  { label: 'Driver licence', value: driverLicenceStatus.replaceAll('_', ' '), status: driverLicenceStatus },
                   { label: 'Trust tier', value: trustLabel, status: data.user.trustScore >= 70 ? 'approved' : 'pending' },
                 ].map((item) => {
                   const tone = statusTone(item.status);
