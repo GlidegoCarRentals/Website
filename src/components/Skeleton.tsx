@@ -42,7 +42,7 @@ export function FleetSkeleton() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 22 }}>
       {Array.from({ length: 8 }).map((_, i) => (
-        <CarCardSkeleton key={i} />
+        <CarCardSkeleton key={`fleet-skeleton-${i}`} />
       ))}
     </div>
   );
@@ -66,7 +66,7 @@ export function TableRowSkeleton({ cols = 5 }: { cols?: number }) {
   return (
     <tr>
       {Array.from({ length: cols }).map((_, i) => (
-        <td key={i} style={{ padding: '14px 16px' }}>
+        <td key={`col-${i}`} style={{ padding: '14px 16px' }}>
           <Skeleton height={14} width={i === 0 ? '80%' : '60%'} />
         </td>
       ))}

@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 
 // ─────────────────────────────────────────────
@@ -84,12 +84,14 @@ async function ensureUserProfile(authUser: {
   }
 
   const metadata = authUser.user_metadata || {};
-  const fullName =
-    typeof metadata.full_name === 'string' && metadata.full_name.trim().length > 0
-      ? metadata.full_name.trim()
-      : typeof metadata.name === 'string' && metadata.name.trim().length > 0
-        ? metadata.name.trim()
-        : authUser.email?.split('@')[0] || 'User';
+  let fullName: string;
+  if (typeof metadata.full_name === 'string' && metadata.full_name.trim().length > 0) {
+    fullName = metadata.full_name.trim();
+  } else if (typeof metadata.name === 'string' && metadata.name.trim().length > 0) {
+    fullName = metadata.name.trim();
+  } else {
+    fullName = authUser.email?.split('@')[0] || 'User';
+  }
   const role = normalizeRole(metadata.role);
 
   const { error } = await supabase.from('users').upsert(
@@ -131,7 +133,7 @@ async function fetchProfile(userId: string): Promise<User | null> {
     trips: data.total_trips || 0,
     hostTrips: data.host_trips || 0,
     joinedDate: formatJoinedDate(data.created_at),
-    promoCredits: parseFloat(data.promo_credits || '20'),
+    promoCredits: Number.parseFloat(data.promo_credits || '20'),
     isSuperhost: data.is_superhost || false,
     trustScore: data.trust_score || 50,
   };
@@ -209,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       if (error.message.includes('Invalid login')) return { ok: false, error: 'Wrong email or password. Please try again.' };
@@ -225,9 +227,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: true };
     }
     return { ok: false, error: 'Something went wrong. Please try again.' };
-  };
+  }, []);
 
-  const signup = async (name: string, email: string, password: string, role: 'guest' | 'host' = 'guest') => {
+  const signup = useCallback(async (name: string, email: string, password: string, role: 'guest' | 'host' = 'guest') => {
     if (!name.trim()) return { ok: false, error: 'Please enter your full name.' };
     if (password.length < 6) return { ok: false, error: 'Password must be at least 6 characters.' };
     const { data, error } = await supabase.auth.signUp({
@@ -259,9 +261,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: true };
     }
     return { ok: false, error: 'Something went wrong. Please try again.' };
-  };
+  }, []);
 
-  const loginWithGoogle = async (nextPath = '/', role: 'guest' | 'host' = 'guest') => {
+  const loginWithGoogle = useCallback(async (nextPath = '/', role: 'guest' | 'host' = 'guest') => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -272,14 +274,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       },
     });
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
-  };
+  }, []);
 
-  const updateUser = async (updates: Partial<User>) => {
+  const updateUser = useCallback(async (updates: Partial<User>) => {
     if (!user) return;
     const dbUpdates: Record<string, unknown> = {};
     if (updates.name !== undefined) dbUpdates.full_name = updates.name;
@@ -291,9 +293,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.from('users').update(dbUpdates).eq('id', user.id);
     }
     setUser(prev => prev ? { ...prev, ...updates } : null);
-  };
+  }, [user]);
 
-  const toggleFavourite = async (carId: string) => {
+  const toggleFavourite = useCallback(async (carId: string) => {
     if (!user) return;
     const favs = user.favourites || [];
     const isFaved = favs.includes(carId);
@@ -304,9 +306,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.from('favourites').insert({ user_id: user.id, car_id: carId });
       setUser(prev => prev ? { ...prev, favourites: [...favs, carId] } : null);
     }
-  };
+  }, [user]);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (!user) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
@@ -315,10 +317,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const profile = await loadProfile(authUser);
     setUser(profile);
-  };
+  }, [user]);
+
+  const value = useMemo(() => ({
+    user, isLoading, login, signup, loginWithGoogle, logout, updateUser, toggleFavourite, refreshUser,
+  }), [user, isLoading, login, signup, loginWithGoogle, logout, updateUser, toggleFavourite, refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, loginWithGoogle, logout, updateUser, toggleFavourite, refreshUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

@@ -22,7 +22,7 @@ export function Modal({ open, onClose, title, children, maxWidth = 500 }: ModalP
   if (!open) return null;
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay" role="button" tabIndex={0} onClick={(e) => e.target === e.currentTarget && onClose()} onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); onClose(); } }}>
       <div className="modal" style={{ maxWidth }}>
         {title && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>

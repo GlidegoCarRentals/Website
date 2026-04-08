@@ -402,22 +402,22 @@ h1, h2, h3, h4, h5, h6 {
 .toast.hiding { animation: toastOut 0.3s ease forwards; }
 
 .toast-success {
-  background: rgba(16,185,129,0.95);
+  background: rgba(5,150,105,0.98);
   color: white;
   border: 1px solid rgba(255,255,255,0.2);
 }
 .toast-error {
-  background: rgba(239,68,68,0.95);
+  background: rgba(220,38,38,0.98);
   color: white;
   border: 1px solid rgba(255,255,255,0.2);
 }
 .toast-info {
-  background: rgba(29,78,216,0.95);
+  background: rgba(29,78,216,0.98);
   color: white;
   border: 1px solid rgba(255,255,255,0.2);
 }
 .toast-warning {
-  background: rgba(245,158,11,0.95);
+  background: rgba(180,83,9,0.98);
   color: white;
   border: 1px solid rgba(255,255,255,0.2);
 }

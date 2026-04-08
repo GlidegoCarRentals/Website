@@ -296,11 +296,11 @@ export async function fetchHostCars(hostId: string) {
   const cars = await fetchCarsByHostId(hostId);
   return cars.map(c => ({
     ...c,
-    displayStatus: c.status === 'active' && c.available
-      ? 'active'
-      : c.status === 'maintenance'
-      ? 'maintenance'
-      : 'inactive',
+    displayStatus: (() => {
+      if (c.status === 'active' && c.available) return 'active';
+      if (c.status === 'maintenance') return 'maintenance';
+      return 'inactive';
+    })(),
     host_id: hostId,
   }));
 }

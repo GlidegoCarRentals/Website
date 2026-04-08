@@ -47,16 +47,9 @@ export async function GET(req: NextRequest) {
 
     console.log(`[Cron] Running reminder job for ${tomorrowStr}`);
 
-    // TODO: Replace with real Supabase query when bookings table is set up
-    // const { data: bookings } = await supabase
-    //   .from('bookings')
-    //   .select('*')
-    //   .eq('pickup_date', tomorrowStr)
-    //   .eq('status', 'confirmed');
-    //
-    // for (const booking of bookings || []) {
-    //   await sendReminderEmail({ ...booking });
-    // }
+    // Placeholder: Supabase bookings query will be connected when the bookings table is ready.
+    // Implementation will query bookings with pickup_date = tomorrowStr and status = 'confirmed',
+    // then call sendReminderEmail for each matching booking.
 
     return NextResponse.json({ 
       success: true, 

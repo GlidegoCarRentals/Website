@@ -154,23 +154,23 @@ function SignupContent() {
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Full name</label>
-              <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required autoComplete="name"
+              <label htmlFor="signup-fullname-input" className="block text-sm font-medium text-zinc-400 mb-2">Full name</label>
+              <input id="signup-fullname-input" type="text" value={fullName} onChange={e => setFullName(e.target.value)} required autoComplete="name"
                 placeholder="Alex Johnson"
                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email"
+              <label htmlFor="signup-email-input" className="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
+              <input id="signup-email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email"
                 placeholder="you@example.com"
                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Password</label>
+              <label htmlFor="signup-password-input" className="block text-sm font-medium text-zinc-400 mb-2">Password</label>
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password"
+                <input id="signup-password-input" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password"
                   placeholder="Min. 8 characters"
                   className="w-full px-4 py-3 pr-14 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
                 <button type="button" onClick={() => setShowPassword(s => !s)}
@@ -187,13 +187,15 @@ function SignupContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Confirm password</label>
-              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password"
+              <label htmlFor="signup-confirm-password-input" className="block text-sm font-medium text-zinc-400 mb-2">Confirm password</label>
+              <input id="signup-confirm-password-input" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password"
                 placeholder="Repeat your password"
                 className={`w-full px-4 py-3 bg-zinc-800 border rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all ${
-                  confirmPassword && confirmPassword !== password ? 'border-red-500/50' :
-                  confirmPassword && confirmPassword === password ? 'border-emerald-500/50' :
-                  'border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50'}`} />
+                  (() => {
+                    if (confirmPassword && confirmPassword !== password) return 'border-red-500/50';
+                    if (confirmPassword && confirmPassword === password) return 'border-emerald-500/50';
+                    return 'border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50';
+                  })()}`} />
               {confirmPassword && confirmPassword !== password && <p className="text-xs text-red-400 mt-1.5">Passwords don&apos;t match</p>}
             </div>
 

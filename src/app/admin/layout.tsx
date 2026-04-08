@@ -21,7 +21,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isLoading, pathname, router, user]);
 
-  if (isLoading || !user || user.role !== 'admin') {
+  if (isLoading || user?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">

@@ -2,6 +2,7 @@
 -- GlideGo — Seed Data (plain SQL, no PL/pgSQL)
 -- Run in Supabase Dashboard → SQL Editor
 -- Requires at least one user in public.users first
+-- Note: repeated string literals are idiomatic in SQL seed data
 -- ============================================================
 
 -- Remove previous seed cars (safe to re-run)

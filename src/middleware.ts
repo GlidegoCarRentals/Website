@@ -8,6 +8,35 @@ const HOST_ONLY = ['/host/dashboard', '/host/add-vehicle', '/host/edit-vehicle',
 const ADMIN_ONLY = ['/admin']
 const AUTH_PAGES = ['/login', '/signup', '/forgot-password']
 
+function classifyRoute(pathname: string) {
+  return {
+    isAuthPage: AUTH_PAGES.some(p => pathname.startsWith(p)),
+    isProtected: PROTECTED.some(p => pathname.startsWith(p)),
+    isHostRoute: HOST_ONLY.some(p => pathname.startsWith(p)),
+    isAdminRoute: ADMIN_ONLY.some(p => pathname.startsWith(p)),
+  }
+}
+
+function redirectToLogin(request: NextRequest, pathname: string) {
+  const url = new URL('/login', request.url)
+  url.searchParams.set('redirectTo', pathname)
+  return NextResponse.redirect(url)
+}
+
+async function checkRoleAccess(
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string,
+  requiredRoles: string[],
+  fallbackUrl: string,
+  request: NextRequest,
+): Promise<NextResponse | null> {
+  const { data: profile } = await supabase.from('users').select('role').eq('id', userId).single()
+  if (!requiredRoles.includes(profile?.role)) {
+    return NextResponse.redirect(new URL(fallbackUrl, request.url))
+  }
+  return null
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } })
 
@@ -35,38 +64,28 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
+  const route = classifyRoute(pathname)
 
   // Logged-in users away from auth pages
-  if (AUTH_PAGES.some(p => pathname.startsWith(p))) {
-    if (user) return NextResponse.redirect(new URL('/account', request.url))
-    return response
+  if (route.isAuthPage) {
+    return user ? NextResponse.redirect(new URL('/account', request.url)) : response
   }
 
-  const isProtected = PROTECTED.some(p => pathname.startsWith(p))
-  const isHostRoute = HOST_ONLY.some(p => pathname.startsWith(p))
-  const isAdminRoute = ADMIN_ONLY.some(p => pathname.startsWith(p))
-
   // Not logged in → login
-  if ((isProtected || isHostRoute || isAdminRoute) && !user) {
-    const url = new URL('/login', request.url)
-    url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
+  if ((route.isProtected || route.isHostRoute || route.isAdminRoute) && !user) {
+    return redirectToLogin(request, pathname)
   }
 
   // Host routes → check role
-  if (isHostRoute && user) {
-    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'host' && profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/become-host', request.url))
-    }
+  if (route.isHostRoute && user) {
+    const redirect = await checkRoleAccess(supabase, user.id, ['host', 'admin'], '/become-host', request)
+    if (redirect) return redirect
   }
 
   // Admin routes → check role
-  if (isAdminRoute && user) {
-    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
+  if (route.isAdminRoute && user) {
+    const redirect = await checkRoleAccess(supabase, user.id, ['admin'], '/', request)
+    if (redirect) return redirect
   }
 
   return response

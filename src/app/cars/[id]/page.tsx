@@ -303,8 +303,8 @@ export default function CarDetailPage() {
                   <span style={{ fontSize: 12, color: '#64748b' }}>({car.trips} trips)</span>
                 </div>
               </div>
-              {car.reviews.map((r, i) => (
-                <div key={i} style={{ background: '#f8fafc', borderRadius: 12, padding: '18px', border: '1px solid #f1f5f9', marginBottom: 12 }}>
+              {car.reviews.map((r: { name: string; date: string; rating: number; text: string; [key: string]: unknown }, i: number) => (
+                <div key={`review-${i}`} style={{ background: '#f8fafc', borderRadius: 12, padding: '18px', border: '1px solid #f1f5f9', marginBottom: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#eff6ff,#f0fdf4)', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#1d4ed8' }}>
@@ -341,10 +341,10 @@ export default function CarDetailPage() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.1em', display: 'block', marginBottom: 7 }}>PICKUP LOCATION</label>
+                  <label htmlFor="pickup-location-select" style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.1em', display: 'block', marginBottom: 7 }}>PICKUP LOCATION</label>
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, pointerEvents: 'none' }}>📍</span>
-                    <select value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} className="form-input" style={{ paddingLeft: 34 }}>
+                    <select id="pickup-location-select" value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} className="form-input" style={{ paddingLeft: 34 }}>
                       {LOCATIONS.map((l: any) => <option key={l} value={l}>{l}</option>)}
                     </select>
                     <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8', fontSize: 11 }}>▾</span>

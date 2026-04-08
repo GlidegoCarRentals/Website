@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -55,7 +55,10 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
     <div
       id={`toast-${toast.id}`}
       className={`toast toast-${toast.type}`}
+      role="button"
+      tabIndex={0}
       onClick={() => onRemove(toast.id)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRemove(toast.id); } }}
       style={{ cursor: 'pointer' }}
     >
       <span style={{ fontSize: 18, flexShrink: 0 }}>{ICONS[toast.type]}</span>
@@ -81,13 +84,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => animateAndRemove(id, setToasts), 4000);
   }, []);
 
-  const ctx: ToastContextType = {
+  const ctx = useMemo<ToastContextType>(() => ({
     toast: addToast,
     success: (m) => addToast(m, 'success'),
     error:   (m) => addToast(m, 'error'),
     info:    (m) => addToast(m, 'info'),
     warning: (m) => addToast(m, 'warning'),
-  };
+  }), [addToast]);
 
   return (
     <ToastContext.Provider value={ctx}>

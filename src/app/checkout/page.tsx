@@ -14,7 +14,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
   const carId = searchParams.get('carId');
-  const totalAmount = parseFloat(searchParams.get('amount') || '0');
+  const totalAmount = Number.parseFloat(searchParams.get('amount') || '0');
 
   // Accept either bookingId or carId
   const referenceId = bookingId || carId;

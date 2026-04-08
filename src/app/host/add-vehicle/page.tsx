@@ -177,8 +177,9 @@ export default function AddVehiclePage() {
               {/* REGO lookup */}
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Registration Number</label>
+                  <label htmlFor="rego-input" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Registration Number</label>
                   <input
+                    id="rego-input"
                     type="text"
                     value={form.rego}
                     onChange={e => set('rego', e.target.value.toUpperCase())}
@@ -187,8 +188,8 @@ export default function AddVehiclePage() {
                   />
                 </div>
                 <div className="w-24">
-                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">State</label>
-                  <select value={form.rego_state} onChange={e => set('rego_state', e.target.value)}
+                  <label htmlFor="rego-state-select" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">State</label>
+                  <select id="rego-state-select" value={form.rego_state} onChange={e => set('rego_state', e.target.value)}
                     className="w-full px-3 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
                     {['VIC','NSW','QLD','SA','WA','TAS','ACT','NT'].map(s => <option key={s}>{s}</option>)}
                   </select>
@@ -211,8 +212,8 @@ export default function AddVehiclePage() {
                     { label: 'Engine', key: 'engine', placeholder: '2.5L 4-cyl' },
                   ].map(({ label, key, placeholder }) => (
                     <div key={key}>
-                      <label className="block text-xs font-medium text-zinc-500 mb-1.5">{label}</label>
-                      <input type="text" value={form[key as keyof Form] as string}
+                      <label htmlFor={`${key}-input`} className="block text-xs font-medium text-zinc-500 mb-1.5">{label}</label>
+                      <input id={`${key}-input`} type="text" value={form[key as keyof Form] as string}
                         onChange={e => set(key as keyof Form, e.target.value)}
                         placeholder={placeholder}
                         className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
@@ -220,39 +221,39 @@ export default function AddVehiclePage() {
                   ))}
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Year</label>
-                    <input type="number" value={form.year} onChange={e => set('year', parseInt(e.target.value))}
+                    <label htmlFor="year-input" className="block text-xs font-medium text-zinc-500 mb-1.5">Year</label>
+                    <input id="year-input" type="number" value={form.year} onChange={e => set('year', Number.parseInt(e.target.value))}
                       min={2000} max={new Date().getFullYear() + 1}
                       className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white text-sm outline-none transition-all" />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Seats</label>
-                    <select value={form.seats} onChange={e => set('seats', parseInt(e.target.value))}
+                    <label htmlFor="seats-select" className="block text-xs font-medium text-zinc-500 mb-1.5">Seats</label>
+                    <select id="seats-select" value={form.seats} onChange={e => set('seats', Number.parseInt(e.target.value))}
                       className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
                       {[2,4,5,6,7,8,9,12].map(n => <option key={n} value={n}>{n} seats</option>)}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Body Type</label>
-                    <select value={form.body_type} onChange={e => set('body_type', e.target.value)}
+                    <label htmlFor="body-type-select" className="block text-xs font-medium text-zinc-500 mb-1.5">Body Type</label>
+                    <select id="body-type-select" value={form.body_type} onChange={e => set('body_type', e.target.value)}
                       className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
                       {BODY_TYPES.map(t => <option key={t}>{t}</option>)}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Transmission</label>
-                    <select value={form.transmission} onChange={e => set('transmission', e.target.value)}
+                    <label htmlFor="transmission-select" className="block text-xs font-medium text-zinc-500 mb-1.5">Transmission</label>
+                    <select id="transmission-select" value={form.transmission} onChange={e => set('transmission', e.target.value)}
                       className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
                       {['Automatic','Manual','CVT','DCT'].map(t => <option key={t}>{t}</option>)}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Fuel Type</label>
-                    <select value={form.fuel_type} onChange={e => set('fuel_type', e.target.value)}
+                    <label htmlFor="fuel-type-select" className="block text-xs font-medium text-zinc-500 mb-1.5">Fuel Type</label>
+                    <select id="fuel-type-select" value={form.fuel_type} onChange={e => set('fuel_type', e.target.value)}
                       className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
                       {['Petrol','Diesel','Hybrid','Electric','Plug-in Hybrid'].map(f => <option key={f}>{f}</option>)}
                     </select>
@@ -260,8 +261,8 @@ export default function AddVehiclePage() {
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-xs font-medium text-zinc-500 mb-1.5">Pickup Location</label>
-                  <input type="text" value={form.location_name} onChange={e => set('location_name', e.target.value)}
+                  <label htmlFor="location-input" className="block text-xs font-medium text-zinc-500 mb-1.5">Pickup Location</label>
+                  <input id="location-input" type="text" value={form.location_name} onChange={e => set('location_name', e.target.value)}
                     placeholder="CBD Melbourne, VIC"
                     className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
                 </div>
@@ -331,8 +332,8 @@ export default function AddVehiclePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Description (optional)</label>
-                <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={4}
+                <label htmlFor="description-textarea" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Description (optional)</label>
+                <textarea id="description-textarea" value={form.description} onChange={e => set('description', e.target.value)} rows={4}
                   placeholder="Describe your car — what makes it special, ideal use cases, any important notes for guests..."
                   className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all resize-none" />
               </div>
@@ -350,11 +351,11 @@ export default function AddVehiclePage() {
                   { label: 'Security Bond', key: 'deposit_amount', placeholder: '500', required: true },
                 ].map(({ label, key, placeholder, required }) => (
                   <div key={key}>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">{label}</label>
+                    <label htmlFor={`${key}-input`} className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">{label}</label>
                     <div className="relative">
                       <span className="absolute left-4 top-3.5 text-zinc-500 text-sm">AUD $</span>
-                      <input type="number" value={form[key as keyof Form] as number || ''}
-                        onChange={e => set(key as keyof Form, parseFloat(e.target.value) || 0)}
+                      <input id={`${key}-input`} type="number" value={form[key as keyof Form] as number || ''}
+                        onChange={e => set(key as keyof Form, Number.parseFloat(e.target.value) || 0)}
                         required={required} placeholder={placeholder}
                         className="w-full pl-16 pr-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
                     </div>
@@ -367,8 +368,8 @@ export default function AddVehiclePage() {
                     { label: 'Minimum Age', key: 'min_age_years', options: [18,19,21,25].map(n => ({ value: n, label: `${n}+ years` })) },
                   ].map(({ label, key, options }) => (
                     <div key={key}>
-                      <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">{label}</label>
-                      <select value={form[key as keyof Form] as number} onChange={e => set(key as keyof Form, parseInt(e.target.value))}
+                      <label htmlFor={`${key}-select`} className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">{label}</label>
+                      <select id={`${key}-select`} value={form[key as keyof Form] as number} onChange={e => set(key as keyof Form, Number.parseInt(e.target.value))}
                         className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 rounded-xl text-white text-sm outline-none transition-all">
                         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
@@ -388,7 +389,10 @@ export default function AddVehiclePage() {
                       <p className="text-zinc-500 text-xs mt-0.5">{desc}</p>
                     </div>
                     <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => set(key as keyof Form, !(form[key as keyof Form] as boolean))}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set(key as keyof Form, !(form[key as keyof Form] as boolean)); } }}
                       className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ml-4 cursor-pointer ${form[key as keyof Form] ? 'bg-blue-600' : 'bg-zinc-700'}`}
                     >
                       <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${form[key as keyof Form] ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -455,7 +459,7 @@ export default function AddVehiclePage() {
                 className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-40">
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />{' '}
                     Publishing listing...
                   </span>
                 ) : '🚀 Publish Listing'}

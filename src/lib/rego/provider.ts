@@ -14,16 +14,16 @@ type RegoResult = {
   };
 };
 
-export async function lookupRego(rego: string): Promise<RegoResult | null> {
-  const provider = process.env.REGO_LOOKUP_PROVIDER;
-
-  if (!provider || provider === 'fallback') {
-    return null;
-  }
-
-  if (provider === 'stub-live') {
-    return null;
-  }
-
+/**
+ * Look up vehicle registration details from an external provider.
+ *
+ * Currently no live provider is wired up, so this always returns null.
+ * When a real provider (e.g. NEVDIS) is integrated, add a case here
+ * that calls the provider API and returns a populated RegoResult.
+ */
+export async function lookupRego(
+  _rego: string,
+): Promise<RegoResult | null> {
+  // No provider configured — nothing to look up.
   return null;
 }

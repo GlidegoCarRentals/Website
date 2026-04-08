@@ -26,12 +26,28 @@ function useNavColors(darkMode: boolean) {
   const isHome = pathname === '/';
   const isTransparent = isHome && !scrolled;
 
-  const navBg = scrolled
-    ? darkMode ? 'rgba(10,15,30,0.97)' : 'rgba(255,255,255,0.97)'
-    : isHome ? 'transparent' : darkMode ? '#0a0f1e' : 'white';
+  let navBg: string;
+  if (scrolled) {
+    navBg = darkMode ? 'rgba(10,15,30,0.97)' : 'rgba(255,255,255,0.97)';
+  } else if (isHome) {
+    navBg = 'transparent';
+  } else {
+    navBg = darkMode ? '#0a0f1e' : 'white';
+  }
 
-  const textCol = isTransparent ? 'rgba(255,255,255,0.9)' : darkMode ? 'rgba(255,255,255,0.85)' : '#374151';
-  const borderCol = scrolled ? (darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)') : 'transparent';
+  let textCol: string;
+  if (isTransparent) {
+    textCol = 'rgba(255,255,255,0.9)';
+  } else {
+    textCol = darkMode ? 'rgba(255,255,255,0.85)' : '#374151';
+  }
+
+  let borderCol: string;
+  if (scrolled) {
+    borderCol = darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  } else {
+    borderCol = 'transparent';
+  }
 
   return { scrolled, isHome, isTransparent, navBg, textCol, borderCol };
 }
@@ -245,8 +261,11 @@ function MobileMenu({ darkMode, onClose }: { darkMode: boolean; onClose: () => v
   return (
     <>
       <div
+        role="button"
+        tabIndex={0}
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99, backdropFilter: 'blur(4px)' }}
         onClick={onClose}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
       />
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, width: 280,

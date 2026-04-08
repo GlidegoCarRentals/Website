@@ -91,12 +91,14 @@ export async function POST(req: NextRequest) {
     };
 
     const confidenceChoice = seed % 5;
-    const confidence =
-      confidenceChoice === 0
-        ? { level: 'Verified', score: 0.95 }
-        : confidenceChoice === 1 || confidenceChoice === 2
-          ? { level: 'Partially Verified', score: 0.72 }
-          : { level: 'Manual Entry', score: 0.45 };
+    let confidence: { level: string; score: number };
+    if (confidenceChoice === 0) {
+      confidence = { level: 'Verified', score: 0.95 };
+    } else if (confidenceChoice === 1 || confidenceChoice === 2) {
+      confidence = { level: 'Partially Verified', score: 0.72 };
+    } else {
+      confidence = { level: 'Manual Entry', score: 0.45 };
+    }
 
     // NOTE: catalog entries are minimal; the rest is derived deterministically.
     return NextResponse.json({

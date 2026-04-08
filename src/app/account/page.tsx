@@ -8,6 +8,149 @@ import { createClient } from '@/lib/supabase/client'
 
 type Tab = 'profile' | 'security' | 'notifications'
 
+// ─────────────────────────────────────────────
+// Tab panel components — extracted to reduce cognitive complexity
+// ─────────────────────────────────────────────
+
+function ProfileTab({ profile, editing, setEditing, fullName, setFullName, phone, setPhone, saving, handleSaveProfile, handleDeleteAccount }: any) {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-semibold text-white">Personal Information</h2>
+        {!editing && (
+          <button onClick={() => setEditing(true)} className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">Edit</button>
+        )}
+      </div>
+
+      <div className="space-y-5">
+        <div>
+          <label htmlFor="account-fullname-input" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Full Name</label>
+          {editing ? (
+            <input id="account-fullname-input" type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white text-sm outline-none transition-all" />
+          ) : (
+            <p className="text-sm py-1">{profile.full_name ? <span className="text-white">{profile.full_name}</span> : <span className="text-zinc-600">Not set</span>}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="account-email-display" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Email Address</label>
+          <p className="text-white text-sm py-1">{profile.email}</p>
+        </div>
+
+        <div>
+          <label htmlFor="account-phone-input" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">Phone Number</label>
+          {editing ? (
+            <input id="account-phone-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+61 4XX XXX XXX" className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
+          ) : (
+            <p className="text-sm py-1">{profile.phone ? <span className="text-white">{profile.phone}</span> : <span className="text-zinc-600">Not added</span>}</p>
+          )}
+        </div>
+
+        {editing && (
+          <div className="flex gap-3 pt-1">
+            <button onClick={handleSaveProfile} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40">{saving ? 'Saving...' : 'Save Changes'}</button>
+            <button onClick={() => { setEditing(false); setFullName(profile.full_name || ''); setPhone(profile.phone || '') }} className="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-3 rounded-xl text-sm font-medium transition-all">Cancel</button>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-8 pt-6 border-t border-zinc-800">
+        <p className="text-xs font-medium text-zinc-600 uppercase tracking-wider mb-3">Danger Zone</p>
+        <button onClick={handleDeleteAccount} className="text-sm text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 px-4 py-2 rounded-xl transition-all">Delete Account</button>
+      </div>
+    </div>
+  )
+}
+
+function SecurityTab({ profile, user, supabase, showMsg, handleResendVerification }: any) {
+  const verifiedClass = profile.email_verified
+    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+    : 'bg-red-500/10 text-red-400 border border-red-500/20'
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <h2 className="font-semibold text-white mb-6">Security Settings</h2>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
+          <div>
+            <p className="font-medium text-white text-sm">Password</p>
+            <p className="text-zinc-500 text-xs mt-0.5">Change your account password</p>
+          </div>
+          <button
+            onClick={async () => {
+              await supabase.auth.resetPasswordForEmail(user.email!, { redirectTo: `${window.location.origin}/reset-password` })
+              showMsg('Password reset link sent to your email.')
+            }}
+            className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+          >Change</button>
+        </div>
+
+        <div className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
+          <div>
+            <p className="font-medium text-white text-sm">Email Verification</p>
+            <p className="text-zinc-500 text-xs mt-0.5">{profile.email}</p>
+          </div>
+          <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${verifiedClass}`}>
+            {profile.email_verified ? '✓ Verified' : '✗ Not Verified'}
+          </span>
+        </div>
+
+        {!profile.email_verified && (
+          <button onClick={handleResendVerification} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-600/20">Send Verification Email</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function NotificationsTab({ profile, user, supabase, refreshProfile }: any) {
+  const prefs = (profile.email_prefs as Record<string, boolean>) || {}
+  const items = [
+    { key: 'booking_updates', label: 'Booking updates', desc: 'Confirmations, status changes, and reminders' },
+    { key: 'messages', label: 'New messages', desc: 'When a host or guest sends you a message' },
+    { key: 'promotions', label: 'Promotions & offers', desc: 'Special deals and discount codes' },
+  ]
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <h2 className="font-semibold text-white mb-6">Email Notifications</h2>
+      <div className="space-y-3">
+        {items.map(pref => {
+          const enabled = prefs[pref.key] ?? true
+          return (
+            <div key={pref.key} className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
+              <div>
+                <p className="font-medium text-white text-sm">{pref.label}</p>
+                <p className="text-zinc-500 text-xs mt-0.5">{pref.desc}</p>
+              </div>
+              <button
+                onClick={async () => {
+                  const updated = { ...prefs, [pref.key]: !enabled }
+                  await supabase.from('users').update({ email_prefs: updated, updated_at: new Date().toISOString() }).eq('id', user.id)
+                  await refreshProfile()
+                }}
+                className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ${enabled ? 'bg-blue-600' : 'bg-zinc-700'}`}
+              >
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function renderActiveTab(activeTab: Tab, props: any) {
+  if (activeTab === 'profile') return <ProfileTab {...props} />
+  if (activeTab === 'security') return <SecurityTab {...props} />
+  return <NotificationsTab {...props} />
+}
+
+// ─────────────────────────────────────────────
+// Main Account Page
+// ─────────────────────────────────────────────
+
 export default function AccountPage() {
   const router = useRouter()
   const { user, profile, loading, signOut, refreshProfile } = useAuth()
@@ -134,6 +277,19 @@ export default function AccountPage() {
     { id: 'notifications', label: 'Notifications' },
   ]
 
+  let roleBadgeClass: string;
+  let roleLabel: string;
+  if (profile.role === 'admin') {
+    roleBadgeClass = 'bg-red-500/10 text-red-400 border border-red-500/20';
+    roleLabel = 'Admin';
+  } else if (profile.role === 'host') {
+    roleBadgeClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+    roleLabel = 'Host';
+  } else {
+    roleBadgeClass = 'bg-zinc-800 text-zinc-400 border border-zinc-700';
+    roleLabel = 'Guest';
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/4 rounded-full blur-[120px] pointer-events-none" />
@@ -235,12 +391,8 @@ export default function AccountPage() {
               <p className="text-zinc-500 text-xs mt-0.5 truncate">{profile.email}</p>
 
               <div className="flex items-center justify-center gap-2 mt-3">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                  profile.role === 'admin' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                  profile.role === 'host' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                  'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                }`}>
-                  {profile.role === 'admin' ? 'Admin' : profile.role === 'host' ? 'Host' : 'Guest'}
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${roleBadgeClass}`}>
+                  {roleLabel}
                 </span>
                 <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
                   profile.email_verified
@@ -302,198 +454,11 @@ export default function AccountPage() {
               ))}
             </div>
 
-            {/* Profile Tab */}
-            {activeTab === 'profile' && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-semibold text-white">Personal Information</h2>
-                  {!editing && (
-                    <button
-                      onClick={() => setEditing(true)}
-                      className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
-                      Full Name
-                    </label>
-                    {editing ? (
-                      <input
-                        type="text"
-                        value={fullName}
-                        onChange={e => setFullName(e.target.value)}
-                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white text-sm outline-none transition-all"
-                      />
-                    ) : (
-                      <p className="text-sm py-1">
-                        {profile.full_name
-                          ? <span className="text-white">{profile.full_name}</span>
-                          : <span className="text-zinc-600">Not set</span>
-                        }
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
-                      Email Address
-                    </label>
-                    <p className="text-white text-sm py-1">{profile.email}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
-                      Phone Number
-                    </label>
-                    {editing ? (
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={e => setPhone(e.target.value)}
-                        placeholder="+61 4XX XXX XXX"
-                        className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all"
-                      />
-                    ) : (
-                      <p className="text-sm py-1">
-                        {profile.phone
-                          ? <span className="text-white">{profile.phone}</span>
-                          : <span className="text-zinc-600">Not added</span>
-                        }
-                      </p>
-                    )}
-                  </div>
-
-                  {editing && (
-                    <div className="flex gap-3 pt-1">
-                      <button
-                        onClick={handleSaveProfile}
-                        disabled={saving}
-                        className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
-                      >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditing(false)
-                          setFullName(profile.full_name || '')
-                          setPhone(profile.phone || '')
-                        }}
-                        className="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-3 rounded-xl text-sm font-medium transition-all"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-zinc-800">
-                  <p className="text-xs font-medium text-zinc-600 uppercase tracking-wider mb-3">Danger Zone</p>
-                  <button
-                    onClick={handleDeleteAccount}
-                    className="text-sm text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 px-4 py-2 rounded-xl transition-all"
-                  >
-                    Delete Account
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Security Tab */}
-            {activeTab === 'security' && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                <h2 className="font-semibold text-white mb-6">Security Settings</h2>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
-                    <div>
-                      <p className="font-medium text-white text-sm">Password</p>
-                      <p className="text-zinc-500 text-xs mt-0.5">Change your account password</p>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        await supabase.auth.resetPasswordForEmail(user.email!, {
-                          redirectTo: `${window.location.origin}/reset-password`,
-                        })
-                        showMsg('Password reset link sent to your email.')
-                      }}
-                      className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
-                    >
-                      Change
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
-                    <div>
-                      <p className="font-medium text-white text-sm">Email Verification</p>
-                      <p className="text-zinc-500 text-xs mt-0.5">{profile.email}</p>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                      profile.email_verified
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                    }`}>
-                      {profile.email_verified ? '✓ Verified' : '✗ Not Verified'}
-                    </span>
-                  </div>
-
-                  {!profile.email_verified && (
-                    <button
-                      onClick={handleResendVerification}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-600/20"
-                    >
-                      Send Verification Email
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Notifications Tab */}
-            {activeTab === 'notifications' && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                <h2 className="font-semibold text-white mb-6">Email Notifications</h2>
-                <div className="space-y-3">
-                  {[
-                    { key: 'booking_updates', label: 'Booking updates', desc: 'Confirmations, status changes, and reminders' },
-                    { key: 'messages', label: 'New messages', desc: 'When a host or guest sends you a message' },
-                    { key: 'promotions', label: 'Promotions & offers', desc: 'Special deals and discount codes' },
-                  ].map(pref => {
-                    const prefs = (profile.email_prefs as Record<string, boolean>) || {}
-                    const enabled = prefs[pref.key] ?? true
-
-                    return (
-                      <div key={pref.key} className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
-                        <div>
-                          <p className="font-medium text-white text-sm">{pref.label}</p>
-                          <p className="text-zinc-500 text-xs mt-0.5">{pref.desc}</p>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            const updated = { ...prefs, [pref.key]: !enabled }
-                            await supabase
-                              .from('users')
-                              .update({ email_prefs: updated, updated_at: new Date().toISOString() })
-                              .eq('id', user.id)
-                            await refreshProfile()
-                          }}
-                          className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ${
-                            enabled ? 'bg-blue-600' : 'bg-zinc-700'
-                          }`}
-                        >
-                          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                            enabled ? 'translate-x-6' : 'translate-x-1'
-                          }`} />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+            {renderActiveTab(activeTab, {
+              profile, editing, setEditing, fullName, setFullName, phone, setPhone,
+              saving, handleSaveProfile, handleDeleteAccount,
+              user, supabase, showMsg, handleResendVerification, refreshProfile,
+            })}
           </div>
         </div>
       </div>

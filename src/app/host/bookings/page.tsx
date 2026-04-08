@@ -110,7 +110,7 @@ export default function HostBookingsPage() {
               {filtered.map(b => {
                 const sc = STATUS_CONFIG[b.status] || STATUS_CONFIG.pending;
                 return (
-                  <div key={b.id} className="booking-row" onClick={() => setSelected(b)} style={{ background: selected?.id === b.id ? '#f8fafc' : undefined }}>
+                  <div key={b.id} className="booking-row" role="button" tabIndex={0} onClick={() => setSelected(b)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(b); } }} style={{ background: selected?.id === b.id ? '#f8fafc' : undefined }}>
                     <div style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg,${b.status === 'pending' ? '#d97706' : '#1d4ed8'},${b.status === 'pending' ? '#f59e0b' : '#059669'})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'white' }}>{b.avatar}</div>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>{b.guest}</div>
@@ -123,7 +123,7 @@ export default function HostBookingsPage() {
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{b.days}d</div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>${b.amount}</div>
                     <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 11px', borderRadius: 20, background: sc.bg, color: sc.color, display: 'inline-block' }}>{sc.label}</span>
-                    <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                    <div role="group" style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                       {b.status === 'pending' && <>
                         <button className="action-btn" onClick={() => changeStatus(b.id, 'confirmed')} style={{ background: '#f0fdf4', color: '#15803d' }}>✓ Accept</button>
                         <button className="action-btn" onClick={() => changeStatus(b.id, 'cancelled')} style={{ background: '#fef2f2', color: '#dc2626' }}>✕</button>

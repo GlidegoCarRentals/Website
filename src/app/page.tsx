@@ -57,6 +57,50 @@ export default function HomePage() {
 
   const navScrolled = scrollY > 60;
 
+  const getCarEmoji = (car: { category: string; fuel: string }) => {
+    if (car.category === 'SUV') return '🚙';
+    if (car.fuel === 'Electric') return '⚡';
+    if (car.category === 'Van') return '🛻';
+    return '🚗';
+  };
+
+  const renderFleetContent = () => {
+    if (carsLoading) {
+      return Array.from({length:8}).map((_,i)=>(
+        <div key={`skeleton-${i}`} style={{background:'white',borderRadius:18,overflow:'hidden',border:'1px solid #f0f0f0'}}>
+          <div className="animate-pulse" style={{height:180,background:'#e2e8f0'}} />
+          <div style={{padding:'16px 18px'}}>
+            <div className="animate-pulse" style={{height:16,background:'#e2e8f0',borderRadius:6,marginBottom:8,width:'70%'}} />
+            <div className="animate-pulse" style={{height:12,background:'#f1f5f9',borderRadius:6,marginBottom:16,width:'40%'}} />
+            <div style={{display:'flex',gap:14,marginBottom:12}}>
+              {[1,2,3].map(j=><div key={j} className="animate-pulse" style={{height:36,background:'#f1f5f9',borderRadius:8,flex:1}} />)}
+            </div>
+            <div className="animate-pulse" style={{height:40,background:'#f1f5f9',borderRadius:8}} />
+          </div>
+        </div>
+      ));
+    }
+    if (filtered.length === 0 && cars.length === 0) {
+      return (
+        <div style={{gridColumn:'1/-1',textAlign:'center',padding:'80px 24px'}}>
+          <div style={{fontSize:56,marginBottom:16}}>🚗</div>
+          <div style={{fontSize:20,fontWeight:700,color:'#0f172a',marginBottom:8}}>No cars available yet</div>
+          <div style={{fontSize:13,color:'#94a3b8'}}>Check back soon — new vehicles are being added to the fleet.</div>
+        </div>
+      );
+    }
+    if (filtered.length === 0) {
+      return (
+        <div style={{gridColumn:'1/-1',textAlign:'center',padding:'80px 24px'}}>
+          <div style={{fontSize:40,marginBottom:12}}>🔍</div>
+          <div style={{fontSize:18,fontWeight:700,color:'#0f172a',marginBottom:8}}>No cars match your filters</div>
+          <button onClick={()=>{setCategory('All');setTransmission('Any');setMaxPrice(400);}} style={{marginTop:8,background:'#1d4ed8',color:'white',border:'none',borderRadius:10,padding:'10px 24px',fontWeight:600,cursor:'pointer',fontSize:14}}>Clear Filters</button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div style={{fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif",backgroundColor:'#f1f5f9',color:'#0f172a',overflowX:'hidden'}}>
       <style>{`
@@ -293,7 +337,7 @@ export default function HomePage() {
             {/* LEFT */}
             <div>
               <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.06)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:50,padding:'8px 18px',fontSize:13,color:'rgba(255,255,255,0.8)',marginBottom:28,fontWeight:500}}>
-                <span style={{width:8,height:8,borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 10px #10b981'}} />
+                <span style={{width:8,height:8,borderRadius:'50%',background:'#10b981',display:'inline-block',boxShadow:'0 0 10px #10b981'}} />{' '}
                 Melbourne&apos;s #1 Rated — 4.9★ · 1,200+ Reviews
               </div>
 
@@ -365,7 +409,7 @@ export default function HomePage() {
                 </button>
                 <div style={{display:'flex',justifyContent:'center',gap:4,flexWrap:'wrap'}}>
                   {['Free cancellation','·','No credit card surcharge','·','Instant confirmation'].map((t,i)=>(
-                    <span key={i} style={{fontSize:11,color:'#94a3b8'}}>{t}</span>
+                    <span key={`trust-${i}`} style={{fontSize:11,color:'#94a3b8'}}>{t}</span>
                   ))}
                 </div>
               </div>
@@ -443,33 +487,7 @@ export default function HomePage() {
 
           {/* Car Grid */}
           <div className="fleet-grid" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:22}}>
-            {carsLoading ? (
-              Array.from({length:8}).map((_,i)=>(
-                <div key={i} style={{background:'white',borderRadius:18,overflow:'hidden',border:'1px solid #f0f0f0'}}>
-                  <div className="animate-pulse" style={{height:180,background:'#e2e8f0'}} />
-                  <div style={{padding:'16px 18px'}}>
-                    <div className="animate-pulse" style={{height:16,background:'#e2e8f0',borderRadius:6,marginBottom:8,width:'70%'}} />
-                    <div className="animate-pulse" style={{height:12,background:'#f1f5f9',borderRadius:6,marginBottom:16,width:'40%'}} />
-                    <div style={{display:'flex',gap:14,marginBottom:12}}>
-                      {[1,2,3].map(j=><div key={j} className="animate-pulse" style={{height:36,background:'#f1f5f9',borderRadius:8,flex:1}} />)}
-                    </div>
-                    <div className="animate-pulse" style={{height:40,background:'#f1f5f9',borderRadius:8}} />
-                  </div>
-                </div>
-              ))
-            ) : filtered.length === 0 && cars.length === 0 ? (
-              <div style={{gridColumn:'1/-1',textAlign:'center',padding:'80px 24px'}}>
-                <div style={{fontSize:56,marginBottom:16}}>🚗</div>
-                <div style={{fontSize:20,fontWeight:700,color:'#0f172a',marginBottom:8}}>No cars available yet</div>
-                <div style={{fontSize:13,color:'#94a3b8'}}>Check back soon — new vehicles are being added to the fleet.</div>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div style={{gridColumn:'1/-1',textAlign:'center',padding:'80px 24px'}}>
-                <div style={{fontSize:40,marginBottom:12}}>🔍</div>
-                <div style={{fontSize:18,fontWeight:700,color:'#0f172a',marginBottom:8}}>No cars match your filters</div>
-                <button onClick={()=>{setCategory('All');setTransmission('Any');setMaxPrice(400);}} style={{marginTop:8,background:'#1d4ed8',color:'white',border:'none',borderRadius:10,padding:'10px 24px',fontWeight:600,cursor:'pointer',fontSize:14}}>Clear Filters</button>
-              </div>
-            ) : null}
+            {renderFleetContent()}
             {!carsLoading && filtered.map(car=>(
               <Link key={car.id} href={`/cars/${car.id}`} style={{textDecoration:'none',color:'inherit'}}>
                 <div className="car-card" style={{opacity:car.available?1:0.7}}>
@@ -483,7 +501,7 @@ export default function HomePage() {
                       />
                     ) : (
                       <div style={{height:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'linear-gradient(135deg,#e0f2fe,#dcfce7)',fontSize:64}}>
-                        {car.category==='SUV'?'🚙':car.fuel==='Electric'?'⚡':car.category==='Van'?'🛻':'🚗'}
+                        {getCarEmoji(car)}
                       </div>
                     )}
                     {!car.available && (
@@ -633,11 +651,11 @@ export default function HomePage() {
                 <h4 style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.3)',letterSpacing:'0.15em',marginBottom:20}}>{col.title}</h4>
                 <div style={{display:'flex',flexDirection:'column',gap:12}}>
                   {col.links.map(link=>(
-                    <a key={link} href="#" style={{fontSize:13,color:'rgba(255,255,255,0.5)',textDecoration:'none',transition:'color 0.2s'}}
+                    <button key={link} type="button" style={{fontSize:13,color:'rgba(255,255,255,0.5)',textDecoration:'none',transition:'color 0.2s',background:'none',border:'none',padding:0,cursor:'pointer',textAlign:'left'}}
                       onMouseEnter={e=>(e.currentTarget.style.color='white')}
                       onMouseLeave={e=>(e.currentTarget.style.color='rgba(255,255,255,0.5)')}>
                       {link}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -647,11 +665,11 @@ export default function HomePage() {
             <p style={{color:'rgba(255,255,255,0.2)',fontSize:12}}>© 2026 GlideGo Car Rentals Pty Ltd. All rights reserved. ABN 12 345 678 901</p>
             <div style={{display:'flex',gap:24}}>
               {['Privacy Policy','Terms of Use','Cookie Policy'].map(l=>(
-                <a key={l} href="#" style={{color:'rgba(255,255,255,0.2)',fontSize:12,textDecoration:'none'}}
+                <button key={l} type="button" style={{color:'rgba(255,255,255,0.2)',fontSize:12,textDecoration:'none',background:'none',border:'none',padding:0,cursor:'pointer'}}
                   onMouseEnter={e=>(e.currentTarget.style.color='rgba(255,255,255,0.5)')}
                   onMouseLeave={e=>(e.currentTarget.style.color='rgba(255,255,255,0.2)')}>
                   {l}
-                </a>
+                </button>
               ))}
             </div>
           </div>

@@ -38,7 +38,6 @@ export default function Page() {
           width="40"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          role="img"
           aria-label="Sentry logo"
         >
           <path
@@ -64,8 +63,8 @@ export default function Page() {
             href="https://docs.sentry.io/platforms/javascript/guides/nextjs/"
           >
             read our docs
-          </a>
-          .
+          </a>.
+
         </p>
 
         <button
@@ -93,19 +92,19 @@ export default function Page() {
           <span>Throw Sample Error</span>
         </button>
 
-        {hasSentError ? (
-          <p className="success">Error sent to Sentry.</p>
-        ) : !isConnected ? (
-          <div className="connectivity-error">
-            <p>
-              It looks like network requests to Sentry are being blocked, which
-              will prevent errors from being captured. Try disabling your
-              ad-blocker to complete the test.
-            </p>
-          </div>
-        ) : (
-          <div className="success_placeholder" />
-        )}
+        {(() => {
+          if (hasSentError) return <p className="success">Error sent to Sentry.</p>;
+          if (!isConnected) return (
+            <div className="connectivity-error">
+              <p>
+                It looks like network requests to Sentry are being blocked, which
+                will prevent errors from being captured. Try disabling your
+                ad-blocker to complete the test.
+              </p>
+            </div>
+          );
+          return <div className="success_placeholder" />;
+        })()}
 
         <div className="flex-spacer" />
       </main>

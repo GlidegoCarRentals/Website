@@ -7,7 +7,7 @@ import { supabase } from '@/lib/auth-context';
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
-  const [updated, setUpdated] = useState(false);
+  const [, setUpdated] = useState(false);
 
   useEffect(() => {
     if (!bookingId) return;

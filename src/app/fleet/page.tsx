@@ -57,6 +57,8 @@ function sortCars(cars: any[], sort: string) {
 // Car Card — Grid View
 // ─────────────────────────────────────────────
 function CarCardGrid({ car, isFav, dm, text, muted, accent, onFav }: any) {
+  const unavailableBg = dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9';
+  const linkBg = car.available ? 'linear-gradient(135deg,#10b981,#059669)' : unavailableBg;
   return (
     <div className="car-card">
       <div style={{ position: 'relative' }}>
@@ -92,7 +94,7 @@ function CarCardGrid({ car, isFav, dm, text, muted, accent, onFav }: any) {
             <span key={f} style={{ fontSize: 10, background: dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: muted, padding: '3px 8px', borderRadius: 6 }}>{f}</span>
           ))}
         </div>
-        <Link href={`/cars/${car.id}`} style={{ display: 'block', textAlign: 'center', padding: 9, background: car.available ? 'linear-gradient(135deg,#10b981,#059669)' : dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', color: car.available ? 'white' : muted, borderRadius: 10, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+        <Link href={`/cars/${car.id}`} style={{ display: 'block', textAlign: 'center', padding: 9, background: linkBg, color: car.available ? 'white' : muted, borderRadius: 10, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
           {car.available ? 'View & Book' : 'Notify Me'}
         </Link>
       </div>
@@ -213,6 +215,78 @@ export default function FleetPage() {
     priceRange[0] > 0 || priceRange[1] < 300, availableOnly,
   ].filter(Boolean).length;
 
+  const dmFallbackBg = dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9';
+  const filterBtnBg = showFilters ? 'rgba(16,185,129,0.1)' : dmFallbackBg;
+  const skeletonBg = dm ? '#1e293b' : '#e2e8f0';
+
+  const renderCarContent = () => {
+    if (carsLoading) {
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={`skeleton-${i}`} style={{ background: surface, border: `1px solid ${border}`, borderRadius: 18, overflow: 'hidden' }}>
+              <div className="animate-pulse" style={{ height: 180, background: skeletonBg }} />
+              <div style={{ padding: 16 }}>
+                <div className="animate-pulse" style={{ height: 16, width: '70%', background: skeletonBg, borderRadius: 8, marginBottom: 8 }} />
+                <div className="animate-pulse" style={{ height: 12, width: '50%', background: skeletonBg, borderRadius: 6, marginBottom: 16 }} />
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                  {[1,2,3].map(j => <div key={j} className="animate-pulse" style={{ flex: 1, height: 36, background: skeletonBg, borderRadius: 8 }} />)}
+                </div>
+                <div className="animate-pulse" style={{ height: 36, background: skeletonBg, borderRadius: 10 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (allCars.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: 80 }}>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>🚗</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: text, marginBottom: 8 }}>No cars available yet</div>
+          <div style={{ fontSize: 13, color: muted }}>Check back soon — new vehicles are being added to the fleet.</div>
+        </div>
+      );
+    }
+    if (filtered.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: 60 }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars match your filters</div>
+          <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Try adjusting your search criteria</div>
+          <button onClick={clearFilters} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Clear All Filters</button>
+        </div>
+      );
+    }
+    if (view === 'grid') {
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }} className="fi">
+          {filtered.map((car: any) => (
+            <CarCardGrid
+              key={car.id} car={car}
+              isFav={user?.favourites?.includes(String(car.id))}
+              dm={dm} text={text} muted={muted} accent={accent}
+              onFav={(e: any) => { e.preventDefault(); if (user) toggleFavourite(String(car.id)); }}
+            />
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="fi">
+        {filtered.map((car: any) => (
+          <CarCardList
+            key={car.id} car={car}
+            isFav={user?.favourites?.includes(String(car.id))}
+            dm={dm} text={text} muted={muted} accent={accent}
+            border={border} surface={surface}
+            onFav={() => toggleFavourite(String(car.id))}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: bg, fontFamily: "'Syne','Inter',sans-serif", color: text }}>
       <style>{`
@@ -242,7 +316,7 @@ export default function FleetPage() {
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search cars..." style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${border}`, borderRadius: 10, padding: '8px 14px', fontSize: 12, color: text, outline: 'none', width: 180 }} />
-          <button onClick={() => setShowFilters(!showFilters)} style={{ padding: '8px 14px', background: showFilters ? 'rgba(16,185,129,0.1)' : dm ? 'rgba(255,255,255,0.05)' : '#f1f5f9', border: `1px solid ${showFilters ? accent : border}`, borderRadius: 10, fontSize: 12, fontWeight: 600, color: showFilters ? accent : muted, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button onClick={() => setShowFilters(!showFilters)} style={{ padding: '8px 14px', background: filterBtnBg, border: `1px solid ${showFilters ? accent : border}`, borderRadius: 10, fontSize: 12, fontWeight: 600, color: showFilters ? accent : muted, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             ⊟ Filters {activeFilterCount > 0 && <span style={{ background: accent, color: 'white', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10 }}>{activeFilterCount}</span>}
           </button>
           <div style={{ display: 'flex', border: `1px solid ${border}`, borderRadius: 10, overflow: 'hidden' }}>
@@ -310,59 +384,7 @@ export default function FleetPage() {
             </select>
           </div>
 
-          {carsLoading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }}>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} style={{ background: surface, border: `1px solid ${border}`, borderRadius: 18, overflow: 'hidden' }}>
-                  <div className="animate-pulse" style={{ height: 180, background: dm ? '#1e293b' : '#e2e8f0' }} />
-                  <div style={{ padding: 16 }}>
-                    <div className="animate-pulse" style={{ height: 16, width: '70%', background: dm ? '#1e293b' : '#e2e8f0', borderRadius: 8, marginBottom: 8 }} />
-                    <div className="animate-pulse" style={{ height: 12, width: '50%', background: dm ? '#1e293b' : '#e2e8f0', borderRadius: 6, marginBottom: 16 }} />
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                      {[1,2,3].map(j => <div key={j} className="animate-pulse" style={{ flex: 1, height: 36, background: dm ? '#1e293b' : '#e2e8f0', borderRadius: 8 }} />)}
-                    </div>
-                    <div className="animate-pulse" style={{ height: 36, background: dm ? '#1e293b' : '#e2e8f0', borderRadius: 10 }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : allCars.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 80 }}>
-              <div style={{ fontSize: 56, marginBottom: 16 }}>🚗</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: text, marginBottom: 8 }}>No cars available yet</div>
-              <div style={{ fontSize: 13, color: muted }}>Check back soon — new vehicles are being added to the fleet.</div>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars match your filters</div>
-              <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Try adjusting your search criteria</div>
-              <button onClick={clearFilters} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Clear All Filters</button>
-            </div>
-          ) : view === 'grid' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }} className="fi">
-              {filtered.map((car: any) => (
-                <CarCardGrid
-                  key={car.id} car={car}
-                  isFav={user?.favourites?.includes(String(car.id))}
-                  dm={dm} text={text} muted={muted} accent={accent}
-                  onFav={(e: any) => { e.preventDefault(); if (user) toggleFavourite(String(car.id)); }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="fi">
-              {filtered.map((car: any) => (
-                <CarCardList
-                  key={car.id} car={car}
-                  isFav={user?.favourites?.includes(String(car.id))}
-                  dm={dm} text={text} muted={muted} accent={accent}
-                  border={border} surface={surface}
-                  onFav={() => toggleFavourite(String(car.id))}
-                />
-              ))}
-            </div>
-          )}
+          {renderCarContent()}
         </div>
       </div>
     </div>

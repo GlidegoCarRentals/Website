@@ -124,16 +124,16 @@ function LoginContent() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email"
+              <label htmlFor="login-email-input" className="block text-sm font-medium text-zinc-400 mb-2">Email address</label>
+              <input id="login-email-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email"
                 placeholder="you@example.com"
                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Password</label>
+              <label htmlFor="login-password-input" className="block text-sm font-medium text-zinc-400 mb-2">Password</label>
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password"
+                <input id="login-password-input" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password"
                   placeholder="••••••••"
                   className="w-full px-4 py-3 pr-14 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
                 <button type="button" onClick={() => setShowPassword(s => !s)}
@@ -145,7 +145,8 @@ function LoginContent() {
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2.5 cursor-pointer">
-                <div onClick={() => setRememberMe(r => !r)}
+                <div role="button" tabIndex={0} onClick={() => setRememberMe(r => !r)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRememberMe(r => !r); } }}
                   className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-zinc-600 hover:border-zinc-400'}`}>
                   {rememberMe && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                 </div>

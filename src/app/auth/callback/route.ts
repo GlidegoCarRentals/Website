@@ -2,6 +2,100 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { EmailOtpType } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+function redirectWithError(origin: string, message: string) {
+  return NextResponse.redirect(
+    `${origin}/login?error=${encodeURIComponent(message)}`
+  )
+}
+
+function redirectVerified(origin: string) {
+  return NextResponse.redirect(
+    `${origin}/account?message=${encodeURIComponent('Email verified successfully! Welcome to GlideGo.')}`
+  )
+}
+
+async function markEmailVerified(supabase: SupabaseClient, userId: string) {
+  await supabase
+    .from('users')
+    .update({ email_verified: true, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+}
+
+async function handlePkceToken(supabase: SupabaseClient, tokenHash: string, origin: string) {
+  const { data, error } = await supabase.auth.exchangeCodeForSession(tokenHash)
+  if (error || !data.user) return null
+  await markEmailVerified(supabase, data.user.id)
+  return redirectVerified(origin)
+}
+
+async function handleTokenHash(
+  supabase: SupabaseClient,
+  tokenHash: string,
+  type: EmailOtpType,
+  origin: string,
+) {
+  const { data, error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+
+  if (verifyError) {
+    console.error('verifyOtp error:', verifyError.message, 'token_hash:', tokenHash, 'type:', type)
+
+    if (tokenHash.startsWith('pkce_')) {
+      const pkceResult = await handlePkceToken(supabase, tokenHash, origin)
+      if (pkceResult) return pkceResult
+    }
+
+    return redirectWithError(origin, 'Email verification failed. The link may have expired. Please request a new one.')
+  }
+
+  if (data.user) {
+    await markEmailVerified(supabase, data.user.id)
+  }
+
+  if (type === 'recovery') {
+    return NextResponse.redirect(`${origin}/reset-password`)
+  }
+
+  return redirectVerified(origin)
+}
+
+async function handleCodeExchange(
+  supabase: SupabaseClient,
+  code: string,
+  next: string,
+  origin: string,
+) {
+  const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+  if (exchangeError) {
+    return redirectWithError(origin, exchangeError.message)
+  }
+
+  if (data.user) {
+    await supabase.from('users').upsert(
+      {
+        id: data.user.id,
+        email: data.user.email,
+        full_name:
+          data.user.user_metadata?.full_name ||
+          data.user.user_metadata?.name ||
+          '',
+        avatar_url:
+          data.user.user_metadata?.avatar_url ||
+          data.user.user_metadata?.picture ||
+          null,
+        role: 'guest',
+        email_verified: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id', ignoreDuplicates: false }
+    )
+  }
+
+  const redirectTo = next.startsWith('/') ? next : '/account'
+  return NextResponse.redirect(`${origin}${redirectTo}`)
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -13,103 +107,19 @@ export async function GET(request: Request) {
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
 
-  // Handle errors in URL
   if (error) {
-    return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(errorDescription ?? error)}`
-    )
+    return redirectWithError(origin, errorDescription ?? error)
   }
 
   const supabase = await createClient()
 
-  // ── PATH 1: token_hash (email verification, password recovery) ──
-  // Supabase sends token_hash for email OTP flows (including PKCE tokens)
   if (token_hash && type) {
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      token_hash,
-      type,
-    })
-
-    if (verifyError) {
-      console.error('verifyOtp error:', verifyError.message, 'token_hash:', token_hash, 'type:', type)
-
-      // PKCE tokens starting with 'pkce_' need exchangeCodeForSession instead
-      // This handles the case where Supabase sends a PKCE token in token_hash
-      if (token_hash.startsWith('pkce_')) {
-        const { data: pkceData, error: pkceError } = await supabase.auth.exchangeCodeForSession(token_hash)
-
-        if (!pkceError && pkceData.user) {
-          await supabase
-            .from('users')
-            .update({ email_verified: true, updated_at: new Date().toISOString() })
-            .eq('id', pkceData.user.id)
-
-          return NextResponse.redirect(
-            `${origin}/account?message=${encodeURIComponent('Email verified successfully! Welcome to GlideGo.')}`
-          )
-        }
-      }
-
-      return NextResponse.redirect(
-        `${origin}/login?error=${encodeURIComponent('Email verification failed. The link may have expired. Please request a new one.')}`
-      )
-    }
-
-    if (data.user) {
-      await supabase
-        .from('users')
-        .update({ email_verified: true, updated_at: new Date().toISOString() })
-        .eq('id', data.user.id)
-    }
-
-    // Password recovery → reset password page
-    if (type === 'recovery') {
-      return NextResponse.redirect(`${origin}/reset-password`)
-    }
-
-    return NextResponse.redirect(
-      `${origin}/account?message=${encodeURIComponent('Email verified successfully! Welcome to GlideGo.')}`
-    )
+    return handleTokenHash(supabase, token_hash, type, origin)
   }
 
-  // ── PATH 2: code (Google OAuth + PKCE code exchange) ──
   if (code) {
-    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-
-    if (exchangeError) {
-      return NextResponse.redirect(
-        `${origin}/login?error=${encodeURIComponent(exchangeError.message)}`
-      )
-    }
-
-    if (data.user) {
-      // Upsert profile for OAuth users
-      await supabase.from('users').upsert(
-        {
-          id: data.user.id,
-          email: data.user.email,
-          full_name:
-            data.user.user_metadata?.full_name ||
-            data.user.user_metadata?.name ||
-            '',
-          avatar_url:
-            data.user.user_metadata?.avatar_url ||
-            data.user.user_metadata?.picture ||
-            null,
-          role: 'guest',
-          email_verified: true,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id', ignoreDuplicates: false }
-      )
-    }
-
-    const redirectTo = next.startsWith('/') ? next : '/account'
-    return NextResponse.redirect(`${origin}${redirectTo}`)
+    return handleCodeExchange(supabase, code, next, origin)
   }
 
-  // No valid params
-  return NextResponse.redirect(
-    `${origin}/login?error=${encodeURIComponent('Invalid verification link. Please try again.')}`
-  )
+  return redirectWithError(origin, 'Invalid verification link. Please try again.')
 }

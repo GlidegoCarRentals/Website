@@ -157,6 +157,7 @@ export default function RegoLookup({
       }}
     >
       <label
+        htmlFor="rego-lookup-input"
         style={{
           fontSize: 12,
           fontWeight: 800,
@@ -171,6 +172,7 @@ export default function RegoLookup({
 
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <input
+          id="rego-lookup-input"
           value={rego}
           onChange={(e) => {
             setSuccess(null);

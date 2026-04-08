@@ -71,7 +71,7 @@ function MessageBubble({ msg, avatar }: { msg: any; avatar: string }) {
 // ─────────────────────────────────────────────
 function ConversationItem({ conv, isActive, onClick }: { conv: any; isActive: boolean; onClick: () => void }) {
   return (
-    <div className={`conv-item ${isActive ? 'active' : ''}`} onClick={onClick}>
+    <div className={`conv-item ${isActive ? 'active' : ''}`} role="button" tabIndex={0} onClick={onClick} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}>
       <div style={{ width: 44, height: 44, borderRadius: '50%', background: `linear-gradient(135deg,${conv.unread ? '#1d4ed8' : '#64748b'},${conv.unread ? '#059669' : '#94a3b8'})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'white', flexShrink: 0, position: 'relative' }}>
         {conv.avatar}
         {conv.unread > 0 && (
@@ -255,7 +255,7 @@ export default function HostMessagesPage() {
           {/* Quick Replies */}
           <div style={{ padding: '12px 24px 10px', background: 'white', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8, overflowX: 'auto' }}>
             {QUICK_REPLIES.map((r, i) => (
-              <button key={i} className="quick-btn" onClick={() => sendMessage(r)}>
+              <button key={`reply-${i}`} className="quick-btn" onClick={() => sendMessage(r)}>
                 {r.slice(0, 30)}{r.length > 30 ? '…' : ''}
               </button>
             ))}

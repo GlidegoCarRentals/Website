@@ -90,9 +90,9 @@ export default function ResetPasswordPage() {
 
           <form onSubmit={handleReset} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">New password</label>
+              <label htmlFor="reset-password-input" className="block text-sm font-medium text-zinc-400 mb-2">New password</label>
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8}
+                <input id="reset-password-input" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8}
                   placeholder="Min. 8 characters"
                   className="w-full px-4 py-3 pr-14 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
                 <button type="button" onClick={() => setShowPassword(s => !s)}
@@ -102,8 +102,8 @@ export default function ResetPasswordPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Confirm password</label>
-              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required
+              <label htmlFor="reset-confirm-password-input" className="block text-sm font-medium text-zinc-400 mb-2">Confirm password</label>
+              <input id="reset-confirm-password-input" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required
                 placeholder="Repeat your password"
                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 hover:border-zinc-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-white placeholder-zinc-600 text-sm outline-none transition-all" />
               {confirmPassword && confirmPassword !== password && <p className="text-xs text-red-400 mt-1.5">Passwords don&apos;t match</p>}

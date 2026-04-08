@@ -1,3 +1,4 @@
+-- Note: repeated string literals are idiomatic in SQL migrations and cannot use constants
 begin;
 
 create extension if not exists pgcrypto;
