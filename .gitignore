@@ -19,4 +19,3 @@ glidero-tests/test-report/
 /playwright/.cache/
 /playwright/.auth/
 .aider*
-.claude
