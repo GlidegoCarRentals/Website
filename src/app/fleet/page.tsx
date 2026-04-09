@@ -214,6 +214,50 @@ export default function FleetPage() {
     priceRange[0] > 0 || priceRange[1] < 300, availableOnly,
   ].filter(Boolean).length;
 
+  function renderCarContent() {
+    if (carsLoading) return <FleetSkeleton />
+    if (allCars.length === 0) return (
+      <div style={{ textAlign: 'center', padding: 60 }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🚗</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars available</div>
+        <div style={{ fontSize: 13, color: muted }}>Check back soon — new vehicles are being added to the fleet.</div>
+      </div>
+    )
+    if (filtered.length === 0) return (
+      <div style={{ textAlign: 'center', padding: 60 }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars match your filters</div>
+        <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Try adjusting your filters</div>
+        <button onClick={clearFilters} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Clear All Filters</button>
+      </div>
+    )
+    if (view === 'grid') return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }} className="fi">
+        {filtered.map((car: any) => (
+          <CarCardGrid
+            key={car.id} car={car}
+            isFav={user?.favourites?.includes(String(car.id))}
+            dm={dm} text={text} muted={muted} accent={accent}
+            onFav={(e: any) => { e.preventDefault(); if (user) toggleFavourite(String(car.id)); }}
+          />
+        ))}
+      </div>
+    )
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="fi">
+        {filtered.map((car: any) => (
+          <CarCardList
+            key={car.id} car={car}
+            isFav={user?.favourites?.includes(String(car.id))}
+            dm={dm} text={text} muted={muted} accent={accent}
+            border={border} surface={surface}
+            onFav={() => toggleFavourite(String(car.id))}
+          />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: bg, fontFamily: "'Syne','Inter',sans-serif", color: text }}>
       <style>{`
@@ -311,45 +355,7 @@ export default function FleetPage() {
             </select>
           </div>
 
-          {carsLoading ? (
-            <FleetSkeleton />
-          ) : allCars.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🚗</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars available</div>
-              <div style={{ fontSize: 13, color: muted }}>Check back soon — new vehicles are being added to the fleet.</div>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 60 }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: text, marginBottom: 8 }}>No cars match your filters</div>
-              <div style={{ fontSize: 13, color: muted, marginBottom: 20 }}>Try adjusting your filters</div>
-              <button onClick={clearFilters} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Clear All Filters</button>
-            </div>
-          ) : view === 'grid' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }} className="fi">
-              {filtered.map((car: any) => (
-                <CarCardGrid
-                  key={car.id} car={car}
-                  isFav={user?.favourites?.includes(String(car.id))}
-                  dm={dm} text={text} muted={muted} accent={accent}
-                  onFav={(e: any) => { e.preventDefault(); if (user) toggleFavourite(String(car.id)); }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="fi">
-              {filtered.map((car: any) => (
-                <CarCardList
-                  key={car.id} car={car}
-                  isFav={user?.favourites?.includes(String(car.id))}
-                  dm={dm} text={text} muted={muted} accent={accent}
-                  border={border} surface={surface}
-                  onFav={() => toggleFavourite(String(car.id))}
-                />
-              ))}
-            </div>
-          )}
+          {renderCarContent()}
         </div>
       </div>
     </div>

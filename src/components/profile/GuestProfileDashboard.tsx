@@ -114,6 +114,53 @@ function ViewSwitch({
   );
 }
 
+function getTrustLabel(score: number): string {
+  if (score >= 85) return 'Elite';
+  if (score >= 70) return 'Trusted';
+  if (score >= 55) return 'Verified';
+  return 'Building';
+}
+
+function computeCommandCenter(
+  upcomingTripsLength: number,
+  driverLicenceStatus: string,
+  phoneVerified: boolean,
+): Array<{ title: string; description: string; tone: string }> {
+  const items: Array<{ title: string; description: string; tone: string }> = [];
+  if (driverLicenceStatus !== 'approved') {
+    items.push({ title: 'Finish licence verification', description: 'Complete driver approval to unlock instant approvals and reduce manual review.', tone: '#d97706' });
+  }
+  if (!phoneVerified) {
+    items.push({ title: 'Verify your phone number', description: 'SMS trip alerts and urgent host coordination work better when your number is verified.', tone: '#2563eb' });
+  }
+  if (upcomingTripsLength > 0) {
+    const s = upcomingTripsLength > 1 ? 's' : '';
+    items.push({ title: `You have ${upcomingTripsLength} upcoming trip${s}`, description: 'Review pickup details and host instructions before your next trip starts.', tone: '#059669' });
+  }
+  if (items.length === 0) {
+    items.push({ title: 'You are trip-ready', description: 'Your account is in strong shape. Keep building trust with smooth trips and detailed reviews.', tone: '#059669' });
+  }
+  return items.slice(0, 3);
+}
+
+function computeProfileCompleteness(
+  user: GuestDashboardData['user'],
+  driverLicenceStatus: string,
+  guestProfile: GuestDashboardData['guestProfile'],
+  paymentMethodsLength: number,
+): number {
+  const checks = [
+    Boolean(user.fullName),
+    Boolean(user.phone),
+    Boolean(user.emailVerified),
+    Boolean(user.phoneVerified),
+    driverLicenceStatus === 'approved',
+    Boolean(guestProfile?.emergencyContactName),
+    Boolean(paymentMethodsLength),
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+}
+
 function BookingCard({ booking, emphasis }: Readonly<{ booking: any; emphasis?: 'primary' | 'muted' }>) {
   const tone = statusTone(booking.status);
 
@@ -176,12 +223,7 @@ export default function GuestProfileDashboard({ data }: Readonly<{ data: GuestDa
     emergencyContactPhone: data.guestProfile?.emergencyContactPhone || '',
   });
 
-  const trustLabel = useMemo(() => {
-    if (data.user.trustScore >= 85) return 'Elite';
-    if (data.user.trustScore >= 70) return 'Trusted';
-    if (data.user.trustScore >= 55) return 'Verified';
-    return 'Building';
-  }, [data.user.trustScore]);
+  const trustLabel = getTrustLabel(data.user.trustScore);
 
   const driverLicenceStatus = data.user.driverLicenceStatus || 'not_started';
   const favouriteCars = (data.favourites || []).filter((entry) => entry?.car?.id);
@@ -197,56 +239,15 @@ export default function GuestProfileDashboard({ data }: Readonly<{ data: GuestDa
     ...data.cancelledTrips.map((booking) => ({ ...booking, lane: 'Cancelled' })),
   ];
 
-  const profileCompleteness = useMemo(() => {
-    const checks = [
-      Boolean(data.user.fullName),
-      Boolean(data.user.phone),
-      Boolean(data.user.emailVerified),
-      Boolean(data.user.phoneVerified),
-      driverLicenceStatus === 'approved',
-      Boolean(data.guestProfile?.emergencyContactName),
-      Boolean(paymentMethods.length),
-    ];
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [data, driverLicenceStatus, paymentMethods.length]);
+  const profileCompleteness = useMemo(
+    () => computeProfileCompleteness(data.user, driverLicenceStatus, data.guestProfile, paymentMethods.length),
+    [data.user, data.guestProfile, driverLicenceStatus, paymentMethods.length],
+  );
 
-  const commandCenter = useMemo(() => {
-    const items = [];
-
-    if (driverLicenceStatus !== 'approved') {
-      items.push({
-        title: 'Finish licence verification',
-        description: 'Complete driver approval to unlock instant approvals and reduce manual review.',
-        tone: '#d97706',
-      });
-    }
-
-    if (!data.user.phoneVerified) {
-      items.push({
-        title: 'Verify your phone number',
-        description: 'SMS trip alerts and urgent host coordination work better when your number is verified.',
-        tone: '#2563eb',
-      });
-    }
-
-    if (data.upcomingTrips.length > 0) {
-      items.push({
-        title: `You have ${data.upcomingTrips.length} upcoming trip${data.upcomingTrips.length > 1 ? 's' : ''}`,
-        description: 'Review pickup details and host instructions before your next trip starts.',
-        tone: '#059669',
-      });
-    }
-
-    if (items.length === 0) {
-      items.push({
-        title: 'You are trip-ready',
-        description: 'Your account is in strong shape. Keep building trust with smooth trips and detailed reviews.',
-        tone: '#059669',
-      });
-    }
-
-    return items.slice(0, 3);
-  }, [data.upcomingTrips.length, data.user.phoneVerified, driverLicenceStatus]);
+  const commandCenter = useMemo(
+    () => computeCommandCenter(data.upcomingTrips.length, driverLicenceStatus, data.user.phoneVerified),
+    [data.upcomingTrips.length, driverLicenceStatus, data.user.phoneVerified],
+  );
 
   const mutate = async (url: string, options: RequestInit, successMessage: string) => {
     setMessage('');
