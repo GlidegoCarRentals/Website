@@ -13,12 +13,42 @@ const shortDate = (value: string | null | undefined) =>
   value
     ? new Date(value).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
     : 'N/A';
-const actionTone = (status: string) =>
-  status === 'pending'
-    ? { bg: 'rgba(245,158,11,0.12)', color: '#d97706' }
-    : ['confirmed', 'active', 'completed', 'approved', 'paid'].includes(status)
-      ? { bg: 'rgba(16,185,129,0.12)', color: '#059669' }
-      : { bg: 'rgba(239,68,68,0.12)', color: '#dc2626' };
+function actionTone(status: string): { bg: string; color: string } {
+  if (status === 'pending') return { bg: 'rgba(245,158,11,0.12)', color: '#d97706' };
+  if (['confirmed', 'active', 'completed', 'approved', 'paid'].includes(status)) return { bg: 'rgba(16,185,129,0.12)', color: '#059669' };
+  return { bg: 'rgba(239,68,68,0.12)', color: '#dc2626' };
+}
+
+function computeProfileStrength(data: HostDashboardData): number {
+  const checks = [
+    Boolean(data.hostProfile?.displayName || data.user.fullName),
+    Boolean(data.hostProfile?.about),
+    Boolean(data.user.phoneVerified),
+    Boolean(data.user.emailVerified),
+    Boolean(data.hostProfile?.instantBookingEnabled),
+    data.analytics.totals.fleetCount > 0,
+    data.recentReviews.length > 0,
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+}
+
+function computeHostCommandCenter(data: HostDashboardData): Array<{ title: string; description: string; tone: string }> {
+  const items: Array<{ title: string; description: string; tone: string }> = [];
+  if (data.pendingBookings.length > 0) {
+    const s = data.pendingBookings.length > 1 ? 's' : '';
+    items.push({ title: `${data.pendingBookings.length} booking request${s} waiting`, description: 'Fast approvals lift conversion and improve search placement.', tone: '#d97706' });
+  }
+  if ((data.hostProfile?.responseRate || 0) < 90) {
+    items.push({ title: 'Response rate can be stronger', description: 'Reply speed affects trust, rank, and host eligibility.', tone: '#2563eb' });
+  }
+  if ((data.hostProfile?.pendingPayoutAmount || 0) > 0) {
+    items.push({ title: `${money(data.hostProfile?.pendingPayoutAmount || 0)} in pending payouts`, description: 'Keep handoffs smooth so Stripe releases transfers on schedule.', tone: '#059669' });
+  }
+  if (items.length === 0) {
+    items.push({ title: 'Your host operation is running smoothly', description: 'Focus next on pricing, conversion, and repeat guests.', tone: '#059669' });
+  }
+  return items.slice(0, 3);
+}
 
 function Metric({ label, value, sub }: Readonly<{ label: string; value: string; sub: string }>) {
   return (
@@ -117,18 +147,8 @@ export default function HostProfileDashboard({ data }: Readonly<{ data: HostDash
   };
 
   const totalLiveBookings = data.pendingBookings.length + data.upcomingBookings.length + data.activeBookings.length;
-  const profileStrength = useMemo(() => {
-    const checks = [Boolean(data.hostProfile?.displayName || data.user.fullName), Boolean(data.hostProfile?.about), Boolean(data.user.phoneVerified), Boolean(data.user.emailVerified), Boolean(data.hostProfile?.instantBookingEnabled), data.analytics.totals.fleetCount > 0, data.recentReviews.length > 0];
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [data]);
-  const commandCenter = useMemo(() => {
-    const items = [];
-    if (data.pendingBookings.length > 0) items.push({ title: `${data.pendingBookings.length} booking request${data.pendingBookings.length > 1 ? 's' : ''} waiting`, description: 'Fast approvals lift conversion and improve search placement.', tone: '#d97706' });
-    if ((data.hostProfile?.responseRate || 0) < 90) items.push({ title: 'Response rate can be stronger', description: 'Reply speed affects trust, rank, and host eligibility.', tone: '#2563eb' });
-    if ((data.hostProfile?.pendingPayoutAmount || 0) > 0) items.push({ title: `${money(data.hostProfile?.pendingPayoutAmount || 0)} in pending payouts`, description: 'Keep handoffs smooth so Stripe releases transfers on schedule.', tone: '#059669' });
-    if (items.length === 0) items.push({ title: 'Your host operation is running smoothly', description: 'Focus next on pricing, conversion, and repeat guests.', tone: '#059669' });
-    return items.slice(0, 3);
-  }, [data.hostProfile?.pendingPayoutAmount, data.hostProfile?.responseRate, data.pendingBookings.length]);
+  const profileStrength = useMemo(() => computeProfileStrength(data), [data]);
+  const commandCenter = useMemo(() => computeHostCommandCenter(data), [data]);
 
   const handleBookingDecision = (bookingId: string, decision: 'confirm' | 'decline') =>
     mutate(`/api/host/bookings/${bookingId}/decision`, { method: 'POST', body: JSON.stringify({ decision, reason: decision === 'decline' ? 'Declined from host command center' : undefined }) }, decision === 'confirm' ? 'Booking confirmed.' : 'Booking declined.');

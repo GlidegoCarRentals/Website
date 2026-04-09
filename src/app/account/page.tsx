@@ -8,10 +8,30 @@ import { createClient } from '@/lib/supabase/client'
 
 type Tab = 'profile' | 'security' | 'notifications'
 
+const supabase = createClient()
+
+function roleBadgeClass(role: string): string {
+  if (role === 'admin') return 'bg-red-500/10 text-red-400 border border-red-500/20'
+  if (role === 'host') return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+  return 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+}
+function roleBadgeLabel(role: string): string {
+  if (role === 'admin') return 'Admin'
+  if (role === 'host') return 'Host'
+  return 'Guest'
+}
+function verifiedBadgeClass(verified: boolean, variant: 'blue' | 'emerald' = 'blue'): string {
+  if (verified) {
+    return variant === 'emerald'
+      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+      : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+  }
+  return 'bg-red-500/10 text-red-400 border border-red-500/20'
+}
+
 export default function AccountPage() {
   const router = useRouter()
   const { user, profile, loading, signOut, refreshProfile } = useAuth()
-  const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [activeTab, setActiveTab] = useState<Tab>('profile')
@@ -104,6 +124,23 @@ export default function AccountPage() {
     })
     if (error) showErr(error.message)
     else showMsg('Verification email sent. Check your inbox.')
+  }
+
+  const handlePasswordReset = async () => {
+    await supabase.auth.resetPasswordForEmail(user!.email!, {
+      redirectTo: `${globalThis.location.origin}/reset-password`,
+    })
+    showMsg('Password reset link sent to your email.')
+  }
+
+  const handleToggleNotification = async (key: string, enabled: boolean) => {
+    const prefs = (profile!.email_prefs as Record<string, boolean>) || {}
+    const updated = { ...prefs, [key]: !enabled }
+    await supabase
+      .from('users')
+      .update({ email_prefs: updated, updated_at: new Date().toISOString() })
+      .eq('id', user!.id)
+    await refreshProfile()
   }
 
   const handleSignOut = async () => {
@@ -235,18 +272,10 @@ export default function AccountPage() {
               <p className="text-zinc-500 text-xs mt-0.5 truncate">{profile.email}</p>
 
               <div className="flex items-center justify-center gap-2 mt-3">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                  profile.role === 'admin' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                  profile.role === 'host' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                  'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                }`}>
-                  {profile.role === 'admin' ? 'Admin' : profile.role === 'host' ? 'Host' : 'Guest'}
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${roleBadgeClass(profile.role)}`}>
+                  {roleBadgeLabel(profile.role)}
                 </span>
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                  profile.email_verified
-                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                }`}>
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${verifiedBadgeClass(profile.email_verified)}`}>
                   {profile.email_verified ? '✓ Verified' : '✗ Unverified'}
                 </span>
               </div>
@@ -414,12 +443,7 @@ export default function AccountPage() {
                       <p className="text-zinc-500 text-xs mt-0.5">Change your account password</p>
                     </div>
                     <button
-                      onClick={async () => {
-                        await supabase.auth.resetPasswordForEmail(user.email!, {
-                          redirectTo: `${globalThis.location.origin}/reset-password`,
-                        })
-                        showMsg('Password reset link sent to your email.')
-                      }}
+                      onClick={handlePasswordReset}
                       className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
                     >
                       Change
@@ -431,11 +455,7 @@ export default function AccountPage() {
                       <p className="font-medium text-white text-sm">Email Verification</p>
                       <p className="text-zinc-500 text-xs mt-0.5">{profile.email}</p>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                      profile.email_verified
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                    }`}>
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${verifiedBadgeClass(profile.email_verified, 'emerald')}`}>
                       {profile.email_verified ? '✓ Verified' : '✗ Not Verified'}
                     </span>
                   </div>
@@ -464,7 +484,6 @@ export default function AccountPage() {
                   ].map(pref => {
                     const prefs = (profile.email_prefs as Record<string, boolean>) || {}
                     const enabled = prefs[pref.key] ?? true
-
                     return (
                       <div key={pref.key} className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">
                         <div>
@@ -472,21 +491,10 @@ export default function AccountPage() {
                           <p className="text-zinc-500 text-xs mt-0.5">{pref.desc}</p>
                         </div>
                         <button
-                          onClick={async () => {
-                            const updated = { ...prefs, [pref.key]: !enabled }
-                            await supabase
-                              .from('users')
-                              .update({ email_prefs: updated, updated_at: new Date().toISOString() })
-                              .eq('id', user.id)
-                            await refreshProfile()
-                          }}
-                          className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ${
-                            enabled ? 'bg-blue-600' : 'bg-zinc-700'
-                          }`}
+                          onClick={() => handleToggleNotification(pref.key, enabled)}
+                          className={`relative w-11 h-6 rounded-full transition-all flex-shrink-0 ${enabled ? 'bg-blue-600' : 'bg-zinc-700'}`}
                         >
-                          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                            enabled ? 'translate-x-6' : 'translate-x-1'
-                          }`} />
+                          <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
                       </div>
                     )

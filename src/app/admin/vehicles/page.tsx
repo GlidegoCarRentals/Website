@@ -43,6 +43,26 @@ export default function VehiclesPage() {
     setVehicles((items) => items.filter((vehicle) => vehicle.id !== id));
   };
 
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      const updated = await persistVehicle(id, { status: newStatus });
+      setVehicles((items) => items.map((item) => item.id === id ? { ...item, status: updated.status } : item));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The vehicle status could not be updated.');
+    }
+  };
+
+  const handleEditRate = async (id: string, currentRate: number) => {
+    const nextRate = globalThis.prompt('New daily rate', String(currentRate));
+    if (!nextRate) return;
+    try {
+      const updated = await persistVehicle(id, { price_daily: Number(nextRate) });
+      setVehicles((items) => items.map((item) => item.id === id ? { ...item, dailyRate: updated.price_daily } : item));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The vehicle could not be updated.');
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -73,14 +93,7 @@ export default function VehiclesPage() {
                 <td className="px-6 py-4">
                   <select
                     value={vehicle.status}
-                    onChange={async (event) => {
-                      try {
-                        const updated = await persistVehicle(vehicle.id, { status: event.target.value });
-                        setVehicles((items) => items.map((item) => item.id === vehicle.id ? { ...item, status: updated.status } : item));
-                      } catch (err) {
-                        setError(err instanceof Error ? err.message : 'The vehicle status could not be updated.');
-                      }
-                    }}
+                    onChange={(e) => handleStatusChange(vehicle.id, e.target.value)}
                     className="text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-200 cursor-pointer"
                   >
                     <option value="active">Active</option>
@@ -90,16 +103,7 @@ export default function VehiclesPage() {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex gap-3">
-                    <button onClick={async () => {
-                      const nextRate = globalThis.prompt('New daily rate', String(vehicle.dailyRate));
-                      if (!nextRate) return;
-                      try {
-                        const updated = await persistVehicle(vehicle.id, { price_daily: Number(nextRate) });
-                        setVehicles((items) => items.map((item) => item.id === vehicle.id ? { ...item, dailyRate: updated.price_daily } : item));
-                      } catch (err) {
-                        setError(err instanceof Error ? err.message : 'The vehicle could not be updated.');
-                      }
-                    }} className="text-blue-600 hover:text-blue-800 font-medium text-xs">Edit</button>
+                    <button onClick={() => handleEditRate(vehicle.id, vehicle.dailyRate)} className="text-blue-600 hover:text-blue-800 font-medium text-xs">Edit</button>
                     <button onClick={() => handleDelete(vehicle.id)} className="text-red-500 hover:text-red-700 font-medium text-xs">Delete</button>
                   </div>
                 </td>
