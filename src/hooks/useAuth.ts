@@ -66,7 +66,7 @@ export function useAuth() {
       return null
     }
     return data as UserProfile
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])  
 
   const setStateFromUser = useCallback(async (user: User | null) => {
     if (!user) {
@@ -91,7 +91,7 @@ export function useAuth() {
       if (mounted) setStateFromUser(user)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { // eslint-disable-line react-hooks/exhaustive-deps
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {  
       if (mounted) setStateFromUser(session?.user ?? null)
     })
 

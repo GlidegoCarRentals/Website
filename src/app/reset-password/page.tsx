@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
       if (event === 'PASSWORD_RECOVERY') setSessionReady(true)
     })
     return () => subscription.unsubscribe()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])  
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault()

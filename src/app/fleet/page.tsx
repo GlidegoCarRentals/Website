@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 import { fetchCars } from '@/lib/db-cars';
 import { FleetSkeleton } from '@/components/Skeleton';
@@ -61,7 +62,15 @@ function CarCardGrid({ car, isFav, dm, text, muted, accent, onFav }: Readonly<an
   return (
     <div className="car-card">
       <div style={{ position: 'relative' }}>
-        <img src={car.image} alt={car.name} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
+        <Image
+          src={car.image}
+          alt={car.name}
+          width={640}
+          height={360}
+          unoptimized
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          style={{ width: '100%', height: 180, objectFit: 'cover' }}
+        />
         {!car.available && (
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ background: '#ef4444', color: 'white', padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>UNAVAILABLE</span>
@@ -108,7 +117,15 @@ function CarCardList({ car, isFav, dm, text, muted, accent, border, surface, onF
   return (
     <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 16, display: 'flex', gap: 16, padding: 16, transition: 'all 0.2s' }}>
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <img src={car.image} alt={car.name} style={{ width: 160, height: 110, borderRadius: 12, objectFit: 'cover' }} />
+        <Image
+          src={car.image}
+          alt={car.name}
+          width={160}
+          height={110}
+          unoptimized
+          sizes="160px"
+          style={{ width: 160, height: 110, borderRadius: 12, objectFit: 'cover' }}
+        />
         {!car.available && (
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: 'white', fontSize: 10, fontWeight: 700 }}>UNAVAILABLE</span>
