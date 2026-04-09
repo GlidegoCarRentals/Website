@@ -91,7 +91,7 @@ test.describe('3D — Images & Assets', () => {
     const brokenImages = await page.evaluate(() => {
       return Array.from(document.images)
         .filter(img => !img.complete || img.naturalWidth === 0)
-        .filter(img => img.src.includes(window.location.hostname))
+        .filter(img => img.src.includes(globalThis.location.hostname))
         .map(img => img.src);
     });
     console.log('Broken local images:', brokenImages);
@@ -104,7 +104,7 @@ test.describe('3D — Images & Assets', () => {
     const brokenImages = await page.evaluate(() => {
       return Array.from(document.images)
         .filter(img => !img.complete || img.naturalWidth === 0)
-        .filter(img => img.src.includes(window.location.hostname))
+        .filter(img => img.src.includes(globalThis.location.hostname))
         .map(img => img.src);
     });
     expect(brokenImages).toHaveLength(0);

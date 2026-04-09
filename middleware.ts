@@ -26,6 +26,71 @@ const ADMIN_ROUTES = ['/admin']
 // Routes that logged-in users should NOT access
 const AUTH_ROUTES = ['/login', '/signup', '/forgot-password']
 
+function isRouteType(pathname: string, routes: string[]): boolean {
+  return routes.some((route) => pathname.startsWith(route))
+}
+
+function checkAuthRoutes(pathname: string, user: unknown, userError: unknown, request: NextRequest): NextResponse | null {
+  if (isRouteType(pathname, AUTH_ROUTES) && user && !userError) {
+    return NextResponse.redirect(new URL('/account', request.url))
+  }
+  return null
+}
+
+async function checkProtectedRoutes(
+  pathname: string,
+  user: unknown,
+  userError: unknown,
+  request: NextRequest,
+): Promise<NextResponse | null> {
+  const isProtected = isRouteType(pathname, PROTECTED_ROUTES)
+  const isHostRoute = isRouteType(pathname, HOST_ROUTES)
+  const isAdminRoute = isRouteType(pathname, ADMIN_ROUTES)
+
+  if ((isProtected || isHostRoute || isAdminRoute) && (!user || userError)) {
+    const redirectUrl = new URL('/login', request.url)
+    redirectUrl.searchParams.set('redirectTo', pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
+  return null
+}
+
+async function checkHostRole(pathname: string, user: unknown, supabase: any, request: NextRequest): Promise<NextResponse | null> {
+  if (!isRouteType(pathname, HOST_ROUTES) || !user) return null
+
+  const { data: profile, error: profileError } = await supabase
+    .from('users')
+    .select('role, email_verified')
+    .eq('id', (user as any).id)
+    .single()
+
+  if (profileError || !profile) {
+    return NextResponse.redirect(new URL('/account', request.url))
+  }
+
+  if (profile.role !== 'host' && profile.role !== 'admin') {
+    return NextResponse.redirect(new URL('/become-host', request.url))
+  }
+
+  return null
+}
+
+async function checkAdminRole(pathname: string, user: unknown, supabase: any, request: NextRequest): Promise<NextResponse | null> {
+  if (!isRouteType(pathname, ADMIN_ROUTES) || !user) return null
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', (user as any).id)
+    .single()
+
+  if (profile?.role !== 'admin') {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  return null
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -64,61 +129,21 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // ─── 1. AUTH ROUTES: redirect logged-in users away from login/signup ───
-  if (AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
-    if (user && !userError) {
-      return NextResponse.redirect(new URL('/account', request.url))
-    }
-    return response
-  }
+  // Check auth routes
+  const authCheck = checkAuthRoutes(pathname, user, userError, request)
+  if (authCheck) return authCheck
 
-  // ─── 2. PROTECTED ROUTES: redirect unauthenticated users to login ───
-  const isProtected = PROTECTED_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  )
-  const isHostRoute = HOST_ROUTES.some((route) => pathname.startsWith(route))
-  const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route))
+  // Check protected routes
+  const protectedCheck = await checkProtectedRoutes(pathname, user, userError, request)
+  if (protectedCheck) return protectedCheck
 
-  if ((isProtected || isHostRoute || isAdminRoute) && (!user || userError)) {
-    const redirectUrl = new URL('/login', request.url)
-    redirectUrl.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(redirectUrl)
-  }
+  // Check host routes
+  const hostCheck = await checkHostRole(pathname, user, supabase, request)
+  if (hostCheck) return hostCheck
 
-  // ─── 3. HOST ROUTES: check host role ───
-  if (isHostRoute && user) {
-    const { data: profile, error: profileError } = await supabase
-      .from('users')
-      .select('role, email_verified')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
-      // Profile not found — redirect to account to complete setup
-      return NextResponse.redirect(new URL('/account', request.url))
-    }
-
-    if (profile.role !== 'host' && profile.role !== 'admin') {
-      // Not a host — redirect to become-host page
-      return NextResponse.redirect(new URL('/become-host', request.url))
-    }
-
-    // ⚠️ DO NOT block hosts for email verification — just show a banner
-    // Blocking here causes the redirect loop you were experiencing
-  }
-
-  // ─── 4. ADMIN ROUTES: check admin role ───
-  if (isAdminRoute && user) {
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-  }
+  // Check admin routes
+  const adminCheck = await checkAdminRole(pathname, user, supabase, request)
+  if (adminCheck) return adminCheck
 
   return response
 }

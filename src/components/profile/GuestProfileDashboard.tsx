@@ -519,24 +519,24 @@ export default function GuestProfileDashboard({ data }: Readonly<{ data: GuestDa
             <SectionTitle eyebrow="Security" title="Personal information" description="Critical account identity should be editable, reviewable, and support-friendly." />
             <div style={{ display: 'grid', gap: 12 }}>
               <div>
-                <label className="label">Full name</label>
-                <input className="input" value={profileForm.fullName} onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))} />
+                <label htmlFor="fullName" className="label">Full name</label>
+                <input id="fullName" className="input" value={profileForm.fullName} onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))} />
               </div>
               <div>
-                <label className="label">Phone</label>
-                <input className="input" value={profileForm.phone} onChange={(event) => setProfileForm((current) => ({ ...current, phone: event.target.value }))} />
+                <label htmlFor="phone" className="label">Phone</label>
+                <input id="phone" className="input" value={profileForm.phone} onChange={(event) => setProfileForm((current) => ({ ...current, phone: event.target.value }))} />
               </div>
               <div>
-                <label className="label">City</label>
-                <input className="input" value={profileForm.city} onChange={(event) => setProfileForm((current) => ({ ...current, city: event.target.value }))} />
+                <label htmlFor="city" className="label">City</label>
+                <input id="city" className="input" value={profileForm.city} onChange={(event) => setProfileForm((current) => ({ ...current, city: event.target.value }))} />
               </div>
               <div>
-                <label className="label">Emergency contact</label>
-                <input className="input" value={profileForm.emergencyContactName} onChange={(event) => setProfileForm((current) => ({ ...current, emergencyContactName: event.target.value }))} />
+                <label htmlFor="emergencyContactName" className="label">Emergency contact</label>
+                <input id="emergencyContactName" className="input" value={profileForm.emergencyContactName} onChange={(event) => setProfileForm((current) => ({ ...current, emergencyContactName: event.target.value }))} />
               </div>
               <div>
-                <label className="label">Emergency contact phone</label>
-                <input className="input" value={profileForm.emergencyContactPhone} onChange={(event) => setProfileForm((current) => ({ ...current, emergencyContactPhone: event.target.value }))} />
+                <label htmlFor="emergencyContactPhone" className="label">Emergency contact phone</label>
+                <input id="emergencyContactPhone" className="input" value={profileForm.emergencyContactPhone} onChange={(event) => setProfileForm((current) => ({ ...current, emergencyContactPhone: event.target.value }))} />
               </div>
               <button
                 className="btn btn-primary"

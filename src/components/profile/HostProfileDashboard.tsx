@@ -217,8 +217,8 @@ export default function HostProfileDashboard({ data }: Readonly<{ data: HostDash
             <section className="card">
               <SectionTitle eyebrow="Brand" title="Host profile and pricing posture" description="Your identity, listing responsiveness, and booking friction all work together." />
               <div style={{ display: 'grid', gap: 12 }}>
-                <div><label className="label">Display name</label><input className="input" value={hostForm.display_name} onChange={(event) => setHostForm((current) => ({ ...current, display_name: event.target.value }))} /></div>
-                <div><label className="label">About</label><textarea className="input" rows={5} value={hostForm.about} onChange={(event) => setHostForm((current) => ({ ...current, about: event.target.value }))} /></div>
+                <div><label htmlFor="displayName" className="label">Display name</label><input id="displayName" className="input" value={hostForm.display_name} onChange={(event) => setHostForm((current) => ({ ...current, display_name: event.target.value }))} /></div>
+                <div><label htmlFor="about" className="label">About</label><textarea id="about" className="input" rows={5} value={hostForm.about} onChange={(event) => setHostForm((current) => ({ ...current, about: event.target.value }))} /></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '12px 0' }}>
                   <div><div style={{ fontWeight: 700 }}>Instant booking</div><div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>Let highly qualified guests confirm without manual approval.</div></div>
                   <button className={`toggle ${hostForm.instant_booking_enabled ? 'on' : ''}`} onClick={() => setHostForm((current) => ({ ...current, instant_booking_enabled: !current.instant_booking_enabled }))} aria-label="Toggle instant booking" />

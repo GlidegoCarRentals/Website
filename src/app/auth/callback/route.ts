@@ -1,8 +1,7 @@
 // src/app/auth/callback/route.ts
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { EmailOtpType } from '@supabase/supabase-js'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { EmailOtpType, SupabaseClient } from '@supabase/supabase-js'
 
 function redirectWithError(origin: string, message: string) {
   return NextResponse.redirect(

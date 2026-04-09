@@ -54,7 +54,7 @@ function formatJoinedDate(createdAt?: string | null) {
 }
 
 function getAuthCallbackUrl(nextPath = '/', role: 'guest' | 'host' = 'guest') {
-  if (typeof window === 'undefined') {
+  if (typeof globalThis === 'undefined') {
     return '/auth/callback';
   }
 
