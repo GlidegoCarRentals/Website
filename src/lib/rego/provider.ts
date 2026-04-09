@@ -293,7 +293,7 @@ export async function lookupRego(
   let token: string
   try {
     token = await getPPSRToken()
-  } catch (err: any) {
+  } catch (err: unknown) {
     return err as RegoLookupError
   }
 
@@ -301,7 +301,7 @@ export async function lookupRego(
   let ppsr: PPSRSearchResult | null
   try {
     ppsr = await ppsrSearchByPlate(plate, state, token)
-  } catch (err: any) {
+  } catch (err: unknown) {
     return err as RegoLookupError
   }
 

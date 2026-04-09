@@ -20,8 +20,9 @@ export async function POST(req: NextRequest) {
   let event;
   try {
     event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET ?? '');
-  } catch (err: any) {
-    console.error('Webhook signature error:', err.message);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Webhook signature error';
+    console.error('Webhook signature error:', message);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 

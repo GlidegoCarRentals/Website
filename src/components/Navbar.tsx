@@ -364,6 +364,8 @@ export default function Navbar({ darkMode = false, onDarkModeToggle }: Readonly<
             {/* Hamburger */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
               style={{ display: 'none', flexDirection: 'column', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}
               className="hamburger"
             >

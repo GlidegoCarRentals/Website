@@ -23,9 +23,10 @@ export async function POST(req: NextRequest) {
     const result = await sendReminderEmail(booking);
     return NextResponse.json({ success: true, result });
 
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
     console.error('[Reminder Email API] Error:', err);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -57,8 +58,9 @@ export async function GET(req: NextRequest) {
       note: 'Connect Supabase query to activate real reminders'
     });
 
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
     console.error('[Reminder Cron] Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

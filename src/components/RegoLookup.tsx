@@ -18,6 +18,18 @@ export type CarDetails = {
   confidence?: { level: string; score: number };
 };
 
+function confidenceBg(level: string): string {
+  if (level === 'Verified') return '#dcfce7';
+  if (level === 'Partially Verified') return '#fef3c7';
+  return '#e5e7eb';
+}
+
+function confidenceColor(level: string): string {
+  if (level === 'Verified') return '#15803d';
+  if (level === 'Partially Verified') return '#b45309';
+  return '#111827';
+}
+
 export default function RegoLookup({
   rego,
   onRegChange,
@@ -123,8 +135,9 @@ export default function RegoLookup({
       lastFetchedRegoRef.current = nextRego;
       const confLevel = data?.confidence?.level ? String(data.confidence.level) : 'Manual Entry';
       setSuccess(`Found ${data.make || ''} ${data.model || ''} (${data.year || ''}) · ${confLevel}.`);
-    } catch (err: any) {
-      setError(err?.message || 'Something went wrong');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      setError(message);
       setSuccess(null);
       setDetails(null);
     } finally {
@@ -260,17 +273,15 @@ export default function RegoLookup({
               </div>
             </div>
             {details.confidence?.level && (
-              <div style={{ fontSize: 12, fontWeight: 900, padding: '6px 10px', borderRadius: 999, background: (() => {
-                const lv = details.confidence?.level || '';
-                if (lv === 'Verified') return '#dcfce7';
-                if (lv === 'Partially Verified') return '#fef3c7';
-                return '#e5e7eb';
-              })(), color: (() => {
-                const lv = details.confidence?.level || '';
-                if (lv === 'Verified') return '#15803d';
-                if (lv === 'Partially Verified') return '#b45309';
-                return '#111827';
-              })(), border: '1px solid rgba(0,0,0,0.04)' }}>
+              <div style={{
+                fontSize: 12,
+                fontWeight: 900,
+                padding: '6px 10px',
+                borderRadius: 999,
+                background: confidenceBg(details.confidence.level),
+                color: confidenceColor(details.confidence.level),
+                border: '1px solid rgba(0,0,0,0.04)',
+              }}>
                 {details.confidence.level} · {Math.round((details.confidence.score || 0) * 100)}%
               </div>
             )}

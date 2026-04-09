@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
+const supabase = createClient()
+
 function SignupContent() {
-  const supabase = createClient()
   const router = useRouter()
 
   const [fullName, setFullName] = useState('')

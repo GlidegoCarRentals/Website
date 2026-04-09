@@ -6,10 +6,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 
+const supabase = createClient()
+
 export default function BecomeHostPage() {
   const router = useRouter()
   const { user, profile, loading } = useAuth()
-  const supabase = createClient()
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
