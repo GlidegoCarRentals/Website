@@ -47,7 +47,7 @@ export default function RegoLookup({
 
   const regoTrimmed = useMemo(() => rego.trim().toUpperCase(), [rego]);
 
-  const normalizeRego = (raw: string) => raw.replace(/[\s-]/g, '').toUpperCase();
+  const normalizeRego = (raw: string) => raw.replaceAll(/[\s-]/g, '').toUpperCase();
 
   const isValidRegoFormat = (normalized: string) => {
     if (!normalized) return false;
