@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
+const supabase = createClient()
+
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -22,8 +24,6 @@ function LoginContent() {
   const [error, setError] = useState(urlError)
   const [message, setMessage] = useState(urlMessage)
   const [resetSent, setResetSent] = useState(false)
-
-  const supabase = createClient()
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {

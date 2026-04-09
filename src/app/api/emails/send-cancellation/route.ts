@@ -22,8 +22,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, result });
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
     console.error('[Cancel Email API] Error:', err);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

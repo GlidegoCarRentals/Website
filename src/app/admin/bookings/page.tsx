@@ -62,7 +62,9 @@ export default function BookingsPage() {
       {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <label htmlFor="booking-search" className="sr-only">Search bookings</label>
         <input
+          id="booking-search"
           type="text"
           placeholder="Search by name, ID or vehicle..."
           value={search}
@@ -105,7 +107,7 @@ export default function BookingsPage() {
                   </td>
                   <td className="px-5 py-4 font-bold text-gray-900">${booking.amount.toLocaleString()}</td>
                   <td className="px-5 py-4">
-                    <select value={booking.bookingStatus} onChange={(event) => handleStatusChange(booking.id, event.target.value)} className="text-xs font-semibold px-2 py-1.5 rounded-full border border-gray-200 cursor-pointer">
+                    <select value={booking.bookingStatus} onChange={(event) => handleStatusChange(booking.id, event.target.value)} aria-label={`Status for booking ${booking.id}`} className="text-xs font-semibold px-2 py-1.5 rounded-full border border-gray-200 cursor-pointer">
                       <option value="confirmed">Confirmed</option>
                       <option value="pending">Pending</option>
                       <option value="completed">Completed</option>

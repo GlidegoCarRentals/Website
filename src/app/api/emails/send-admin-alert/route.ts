@@ -26,8 +26,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid type. Use: admin_alert | trip_complete' }, { status: 400 });
 
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
     console.error('[Admin Alert API] Error:', err);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

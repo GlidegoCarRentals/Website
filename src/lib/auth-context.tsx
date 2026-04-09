@@ -1,14 +1,11 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 
 // ─────────────────────────────────────────────
-// Supabase client — SSR compatible
+// Supabase client — singleton, shared across all callers
 // ─────────────────────────────────────────────
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-anon-key'
-);
+const supabase = createClient();
 
 export { supabase };
 

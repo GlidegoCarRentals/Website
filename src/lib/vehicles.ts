@@ -1,12 +1,9 @@
 // src/lib/vehicles.ts
 // Reliable vehicle operations with proper error handling
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createClient();
 
 export interface VehicleData {
   make: string;

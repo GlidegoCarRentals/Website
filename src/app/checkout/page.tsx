@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import CheckoutForm from '@/components/CheckoutForm';
 import { useAuth } from '@/lib/auth-context';
 
@@ -11,6 +11,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 function CheckoutContent() {
   const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
   const carId = searchParams.get('carId');
@@ -47,7 +48,7 @@ function CheckoutContent() {
   }, [authLoading, bookingId, referenceId, totalAmount, user?.email, user?.name]);
 
   const handlePaymentSuccess = () => {
-    globalThis.location.href = `/payment-success?bookingId=${referenceId}`;
+    router.push(`/payment-success?bookingId=${referenceId}`);
   };
 
   if (!referenceId || !totalAmount) {
@@ -57,7 +58,7 @@ function CheckoutContent() {
           <div className="text-4xl mb-4">❌</div>
           <p className="text-red-700 font-medium mb-4">Missing booking details.</p>
           <button
-            onClick={() => globalThis.history.back()}
+            onClick={() => router.back()}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold"
           >
             Go Back
@@ -85,7 +86,7 @@ function CheckoutContent() {
           <div className="text-4xl mb-4">❌</div>
           <p className="text-red-700 font-medium mb-4">{error}</p>
           <button
-            onClick={() => globalThis.history.back()}
+            onClick={() => router.back()}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold"
           >
             Go Back

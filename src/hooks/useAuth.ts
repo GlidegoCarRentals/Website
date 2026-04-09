@@ -5,6 +5,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
+// Module-level singleton — avoids creating a new client on every render
+// and prevents concurrent auth-token lock contention.
+const supabase = createClient()
+
 export interface UserProfile {
   id: string
   email: string
@@ -41,7 +45,6 @@ interface AuthState {
 }
 
 export function useAuth() {
-  const supabase = createClient()
   const [state, setState] = useState<AuthState>({
     user: null,
     profile: null,
