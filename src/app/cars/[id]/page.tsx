@@ -156,7 +156,15 @@ const [imgError, setImgError] = useState(false);
             {/* Main Image */}
             <div style={{ borderRadius: 20, overflow: 'hidden', marginBottom: 24, position: 'relative', height: 380, background: 'linear-gradient(135deg,#e0f2fe,#dcfce7)' }}>
               {!imgError ? (
-                <img src={car.image} alt={car.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={() => setImgError(true)} />
+                <Image
+                  src={car.image}
+                  alt={car.name}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 1200px) 100vw, 810px"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={() => setImgError(true)}
+                />
               ) : (
                 <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 120 }}>
                   {CAR_FALLBACK[car.category] || '🚗'}

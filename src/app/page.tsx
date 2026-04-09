@@ -459,9 +459,12 @@ export default function HomePage() {
                 <div className="car-card" style={{opacity:car.available?1:0.7}}>
                   <div className="car-img-wrap">
                     {!imgErrors[car.id] ? (
-                      <img
+                      <Image
                         src={car.image}
                         alt={car.name}
+                        fill
+                        unoptimized
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                         className="car-img"
                         onError={()=>setImgErrors(prev=>({...prev,[car.id]:true}))}
                       />

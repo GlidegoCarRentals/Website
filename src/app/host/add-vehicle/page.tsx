@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
@@ -456,7 +457,14 @@ function PhotosStep({ form, set, uploading, uploadPct, drag, setDrag, fileRef, d
             <div key={url} style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', aspectRatio: '16/10', background: '#0d1117', border: i === 0 ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.06)' }}
               onMouseEnter={e => { const btn = e.currentTarget.querySelector('.del-btn') as HTMLElement; if (btn) btn.style.opacity = '1' }}
               onMouseLeave={e => { const btn = e.currentTarget.querySelector('.del-btn') as HTMLElement; if (btn) btn.style.opacity = '0' }}>
-              <img src={url} alt={`Vehicle photo ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <Image
+                src={url}
+                alt={`Vehicle photo ${i + 1}`}
+                fill
+                unoptimized
+                sizes="(max-width: 768px) 100vw, 33vw"
+                style={{ objectFit: 'cover' }}
+              />
               {i === 0 && (
                 <span style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(37,99,235,0.9)', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 8 }}>COVER</span>
               )}
@@ -692,7 +700,14 @@ function ReviewStep({ form }: Readonly<{ form: Form }>) {
     <div>
       {form.photos[0] && (
         <div style={{ borderRadius: 18, overflow: 'hidden', aspectRatio: '16/8', marginBottom: 24, position: 'relative' }}>
-          <img src={form.photos[0]} alt={`${form.year} ${form.make} ${form.model} — cover photo`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <Image
+            src={form.photos[0]}
+            alt={`${form.year} ${form.make} ${form.model} cover photo`}
+            fill
+            unoptimized
+            sizes="(max-width: 768px) 100vw, 760px"
+            style={{ objectFit: 'cover' }}
+          />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)' }} />
           <div style={{ position: 'absolute', bottom: 16, left: 20 }}>
             <p style={{ color: 'white', fontWeight: 800, fontSize: 22 }}>{form.year} {form.make} {form.model}</p>

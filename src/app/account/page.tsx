@@ -48,8 +48,8 @@ export default function AccountPage() {
   useEffect(() => {
     if (profile && !formInitialized) {
       setFullName(profile.full_name || '') // eslint-disable-line react-hooks/set-state-in-effect
-      setPhone(profile.phone || '') // eslint-disable-line react-hooks/set-state-in-effect
-      setFormInitialized(true) // eslint-disable-line react-hooks/set-state-in-effect
+      setPhone(profile.phone || '')  
+      setFormInitialized(true)  
     }
   }, [profile, formInitialized])
 

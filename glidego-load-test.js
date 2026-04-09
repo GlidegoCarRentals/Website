@@ -50,7 +50,7 @@ export const options = {
 // ─────────────────────────────────────────────
 // Main Test Function
 // ─────────────────────────────────────────────
-export default function () {
+export default function glidegoLoadTest() {
   // Randomly pick a user journey
   const journey = Math.random();
 

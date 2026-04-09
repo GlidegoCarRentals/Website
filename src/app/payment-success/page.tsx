@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/auth-context';
 
 function PaymentSuccessContent() {
@@ -38,9 +39,9 @@ function PaymentSuccessContent() {
           <p style={{ color: '#15803d', fontWeight: 600, fontSize: 14 }}>✅ Payment successful</p>
           <p style={{ color: '#16a34a', fontSize: 12, marginTop: 4 }}>Bond pre-authorised — will be released on return</p>
         </div>
-        <a href="/" style={{ display: 'block', background: 'linear-gradient(135deg,#1d4ed8,#059669)', color: 'white', padding: '14px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15 }}>
+        <Link href="/" style={{ display: 'block', background: 'linear-gradient(135deg,#1d4ed8,#059669)', color: 'white', padding: '14px 24px', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 15 }}>
           Back to Home
-        </a>
+        </Link>
       </div>
     </div>
   );
