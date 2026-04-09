@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const regoRaw = body?.rego;
-    const normalizeRego = (raw: string) => raw.replace(/[\s-]/g, '').trim().toUpperCase();
+    const normalizeRego = (raw: string) => raw.replaceAll(/[\s-]/g, '').trim().toUpperCase();
     const rego = typeof regoRaw === 'string' ? normalizeRego(regoRaw) : '';
 
     if (!rego) {

@@ -134,7 +134,7 @@ export default function AccountPage() {
   }
 
   const handleToggleNotification = async (key: string, enabled: boolean) => {
-    const prefs = (profile!.email_prefs as Record<string, boolean>) || {}
+    const prefs = profile!.email_prefs || {}
     const updated = { ...prefs, [key]: !enabled }
     await supabase
       .from('users')
@@ -482,7 +482,7 @@ export default function AccountPage() {
                     { key: 'messages', label: 'New messages', desc: 'When a host or guest sends you a message' },
                     { key: 'promotions', label: 'Promotions & offers', desc: 'Special deals and discount codes' },
                   ].map(pref => {
-                    const prefs = (profile.email_prefs as Record<string, boolean>) || {}
+                    const prefs = profile.email_prefs || {}
                     const enabled = prefs[pref.key] ?? true
                     return (
                       <div key={pref.key} className="flex items-center justify-between p-4 bg-zinc-800/50 border border-zinc-800 rounded-xl">

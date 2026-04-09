@@ -260,7 +260,7 @@ async function decodeVINWithNHTSA(vin: string): Promise<NHTSAResult | null> {
 // Helpers
 // ─────────────────────────────────────────────
 function toTitleCase(str: string): string {
-  return str.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase())
+  return str.toLowerCase().replaceAll(/\b[a-z]/g, c => c.toUpperCase())
 }
 
 function guessColour(raw?: string): string {
@@ -278,7 +278,7 @@ function guessColour(raw?: string): string {
     yel: 'Yellow', yellow: 'Yellow',
     mar: 'Maroon', maroon: 'Maroon',
   }
-  const key = raw.toLowerCase().replace(/[^a-z]/g, '')
+  const key = raw.toLowerCase().replaceAll(/[^a-z]/g, '')
   return map[key] || toTitleCase(raw)
 }
 
