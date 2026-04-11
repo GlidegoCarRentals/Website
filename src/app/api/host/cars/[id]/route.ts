@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+﻿import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -53,6 +53,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const auth = await authorizeCarAccess(id);
   if ('error' in auth) return auth.error;
 
+  if (auth.profile.role === 'host' && auth.car.host_id !== auth.user.id) {
+    return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+  }
+
   const body = await request.json();
   const updates: Record<string, unknown> = {};
 
@@ -96,6 +100,10 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
   const { id } = await context.params;
   const auth = await authorizeCarAccess(id);
   if ('error' in auth) return auth.error;
+
+  if (auth.profile.role === 'host' && auth.car.host_id !== auth.user.id) {
+    return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+  }
 
   const { error } = await auth.supabase.from('cars').delete().eq('id', id);
   if (error) {

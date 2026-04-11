@@ -52,10 +52,10 @@ function computeHostCommandCenter(data: HostDashboardData): Array<{ title: strin
 
 function Metric({ label, value, sub }: Readonly<{ label: string; value: string; sub: string }>) {
   return (
-    <div className="card-flat" style={{ padding: 20 }}>
-      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 900, fontFamily: 'var(--font-heading)' }}>{value}</div>
-      <div style={{ fontSize: 13, color: 'var(--color-text-3)', marginTop: 4 }}>{sub}</div>
+    <div className="card-flat" style={{ padding: 22, background: 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(236,253,255,0.88))', border: '1px solid rgba(59,130,246,0.18)', boxShadow: '0 22px 50px rgba(59,130,246,0.08)', animation: 'fadeIn 0.4s ease both' }}>
+      <div style={{ fontSize: 12, color: 'var(--color-primary-dark)', marginBottom: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 900, fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}>{value}</div>
+      <div style={{ fontSize: 13, color: 'var(--color-text-3)', marginTop: 6 }}>{sub}</div>
     </div>
   );
 }
@@ -63,8 +63,11 @@ function Metric({ label, value, sub }: Readonly<{ label: string; value: string; 
 function SectionTitle({ eyebrow, title, description }: Readonly<{ eyebrow?: string; title: string; description: string }>) {
   return (
     <div style={{ marginBottom: 18 }}>
-      {eyebrow ? <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{eyebrow}</div> : null}
-      <h2 style={{ fontSize: 22, fontWeight: 900, marginBottom: 6 }}>{title}</h2>
+      {eyebrow ? <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>{eyebrow}</div> : null}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 900, margin: 0, color: 'var(--color-text)' }}>{title}</h2>
+        <span style={{ flex: '1 1 auto', minWidth: 60, height: 1, background: 'rgba(15,23,42,0.08)' }} />
+      </div>
       <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{description}</div>
     </div>
   );
@@ -90,9 +93,22 @@ function ViewSwitch({ value, onChange }: Readonly<{ value: HostView; onChange: (
     { id: 'growth', label: 'Growth', description: 'Reviews, payouts, AI insights' },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 24 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12, marginBottom: 28 }}>
       {views.map((view) => (
-        <button key={view.id} onClick={() => onChange(view.id)} className="card-flat" style={{ padding: 16, textAlign: 'left', borderColor: value === view.id ? 'rgba(59,130,246,0.35)' : 'var(--color-border)', background: value === view.id ? 'linear-gradient(135deg, rgba(29,78,216,0.18), rgba(16,185,129,0.10))' : 'var(--color-surface)', cursor: 'pointer' }}>
+        <button
+          key={view.id}
+          onClick={() => onChange(view.id)}
+          className="card-flat"
+          style={{
+            padding: 18,
+            textAlign: 'left',
+            borderColor: value === view.id ? 'rgba(59,130,246,0.45)' : 'var(--color-border)',
+            background: value === view.id ? 'linear-gradient(135deg, rgba(59,130,246,0.18), rgba(16,185,129,0.08))' : 'var(--color-surface)',
+            boxShadow: value === view.id ? '0 18px 40px rgba(59,130,246,0.08)' : '0 10px 28px rgba(15,23,42,0.04)',
+            cursor: 'pointer',
+            transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+          }}
+        >
           <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 4 }}>{view.label}</div>
           <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{view.description}</div>
         </button>
@@ -104,20 +120,21 @@ function ViewSwitch({ value, onChange }: Readonly<{ value: HostView; onChange: (
 function BookingCard({ booking, isPending, onDecision }: Readonly<{ booking: any; isPending: boolean; onDecision: (id: string, decision: 'confirm' | 'decline') => void }>) {
   const tone = actionTone(booking.status);
   return (
-    <div className="card-flat" style={{ padding: 18 }}>
+    <div className="card-flat" style={{ padding: 18, background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(240,249,255,0.9))', border: '1px solid rgba(96,165,250,0.18)', boxShadow: '0 18px 40px rgba(59,130,246,0.08)', animation: 'fadeIn 0.4s ease both' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: 15 }}>{booking.car?.make} {booking.car?.model} - {booking.guest?.fullName || 'Guest'}</div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{shortDate(booking.startDate)} to {shortDate(booking.endDate)} - {booking.tripDays} day(s)</div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>{booking.bookingReference} - Guest trust {booking.guest?.trustScore || 0} - Licence {booking.guest?.driverLicenceStatus || 'pending'}</div>
+          <div style={{ fontWeight: 900, fontSize: 15, color: 'var(--color-text)' }}>{booking.car?.make} {booking.car?.model}</div>
+          <div style={{ fontSize: 13, color: 'var(--color-secondary-dark)', marginTop: 4 }}>{booking.guest?.fullName || 'Guest'}</div>
+          <div style={{ fontSize: 13, color: 'var(--color-text-3)', marginTop: 8 }}>{shortDate(booking.startDate)} – {shortDate(booking.endDate)} · {booking.tripDays} day(s)</div>
+          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 6 }}>{booking.bookingReference} · Trust {booking.guest?.trustScore || 0} · Licence {booking.guest?.driverLicenceStatus || 'pending'}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 800, fontSize: 16 }}>{money(booking.totalAmount)}</div>
-          <div style={{ marginTop: 6, display: 'inline-flex', padding: '4px 10px', borderRadius: 999, background: tone.bg, color: tone.color, fontSize: 12, fontWeight: 700 }}>{booking.status}</div>
+          <div style={{ fontWeight: 900, fontSize: 16 }}>{money(booking.totalAmount)}</div>
+          <div style={{ marginTop: 8, display: 'inline-flex', padding: '6px 12px', borderRadius: 999, background: tone.bg, color: tone.color, fontSize: 12, fontWeight: 700, letterSpacing: '0.02em' }}>{booking.status}</div>
         </div>
       </div>
       {booking.status === 'pending' ? (
-        <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
           <button className="btn btn-primary btn-sm" disabled={isPending} onClick={() => onDecision(booking.id, 'confirm')}>Accept</button>
           <button className="btn btn-danger btn-sm" disabled={isPending} onClick={() => onDecision(booking.id, 'decline')}>Decline</button>
         </div>
@@ -155,28 +172,45 @@ export default function HostProfileDashboard({ data }: Readonly<{ data: HostDash
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 48 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, flexWrap: 'wrap', marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-3)', marginBottom: 8 }}>Host command center</div>
-          <h1 style={{ fontSize: 34, fontWeight: 900, letterSpacing: '-0.03em' }}>{data.hostProfile?.displayName || data.user.fullName}</h1>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-            {data.hostProfile?.superhostStatus ? <span className="rounded" style={{ background: 'rgba(29,78,216,0.12)', color: '#1d4ed8', padding: '8px 12px', fontSize: 13, fontWeight: 800 }}>Superhost</span> : null}
-            <span className="rounded" style={{ background: 'var(--color-primary-bg)', color: 'var(--color-primary-dark)', padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>Trust score {data.user.trustScore}/100</span>
-            <span className="rounded" style={{ background: 'rgba(29,78,216,0.14)', color: '#60a5fa', padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>Profile strength {profileStrength}%</span>
-            <span className="rounded" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', fontSize: 13 }}>Response rate {compactPercent(data.hostProfile?.responseRate || 0)}</span>
+      <div style={{ display: 'grid', gap: 24, marginBottom: 24, padding: 28, borderRadius: 28, background: 'linear-gradient(135deg, #eef2ff 0%, #f8fafc 48%, #ecfeff 100%)', border: '1px solid rgba(96,165,250,0.16)', boxShadow: '0 30px 90px rgba(59,130,246,0.08)', animation: 'fadeIn 0.35s ease both' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13, color: 'var(--color-text-3)', marginBottom: 10, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Host command center</div>
+            <h1 style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-0.03em', margin: 0, lineHeight: 1.05 }}>Glidego host dashboard</h1>
+            <div style={{ fontSize: 15, color: 'var(--color-text-2)', marginTop: 10, maxWidth: 680 }}>A modern host cockpit for bookings, fleet health, payouts, and growth signals — now in a brighter, more engaging control surface.</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
+              {data.hostProfile?.superhostStatus ? <span className="rounded" style={{ background: 'rgba(59,130,246,0.14)', color: '#1e40af', padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>Superhost</span> : null}
+              <span className="rounded" style={{ background: 'rgba(16,185,129,0.12)', color: '#047857', padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>Trust score {data.user.trustScore}/100</span>
+              <span className="rounded" style={{ background: 'rgba(251,191,36,0.12)', color: '#92400e', padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>Response rate {compactPercent(data.hostProfile?.responseRate || 0)}</span>
+            </div>
+            <div style={{ marginTop: 18, maxWidth: 420 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Profile strength</div>
+                <div style={{ fontSize: 13, color: 'var(--color-text-3)' }}>{profileStrength}% complete</div>
+              </div>
+              <div style={{ background: 'rgba(16,185,129,0.12)', borderRadius: 999, overflow: 'hidden', height: 12 }}>
+                <div style={{ width: `${profileStrength}%`, height: '100%', background: 'linear-gradient(90deg, #34d399, #059669)', transition: 'width 0.4s ease' }} />
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 180 }}>
+            <button className="btn btn-secondary" disabled={isPending} onClick={() => router.refresh()} style={{ width: 'max-content' }}>Refresh live data</button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12 }}>
+              <span style={{ padding: '12px 14px', borderRadius: 999, background: 'rgba(59,130,246,0.12)', color: '#1e3a8a', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>Active fleet {data.analytics.totals.activeVehicleCount}</span>
+              <span style={{ padding: '12px 14px', borderRadius: 999, background: 'rgba(16,185,129,0.12)', color: '#065f46', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>Booked trips {totalLiveBookings}</span>
+            </div>
           </div>
         </div>
-        <button className="btn btn-secondary" disabled={isPending} onClick={() => router.refresh()}>Refresh live data</button>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 16 }}>
+          <Metric label="Monthly revenue" value={money(data.analytics.totals.totalRevenue)} sub={`${data.analytics.totals.totalConfirmedBookings} confirmed bookings`} />
+          <Metric label="Fleet size" value={String(data.analytics.totals.fleetCount)} sub={`${data.analytics.totals.activeVehicleCount} active or bookable`} />
+          <Metric label="Booking conversion" value={compactPercent(data.analytics.totals.conversionRate)} sub={`${data.analytics.totals.totalViews} views tracked`} />
+          <Metric label="Pending payout" value={money(data.hostProfile?.pendingPayoutAmount || 0)} sub={`${data.payouts.length} payout records`} />
+        </div>
       </div>
 
       {message ? <div className="card-flat" style={{ marginBottom: 20, padding: '14px 18px', color: message.toLowerCase().includes('wrong') || message.toLowerCase().includes('issue') ? 'var(--color-danger)' : 'var(--color-primary-dark)' }}>{message}</div> : null}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16, marginBottom: 24 }}>
-        <Metric label="Monthly revenue" value={money(data.analytics.totals.totalRevenue)} sub={`${data.analytics.totals.totalConfirmedBookings} confirmed bookings`} />
-        <Metric label="Fleet" value={String(data.analytics.totals.fleetCount)} sub={`${data.analytics.totals.activeVehicleCount} active or bookable`} />
-        <Metric label="Views to bookings" value={compactPercent(data.analytics.totals.conversionRate)} sub={`${data.analytics.totals.totalViews} views tracked`} />
-        <Metric label="Pending payout" value={money(data.hostProfile?.pendingPayoutAmount || 0)} sub={`${data.payouts.length} payout records`} />
-      </div>
 
       <ViewSwitch value={view} onChange={setView} />
 

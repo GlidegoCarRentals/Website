@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { GuestDashboardData } from '@/lib/profile/types';
 
@@ -23,6 +23,14 @@ function shortDate(value: string | null | undefined) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+function computeTripDays(startDate?: string | null, endDate?: string | null) {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(1, diff + 1);
 }
 
 function statusTone(status: string) {
@@ -222,6 +230,46 @@ export default function GuestProfileDashboard({ data }: Readonly<{ data: GuestDa
     emergencyContactName: data.guestProfile?.emergencyContactName || '',
     emergencyContactPhone: data.guestProfile?.emergencyContactPhone || '',
   });
+  const [guestBookings, setGuestBookings] = useState<any[]>([])
+  const [guestBookingsLoading, setGuestBookingsLoading] = useState(true)
+  const [guestBookingsError, setGuestBookingsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+
+    async function loadGuestBookings() {
+      setGuestBookingsLoading(true)
+      setGuestBookingsError(null)
+
+      try {
+        const response = await fetch('/api/guest/bookings', { cache: 'no-store' })
+        const payload = await response.json()
+
+        if (!response.ok) {
+          throw new Error(payload?.error || 'Failed to load bookings.')
+        }
+
+        if (!active) return
+
+        const bookings = Array.isArray(payload.bookings) ? payload.bookings : []
+        setGuestBookings(bookings.map((booking: any) => ({
+          ...booking,
+          tripDays: booking.tripDays || computeTripDays(booking.startDate, booking.endDate),
+        })))
+      } catch (error) {
+        if (!active) return
+        setGuestBookingsError(error instanceof Error ? error.message : 'Unable to fetch bookings.')
+      } finally {
+        if (active) setGuestBookingsLoading(false)
+      }
+    }
+
+    loadGuestBookings()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const trustLabel = getTrustLabel(data.user.trustScore);
 
@@ -445,13 +493,25 @@ export default function GuestProfileDashboard({ data }: Readonly<{ data: GuestDa
           <section className="card">
             <SectionTitle eyebrow="Trips" title="Trip timeline" description="Every reservation should be legible at a glance, from pending approval to completed and reviewed." />
             <div style={{ display: 'grid', gap: 14 }}>
-              {allTrips.map((booking) => (
-                <div key={booking.id}>
-                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{booking.lane}</div>
-                  <BookingCard booking={booking} />
+              {guestBookingsLoading ? (
+                <div className="card-flat" style={{ padding: 18, color: 'var(--color-text-3)' }}>
+                  Loading bookings...
                 </div>
-              ))}
-              {allTrips.length === 0 ? <div className="card-flat" style={{ padding: 18, color: 'var(--color-text-3)' }}>No trips yet.</div> : null}
+              ) : guestBookingsError ? (
+                <div className="card-flat" style={{ padding: 18, color: 'var(--color-danger)' }}>
+                  {guestBookingsError}
+                </div>
+              ) : guestBookings.length > 0 ? (
+                guestBookings.map((booking) => (
+                  <div key={booking.id}>
+                    <BookingCard booking={booking} />
+                  </div>
+                ))
+              ) : (
+                <div className="card-flat" style={{ padding: 18, color: 'var(--color-text-3)' }}>
+                  No bookings found yet. Once you make a reservation, it will appear here with booking reference, status, dates, amount, and car details.
+                </div>
+              )}
             </div>
           </section>
         </div>
