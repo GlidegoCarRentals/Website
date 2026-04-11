@@ -67,22 +67,18 @@ const [imgError, setImgError] = useState(false);
         .insert({
           car_id: car.id,
           guest_id: user.id,
-          host_id: car.host_id || null,
-          customer_email: user.email || null,
-          customer_name: user.user_metadata?.full_name || user.email || 'Customer',
-          car_name: car.name,
-          car_category: car.category,
-          pickup_date: pickupDate,
-          return_date: returnDate,
-          pickup_location: pickupLocation,
-          days,
-          subtotal,
-          service_fee: serviceFee,
-          total_amount: total,
-          bond_amount: car.deposit || 0,
-          status: 'pending_payment',
+          host_id: car.host_id,
+          status: 'pending',
           payment_status: 'pending',
-          booking_status: 'pending',
+          start_date: new Date(pickupDate).toISOString(),
+          end_date: new Date(returnDate).toISOString(),
+          pickup_location: pickupLocation,
+          return_location: pickupLocation, // Default to same as pickup
+          trip_days: days,
+          subtotal_amount: subtotal,
+          fees_amount: serviceFee,
+          total_amount: total,
+          deposit_amount: car.deposit || 0,
         })
         .select()
         .single();

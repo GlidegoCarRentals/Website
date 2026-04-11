@@ -1,11 +1,26 @@
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  const supabase = await createClient();
+  
+  // Fetch real stats
+  const [usersRes, bookingsRes, paymentsRes, activeCarsRes] = await Promise.all([
+    supabase.from('users').select('id', { count: 'exact' }),
+    supabase.from('bookings').select('id', { count: 'exact' }),
+    supabase.from('payments').select('amount').eq('status', 'paid'),
+    supabase.from('cars').select('id', { count: 'exact' }).eq('status', 'active'),
+  ]);
+
+  const totalRevenue = (paymentsRes.data || []).reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalBookings = bookingsRes.count || 0;
+  const activeVehicles = activeCarsRes.count || 0;
+
   const stats = [
-    { label: 'Total Bookings', value: '71', change: '+12%', icon: '📅', color: 'blue', href: '/admin/bookings' },
-    { label: 'Total Revenue', value: '$29,000', change: '+18%', icon: '💰', color: 'green', href: '/admin/revenue' },
-    { label: 'Active Vehicles', value: '6', change: '', icon: '🚗', color: 'purple', href: '/admin/vehicles' },
-    { label: 'This Month', value: '$6,100', change: '+17%', icon: '📈', color: 'orange', href: '/admin/revenue' },
+    { label: 'Total Bookings', value: totalBookings.toString(), change: '', icon: '📅', color: 'blue', href: '/admin/bookings' },
+    { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, change: '', icon: '💰', color: 'green', href: '/admin/revenue' },
+    { label: 'Active Vehicles', value: activeVehicles.toString(), change: '', icon: '🚗', color: 'purple', href: '/admin/vehicles' },
+    { label: 'Total Users', value: (usersRes.count || 0).toString(), change: '', icon: '👥', color: 'orange', href: '/admin/users' },
   ];
 
   const quickActions = [

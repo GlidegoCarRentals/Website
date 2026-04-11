@@ -1,5 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { requireRole } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 type Payload = {
@@ -36,41 +35,10 @@ function slugify(value: string) {
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {}
-        },
-      },
-    }
-  )
+  const auth = await requireRole(['host', 'admin'])
+  if (!auth.ok) return auth.response
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: 'Please sign in to list a vehicle.' }, { status: 401 })
-  }
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (!profile || (profile.role !== 'host' && profile.role !== 'admin')) {
-    return NextResponse.json({ error: 'Only hosts can add vehicles.' }, { status: 403 })
-  }
+  const { supabase, userId: host_id } = auth
 
   const payload = (await request.json()) as Payload
   const make = payload.make?.trim()
@@ -101,7 +69,7 @@ export async function POST(request: Request) {
   const slug = baseSlug || `vehicle-${Date.now()}`
 
   const insertPayload = {
-    host_id: user.id,
+    host_id,
     make,
     model,
     year,

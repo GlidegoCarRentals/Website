@@ -22,8 +22,8 @@ async function handlePaymentSucceeded(pi: any) {
   if (!meta.bookingId || meta.type !== 'rental_charge') return;
 
   const db = getSupabase();
-  await db.from('payments').update({ status: 'succeeded' }).eq('stripe_payment_intent_id', pi.id);
-  await db.from('bookings').update({ payment_status: 'paid', booking_status: 'confirmed' }).eq('id', meta.bookingId);
+  await db.from('payments').update({ status: 'paid' }).eq('stripe_payment_intent_id', pi.id);
+  await db.from('bookings').update({ payment_status: 'paid', status: 'confirmed' }).eq('id', meta.bookingId);
 
   const { data: booking } = await db.from('bookings').select('*').eq('id', meta.bookingId).single();
 
@@ -63,7 +63,7 @@ async function handlePaymentFailed(pi: any) {
   if (meta.bookingId) {
     const db = getSupabase();
     await db.from('payments').update({ status: 'failed' }).eq('stripe_payment_intent_id', pi.id);
-    await db.from('bookings').update({ payment_status: 'failed', booking_status: 'cancelled' }).eq('id', meta.bookingId);
+    await db.from('bookings').update({ payment_status: 'failed', status: 'cancelled' }).eq('id', meta.bookingId);
   }
   await sendAdminAlert(
     `⚠️ Payment Failed — ${meta.carName || 'Unknown Car'}`,
