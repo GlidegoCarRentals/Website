@@ -24,7 +24,7 @@ export async function GET() {
     totalBookings: bookings.length,
     activeBookings: bookings.filter(b => b.status === 'active').length,
     totalRevenue: payments
-      .filter(p => p.status === 'succeeded')
+      .filter(p => p.status === 'paid')
       .reduce((sum, p) => sum + Number(p.amount), 0),
   }
 
