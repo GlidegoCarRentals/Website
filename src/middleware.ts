@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PROTECTED = ['/account', '/booking', '/payment-success', '/favourites']
+const PROTECTED = ['/account', '/booking', '/payment-success', '/favourites', '/checkout']
 const HOST_ONLY = ['/host/dashboard', '/host/add-vehicle', '/host/edit-vehicle', '/host/bookings', '/host/earnings', '/host/messages', '/host/settings', '/host/vehicles']
 const ADMIN_ONLY = ['/admin']
 const AUTH_PAGES = ['/login', '/signup', '/forgot-password']

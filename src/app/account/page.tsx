@@ -348,11 +348,12 @@ export default function AccountPage() {
 
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+                    <label htmlFor="fullName" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
                       Full Name
                     </label>
                     {editing ? (
                       <input
+                        id="fullName"
                         type="text"
                         value={fullName}
                         onChange={e => setFullName(e.target.value)}
@@ -376,11 +377,12 @@ export default function AccountPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+                    <label htmlFor="phone" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
                       Phone Number
                     </label>
                     {editing ? (
                       <input
+                        id="phone"
                         type="tel"
                         value={phone}
                         onChange={e => setPhone(e.target.value)}

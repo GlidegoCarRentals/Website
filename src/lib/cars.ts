@@ -83,7 +83,7 @@ export const CARS = [
     allFeatures: ['Panoramic Sunroof', 'Harman Kardon Sound', 'Heads-Up Display', '7 Seats', 'Air Suspension', 'Gesture Control', 'Wireless Charging', '4WD'],
     included: ['Insurance Included', 'Unlimited KM in VIC', '24/7 Roadside Assist', 'Free Cancellation'],
     deposit: 800, minAge: 25, minDays: 2,
-    host: { name: 'Michael T.', avatar: 'MT', rating: 5.0, trips: 312, responseTime: '< 1 hour', joined: '2021' },
+    host: { name: 'Michael T.', avatar: 'MT', rating: 5, trips: 312, responseTime: '< 1 hour', joined: '2021' },
     reviews: [
       { name: 'Sarah K.', rating: 5, date: 'Feb 2026', text: 'Immaculate car, exactly as described. Michael was super responsive.' },
       { name: 'James R.', rating: 5, date: 'Jan 2026', text: 'Best car rental experience ever. The BMW was spotless and drove like a dream.' },
