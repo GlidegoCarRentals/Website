@@ -36,7 +36,7 @@ function slugify(value: string) {
 
 export async function POST(request: Request) {
   const auth = await requireRole(['host', 'admin'])
-  if (!auth.ok) return auth.response
+  if (!auth.ok) return (auth as { response: ReturnType<typeof NextResponse.json> }).response
 
   const { supabase, userId: host_id } = auth
 
